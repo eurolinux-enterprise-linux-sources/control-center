@@ -11,7 +11,7 @@
 Name: control-center
 Epoch: 1
 Version: 3.26.2
-Release: 8%{?dist}
+Release: 9%{?dist}
 Summary: Utilities to configure the GNOME desktop
 
 License: GPLv2+ and GFDL
@@ -39,6 +39,8 @@ Patch23: 0001-network-Consider-empty-IPv6-gateway-to-be-valid.patch
 
 Patch24: 0001-network-Request-periodic-Wi-Fi-scans.patch
 Patch25: 0002-wifi-Show-the-Wi-Fi-disabled-page-if-it-is-disabled.patch
+
+Patch26: wacom-pro-pen-3d.patch
 
 BuildRequires: autoconf automake libtool intltool gnome-common
 
@@ -176,6 +178,7 @@ utilities.
 
 %patch24 -p1
 %patch25 -p1
+%patch26 -p1
 
 autoreconf -f -i
 
@@ -263,6 +266,10 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
 
 %changelog
+* Tue Apr 17 2018 Carlos Garnacho <cgarnach@redhat.com> - 3.26.2-9
+- Add support for Wacom Pro Pen 3D styli
+  Resolves: #1568701
+
 * Tue Feb 20 2018 Bastien Nocera <bnocera@redhat.com> - 3.26.2-8
 + control-center-3.26.2-8
 - Fix Wi-Fi networks not getting updated
