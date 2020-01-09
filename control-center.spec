@@ -26,7 +26,7 @@
 Summary: Utilities to configure the GNOME desktop
 Name: control-center
 Version: 2.28.1
-Release: 38%{?dist}
+Release: 39%{?dist}
 Epoch: 1
 License: GPLv2+ and GFDL
 Group: User Interface/Desktops
@@ -533,6 +533,10 @@ fi
 
 
 %changelog
+* Thu Jun 11 2013 Matthew Barnes <mbarnes@redhat.com> 2.28.1-39
+- Rebuild against newer evolution-data-server.
+  Resolves: #973279
+
 * Mon Sep 10 2012 Olivier Fourdan <ofourdan@redhat.com> 2.28.1-38
 - wacom: Re-sync sources from gnome-settings-daemon-2.28.2-26 with
   LED support (#805069)
