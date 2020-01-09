@@ -150,10 +150,8 @@ on_allocation_changed (ClutterActor          *actor,
   resize_display (area);
 }
 
-static gboolean
-on_delete_event (GtkWidget *widget,
-                 GdkEvent  *event,
-                 CalibArea *area)
+static void
+calib_area_notify_finish (CalibArea *area)
 {
   clutter_timeline_stop (CLUTTER_TIMELINE (area->clock_timeline));
 
@@ -165,15 +163,21 @@ on_delete_event (GtkWidget *widget,
   gtk_widget_hide (area->window);
 
   (*area->callback) (area, area->user_data);
+}
 
+static gboolean
+on_delete_event (GtkWidget *widget,
+                 GdkEvent  *event,
+                 CalibArea *area)
+{
+  calib_area_notify_finish (area);
   return TRUE;
 }
 
 static gboolean
-draw_success_end_wait_callback (CalibArea *area)
+calib_area_finish_idle_cb (CalibArea *area)
 {
-  on_delete_event (NULL, NULL, area);
-
+  calib_area_notify_finish (area);
   return FALSE;
 }
 
@@ -241,12 +245,12 @@ set_calibration_status (CalibArea *area)
     {
       set_success (area);
       g_timeout_add (END_TIME,
-                     (GSourceFunc) draw_success_end_wait_callback,
+                     (GSourceFunc) calib_area_finish_idle_cb,
                      area);
     }
   else
     {
-      on_delete_event (NULL, NULL, area);
+      g_idle_add ((GSourceFunc) calib_area_finish_idle_cb, area);
     }
 }
 
@@ -372,20 +376,16 @@ on_button_press_event(ClutterActor       *actor,
 }
 
 static gboolean
-on_key_release_event(ClutterActor    *actor,
-                     ClutterKeyEvent *event,
-                     CalibArea       *area)
+on_key_release_event (GtkWidget   *widget,
+                      GdkEventKey *event,
+                      CalibArea   *area)
 {
   if (area->success ||
-      event->type != CLUTTER_KEY_RELEASE ||
-      event->keyval != CLUTTER_KEY_Escape)
-    {
-      return FALSE;
-    }
+      event->keyval != GDK_KEY_Escape)
+    return GDK_EVENT_PROPAGATE;
 
-  on_delete_event (area->window, NULL, area);
-
-  return FALSE;
+  calib_area_notify_finish (area);
+  return GDK_EVENT_STOP;
 }
 
 static gboolean
@@ -397,7 +397,7 @@ on_focus_out_event (GtkWidget *widget,
     return FALSE;
 
   /* If the calibrator window loses focus, simply bail out... */
-  on_delete_event (widget, NULL, area);
+  calib_area_notify_finish (area);
 
   return FALSE;
 }
@@ -471,7 +471,7 @@ show_helper_text_title (CalibArea *area)
   area->helper_msg_timeline = transition;
 }
 
-static void
+static gboolean
 on_fullscreen (GtkWindow           *window,
                GdkEventWindowState *event,
                CalibArea           *area)
@@ -479,11 +479,11 @@ on_fullscreen (GtkWindow           *window,
   ClutterRect rect;
 
   if ((event->changed_mask & GDK_WINDOW_STATE_FULLSCREEN) == 0)
-    return;
+    return FALSE;
 
   /* Protect against window state multiple changes*/
-  if (CLUTTER_ACTOR_IS_VISIBLE (area->action_layer))
-    return;
+  if (clutter_actor_is_visible (area->action_layer))
+    return FALSE;
 
   clutter_actor_show (area->action_layer);
   clutter_actor_show (area->clock);
@@ -503,6 +503,7 @@ on_fullscreen (GtkWindow           *window,
                        - clutter_actor_get_height (area->helper_text_body));
 
   show_helper_text_title (area);
+  return FALSE;
 }
 
 static void
@@ -665,10 +666,6 @@ set_up_stage (CalibArea *calib_area, ClutterActor *stage)
                     "button-press-event",
                     G_CALLBACK (on_button_press_event),
                     calib_area);
-  g_signal_connect (stage,
-                    "key-release-event",
-                    G_CALLBACK (on_key_release_event),
-                    calib_area);
 }
 
 /**
@@ -723,7 +720,7 @@ calib_area_new (GdkScreen      *screen,
   /* No cursor */
   gtk_widget_realize (calib_area->window);
   window = gtk_widget_get_window (calib_area->window);
-  cursor = gdk_cursor_new (GDK_BLANK_CURSOR);
+  cursor = gdk_cursor_new_for_display (gdk_display_get_default (), GDK_BLANK_CURSOR);
   gdk_window_set_cursor (window, cursor);
   g_object_unref (cursor);
 
@@ -751,6 +748,10 @@ calib_area_new (GdkScreen      *screen,
 
   set_up_stage (calib_area, stage);
 
+  g_signal_connect (calib_area->window,
+                    "key-release-event",
+                    G_CALLBACK (on_key_release_event),
+                    calib_area);
   g_signal_connect (calib_area->window,
                     "delete-event",
                     G_CALLBACK (on_delete_event),

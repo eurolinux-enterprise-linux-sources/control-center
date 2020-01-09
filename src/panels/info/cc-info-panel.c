@@ -22,6 +22,7 @@
 
 #include "cc-info-panel.h"
 #include "cc-info-resources.h"
+#include "info-cleanup.h"
 
 #include <glib.h>
 #include <glib/gi18n.h>
@@ -39,8 +40,6 @@
 #endif
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
-#include <GL/gl.h>
-#include <GL/glx.h>
 #endif
 
 #include "gsd-disk-space-helper.h"
@@ -57,10 +56,6 @@
 
 #define MEDIA_HANDLING_SCHEMA "org.gnome.desktop.media-handling"
 
-/* Session */
-#define GNOME_SESSION_MANAGER_SCHEMA        "org.gnome.desktop.session"
-#define KEY_SESSION_NAME          "session-name"
-
 #define WID(w) (GtkWidget *) gtk_builder_get_object (self->priv->builder, w)
 
 CC_PANEL_REGISTER (CcInfoPanel, cc_info_panel)
@@ -69,10 +64,8 @@ CC_PANEL_REGISTER (CcInfoPanel, cc_info_panel)
   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CC_TYPE_INFO_PANEL, CcInfoPanelPrivate))
 
 typedef struct {
-  /* Will be the string below, or "Unknown" */
-  const char *hardware_string;
-
-  char *glx_renderer;
+  /* Will be one or 2 GPU name strings, or "Unknown" */
+  char *hardware_string;
 } GraphicsData;
 
 typedef struct 
@@ -102,8 +95,6 @@ struct _CcInfoPanelPrivate
   /* Media */
   GSettings     *media_settings;
   GtkWidget     *other_application_combo;
-
-  GDBusConnection     *session_bus;
 
   GraphicsData  *graphics_data;
 };
@@ -224,142 +215,130 @@ load_gnome_version (char **version,
   return ret;
 };
 
-typedef struct
-{
-  char *regex;
-  char *replacement;
-} ReplaceStrings;
-
-static char *
-prettify_info (const char *info)
-{
-  char *pretty;
-  int   i;
-  static const ReplaceStrings rs[] = {
-    { "Mesa DRI ", ""},
-    { "Intel[(]R[)]", "Intel<sup>\302\256</sup>"},
-    { "Core[(]TM[)]", "Core<sup>\342\204\242</sup>"},
-    { "Atom[(]TM[)]", "Atom<sup>\342\204\242</sup>"},
-    { "Graphics Controller", "Graphics"},
-  };
-
-  pretty = g_markup_escape_text (info, -1);
-
-  for (i = 0; i < G_N_ELEMENTS (rs); i++)
-    {
-      GError *error;
-      GRegex *re;
-      char   *new;
-
-      error = NULL;
-
-      re = g_regex_new (rs[i].regex, 0, 0, &error);
-      if (re == NULL)
-        {
-          g_warning ("Error building regex: %s", error->message);
-          g_error_free (error);
-          continue;
-        }
-
-      new = g_regex_replace_literal (re,
-                                     pretty,
-                                     -1,
-                                     0,
-                                     rs[i].replacement,
-                                     0,
-                                     &error);
-
-      g_regex_unref (re);
-
-      if (error != NULL)
-        {
-          g_warning ("Error replacing %s: %s", rs[i].regex, error->message);
-          g_error_free (error);
-          continue;
-        }
-
-      g_free (pretty);
-      pretty = new;
-    }
-
-  return pretty;
-}
-
 static void
 graphics_data_free (GraphicsData *gdata)
 {
-  g_free (gdata->glx_renderer);
+  g_free (gdata->hardware_string);
   g_slice_free (GraphicsData, gdata);
 }
 
-#ifdef GDK_WINDOWING_X11
 static char *
-get_graphics_data_glx_renderer ()
+get_renderer_from_session (void)
 {
-  Display *display;
-  int attributes[] = {
-    GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
-    GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR,
-    GLX_RENDER_TYPE, GLX_RGBA_BIT,
-    None
-  };
-  int nconfigs;
-  int major, minor;
-  Window window;
-  GLXFBConfig *config;
-  GLXWindow glxwin;
-  GLXContext context;
-  XSetWindowAttributes win_attributes;
-  XVisualInfo *visualInfo;
+  GDBusProxy *session_proxy;
+  GVariant *renderer_variant;
   char *renderer;
+  GError *error = NULL;
 
-  gdk_error_trap_push ();
+  session_proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+                                                 G_DBUS_PROXY_FLAGS_NONE,
+                                                 NULL,
+                                                 "org.gnome.SessionManager",
+                                                 "/org/gnome/SessionManager",
+                                                 "org.gnome.SessionManager",
+                                                 NULL, &error);
+  if (error != NULL)
+    {
+      g_warning ("Unable to connect to create a proxy for org.gnome.SessionManager: %s",
+                 error->message);
+      g_error_free (error);
+      return NULL;
+    }
 
-  display = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
+  renderer_variant = g_dbus_proxy_get_cached_property (session_proxy, "Renderer");
+  g_object_unref (session_proxy);
 
-  glXQueryVersion (display, &major, &minor);
-  config = glXChooseFBConfig (display, DefaultScreen (display),
-                              attributes, &nconfigs);
-  if (config == NULL) {
-    g_warning ("Failed to get OpenGL configuration");
+  if (!renderer_variant)
+    {
+      g_warning ("Unable to retrieve org.gnome.SessionManager.Renderer property");
+      return NULL;
+    }
 
-    gdk_error_trap_pop_ignored ();
-    return NULL;
-  }
-  visualInfo = glXGetVisualFromFBConfig (display, *config);
-  win_attributes.colormap = XCreateColormap (display, DefaultRootWindow(display),
-                                        visualInfo->visual, AllocNone );
-
-  window = XCreateWindow (display, DefaultRootWindow (display),
-                                0, 0, /* x, y */
-                                1, 1, /* width, height */
-                                0,   /* border_width */
-                                visualInfo->depth, InputOutput,
-                                visualInfo->visual, CWColormap, &win_attributes);
-  glxwin = glXCreateWindow (display, *config, window, NULL);
-
-  context = glXCreateNewContext (display, *config, GLX_RGBA_TYPE,
-                                 NULL, TRUE);
-  XFree (config);
-
-  glXMakeContextCurrent (display, glxwin, glxwin, context);
-  renderer = (char *) glGetString (GL_RENDERER);
-  renderer = renderer ? prettify_info (renderer) : NULL;
-
-  glXMakeContextCurrent (display, None, None, NULL);
-  glXDestroyContext (display, context);
-  glXDestroyWindow (display, glxwin);
-  XDestroyWindow (display, window);
-  XFree (visualInfo);
-
-  if (gdk_error_trap_pop () != Success) {
-    g_warning ("Failed to get OpenGL driver info");
-    return NULL;
-  }
+  renderer = info_cleanup (g_variant_get_string (renderer_variant, NULL));
+  g_variant_unref (renderer_variant);
 
   return renderer;
 }
-#endif
+
+static char *
+get_renderer_from_helper (gboolean discrete_gpu)
+{
+  int status;
+  char *argv[] = { GNOME_SESSION_DIR "/gnome-session-check-accelerated", NULL };
+  char **envp = NULL;
+  char *renderer = NULL;
+  char *ret = NULL;
+  GError *error = NULL;
+
+  if (discrete_gpu)
+    {
+      envp = g_get_environ ();
+      envp = g_environ_setenv (envp, "DRI_PRIME", "1", TRUE);
+    }
+
+  if (!g_spawn_sync (NULL, (char **) argv, envp, 0, NULL, NULL, &renderer, NULL, &status, &error))
+    {
+      g_debug ("Failed to get %s GPU: %s",
+               discrete_gpu ? "discrete" : "integrated",
+               error->message);
+      g_error_free (error);
+      goto out;
+    }
+
+  if (!g_spawn_check_exit_status (status, NULL))
+    goto out;
+
+  if (renderer == NULL || *renderer == '\0')
+    goto out;
+
+  ret = info_cleanup (renderer);
+
+out:
+  g_free (renderer);
+  g_strfreev (envp);
+  return ret;
+}
+
+static gboolean
+has_dual_gpu (void)
+{
+  GDBusProxy *switcheroo_proxy;
+  GVariant *dualgpu_variant;
+  gboolean ret;
+  GError *error = NULL;
+
+  switcheroo_proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
+                                                    G_DBUS_PROXY_FLAGS_NONE,
+                                                    NULL,
+                                                    "net.hadess.SwitcherooControl",
+                                                    "/net/hadess/SwitcherooControl",
+                                                    "net.hadess.SwitcherooControl",
+                                                    NULL, &error);
+  if (switcheroo_proxy == NULL)
+    {
+      g_debug ("Unable to connect to create a proxy for net.hadess.SwitcherooControl: %s",
+               error->message);
+      g_error_free (error);
+      return FALSE;
+    }
+
+  dualgpu_variant = g_dbus_proxy_get_cached_property (switcheroo_proxy, "HasDualGpu");
+  g_object_unref (switcheroo_proxy);
+
+  if (!dualgpu_variant)
+    {
+      g_debug ("Unable to retrieve net.hadess.SwitcherooControl.HasDualGpu property, the daemon is likely not running");
+      return FALSE;
+    }
+
+  ret = g_variant_get_boolean (dualgpu_variant);
+  g_variant_unref (dualgpu_variant);
+
+  if (ret)
+    g_debug ("Dual-GPU machine detected");
+
+  return ret;
+}
 
 static GraphicsData *
 get_graphics_data (void)
@@ -371,20 +350,31 @@ get_graphics_data (void)
 
   display = gdk_display_get_default ();
 
-#ifdef GDK_WINDOWING_X11
-  if (GDK_IS_X11_DISPLAY (display))
+#if defined(GDK_WINDOWING_X11) || defined(GDK_WINDOWING_WAYLAND)
+  if (GDK_IS_X11_DISPLAY (display) ||
+      GDK_IS_WAYLAND_DISPLAY (display))
     {
-      result->glx_renderer = get_graphics_data_glx_renderer ();
-      result->hardware_string = result->glx_renderer;
+      char *discrete_renderer = NULL;
+      char *renderer;
+
+      renderer = get_renderer_from_session ();
+      if (!renderer)
+        renderer = get_renderer_from_helper (FALSE);
+      if (has_dual_gpu ())
+        discrete_renderer = get_renderer_from_helper (TRUE);
+      if (!discrete_renderer)
+        result->hardware_string = g_strdup (renderer);
+      else
+        result->hardware_string = g_strdup_printf ("%s / %s",
+                                                   renderer,
+                                                   discrete_renderer);
+      g_free (renderer);
+      g_free (discrete_renderer);
     }
-  else
 #endif
-#ifdef GDK_WINDOWING_WAYLAND
-  if (GDK_IS_WAYLAND_DISPLAY (display))
-    result->hardware_string = _("Wayland");
-  else
-#endif
-    result->hardware_string = _("Unknown");
+
+  if (!result->hardware_string)
+    result->hardware_string = g_strdup (_("Unknown"));
 
   return result;
 }
@@ -431,49 +421,108 @@ cc_info_panel_class_init (CcInfoPanelClass *klass)
   object_class->finalize = cc_info_panel_finalize;
 }
 
-static char *
-get_os_type (void)
+static GHashTable*
+get_os_info (void)
 {
-  int bits;
-  char *buffer;
-  char *name;
-  char *result;
+  GHashTable *hashtable;
+  gchar *buffer;
 
-  name = NULL;
+  hashtable = NULL;
 
   if (g_file_get_contents ("/etc/os-release", &buffer, NULL, NULL))
     {
-       char *start, *end;
+      gchar **lines;
+      gint i;
 
-       start = end = NULL;
-       if ((start = strstr (buffer, "PRETTY_NAME=\"")) != NULL)
-         {
-           start += strlen ("PRETTY_NAME=\"");
-           end = strchr (start, '"');
-         }
+      lines = g_strsplit (buffer, "\n", -1);
 
-       if (start != NULL && end != NULL)
-         {
-           name = g_strndup (start, end - start);
-         }
+      for (i = 0; lines[i] != NULL; i++)
+        {
+          gchar *delimiter, *key, *value;
 
-       g_free (buffer);
+          /* Initialize the hash table if needed */
+          if (!hashtable)
+            hashtable = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+
+          delimiter = strstr (lines[i], "=");
+          value = NULL;
+          key = NULL;
+
+          if (delimiter != NULL)
+            {
+              gint size;
+
+              key = g_strndup (lines[i], delimiter - lines[i]);
+
+              /* Jump the '=' */
+              delimiter += strlen ("=");
+
+              /* Eventually jump the ' " ' character */
+              if (g_str_has_prefix (delimiter, "\""))
+                delimiter += strlen ("\"");
+
+              size = strlen (delimiter);
+
+              /* Don't consider the last ' " ' too */
+              if (g_str_has_suffix (delimiter, "\""))
+                size -= strlen ("\"");
+
+              value = g_strndup (delimiter, size);
+
+              g_hash_table_insert (hashtable, key, value);
+            }
+        }
+
+      g_strfreev (lines);
+      g_free (buffer);
     }
+
+  return hashtable;
+}
+
+static char *
+get_os_type (void)
+{
+  GHashTable *os_info;
+  gchar *name, *result, *build_id;
+  int bits;
+
+  os_info = get_os_info ();
+
+  if (!os_info)
+    return NULL;
+
+  name = g_hash_table_lookup (os_info, "PRETTY_NAME");
+  build_id = g_hash_table_lookup (os_info, "BUILD_ID");
 
   if (GLIB_SIZEOF_VOID_P == 8)
     bits = 64;
   else
     bits = 32;
 
-  /* translators: This is the name of the OS, followed by the type
-   * of architecture, for example:
-   * "Fedora 18 (Spherical Cow) 64-bit" or "Ubuntu (Oneric Ocelot) 32-bit" */
-  if (name)
-    result = g_strdup_printf (_("%s %d-bit"), name, bits);
+  if (build_id)
+    {
+      /* translators: This is the name of the OS, followed by the type
+       * of architecture and the build id, for example:
+       * "Fedora 18 (Spherical Cow) 64-bit (Build ID: xyz)" or
+       * "Ubuntu (Oneric Ocelot) 32-bit (Build ID: jki)" */
+      if (name)
+        result = g_strdup_printf (_("%s %d-bit (Build ID: %s)"), name, bits, build_id);
+      else
+        result = g_strdup_printf (_("%d-bit (Build ID: %s)"), bits, build_id);
+    }
   else
-    result = g_strdup_printf (_("%d-bit"), bits);
+    {
+      /* translators: This is the name of the OS, followed by the type
+       * of architecture, for example:
+       * "Fedora 18 (Spherical Cow) 64-bit" or "Ubuntu (Oneric Ocelot) 32-bit" */
+      if (name)
+        result = g_strdup_printf (_("%s %d-bit"), name, bits);
+      else
+        result = g_strdup_printf (_("%d-bit"), bits);
+    }
 
-  g_free (name);
+  g_clear_pointer (&os_info, g_hash_table_destroy);
 
   return result;
 }
@@ -577,40 +626,6 @@ get_primary_disc_info (CcInfoPanel *self)
 }
 
 static char *
-remove_duplicate_whitespace (const char *old)
-{
-  char   *new;
-  GRegex *re;
-  GError *error;
-
-  error = NULL;
-  re = g_regex_new ("[ \t\n\r]+", G_REGEX_MULTILINE, 0, &error);
-  if (re == NULL)
-    {
-      g_warning ("Error building regex: %s", error->message);
-      g_error_free (error);
-      return g_strdup (old);
-    }
-  new = g_regex_replace (re,
-                         old,
-                         -1,
-                         0,
-                         " ",
-                         0,
-                         &error);
-  g_regex_unref (re);
-  if (new == NULL)
-    {
-      g_warning ("Error replacing string: %s", error->message);
-      g_error_free (error);
-      return g_strdup (old);
-    }
-
-  return new;
-}
-
-
-static char *
 get_cpu_info (const glibtop_sysinfo *info)
 {
   GHashTable    *counts;
@@ -652,22 +667,21 @@ get_cpu_info (const glibtop_sysinfo *info)
   g_hash_table_iter_init (&iter, counts);
   while (g_hash_table_iter_next (&iter, &key, &value))
     {
-      char *stripped;
+      char *cleanedup;
       int   count;
 
       count = GPOINTER_TO_INT (value);
-      stripped = remove_duplicate_whitespace ((const char *)key);
+      cleanedup = info_cleanup ((const char *) key);
       if (count > 1)
-        g_string_append_printf (cpu, "%s \303\227 %d ", stripped, count);
+        g_string_append_printf (cpu, "%s \303\227 %d ", cleanedup, count);
       else
-        g_string_append_printf (cpu, "%s ", stripped);
-      g_free (stripped);
+        g_string_append_printf (cpu, "%s ", cleanedup);
+      g_free (cleanedup);
     }
 
   g_hash_table_destroy (counts);
 
-  ret = prettify_info (cpu->str);
-  g_string_free (cpu, TRUE);
+  ret = g_string_free (cpu, FALSE);
 
   return ret;
 }
@@ -724,7 +738,7 @@ static struct {
 } const virt_tech[] = {
   { "kvm", "KVM" },
   { "qemu", "QEmu" },
-  { "vmware", "VMWare" },
+  { "vmware", "VMware" },
   { "microsoft", "Microsoft" },
   { "oracle", "Oracle" },
   { "xen", "Xen" },
@@ -1559,10 +1573,6 @@ cc_info_panel_init (CcInfoPanel *self)
   self->priv->builder = gtk_builder_new ();
 
   self->priv->media_settings = g_settings_new (MEDIA_HANDLING_SCHEMA);
-
-  self->priv->session_bus = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, NULL);
-
-  g_assert (self->priv->session_bus);
 
   if (gtk_builder_add_from_resource (self->priv->builder,
                                      "/org/gnome/control-center/info/info.ui",

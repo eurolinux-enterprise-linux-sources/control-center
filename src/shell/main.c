@@ -29,6 +29,10 @@
 #include <X11/Xlib.h>
 #endif
 
+#ifdef HAVE_CHEESE
+#include <cheese-gtk.h>
+#endif /* HAVE_CHEESE */
+
 #include "cc-application.h"
 
 int
@@ -37,9 +41,6 @@ main (int argc, char **argv)
   GtkApplication *application;
   int status;
 
-  /* FIXME: remove this when GOA uses WebKit2 */
-  g_setenv("G_TLS_GNUTLS_PRIORITY", "NORMAL:%COMPAT:!VERS-SSL3.0", FALSE);
-
   bindtextdomain (GETTEXT_PACKAGE, GNOMELOCALEDIR);
   bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
   textdomain (GETTEXT_PACKAGE);
@@ -47,6 +48,10 @@ main (int argc, char **argv)
 #ifdef GDK_WINDOWING_X11
   XInitThreads ();
 #endif
+
+#ifdef HAVE_CHEESE
+  cheese_gtk_init (&argc, &argv);
+#endif /* HAVE_CHEESE */
 
   application = cc_application_new ();
   status = g_application_run (G_APPLICATION (application), argc, argv);

@@ -37,6 +37,7 @@
 #include <libgnome-desktop/gnome-languages.h>
 
 typedef struct {
+        GtkWidget *done_button;
         GtkWidget *no_results;
         GtkListBoxRow *more_item;
         GtkWidget *filter_entry;
@@ -126,7 +127,6 @@ more_widget_new (void)
         gtk_style_context_add_class (gtk_widget_get_style_context (arrow), "dim-label");
         gtk_widget_set_margin_top (box, 10);
         gtk_widget_set_margin_bottom (box, 10);
-        gtk_misc_set_alignment (GTK_MISC (arrow), 0.5, 0.5);
         gtk_box_pack_start (GTK_BOX (box), arrow, TRUE, TRUE, 0);
 
         return GTK_LIST_BOX_ROW (row);
@@ -359,7 +359,33 @@ row_activated (GtkListBox        *box,
                 return;
         }
         new_locale_id = g_object_get_data (G_OBJECT (row), "locale-id");
-        set_locale_id (chooser, new_locale_id);
+        if (g_strcmp0 (new_locale_id, priv->language) == 0) {
+                gtk_dialog_response (GTK_DIALOG (chooser),
+                                     gtk_dialog_get_response_for_widget (GTK_DIALOG (chooser),
+                                                                         priv->done_button));
+        } else {
+                set_locale_id (chooser, new_locale_id);
+        }
+}
+
+static void
+activate_default (GtkWindow *window,
+                  GtkDialog *chooser)
+{
+        CcLanguageChooserPrivate *priv = GET_PRIVATE (chooser);
+        GtkWidget *focus;
+        gchar *locale_id;
+
+        focus = gtk_window_get_focus (window);
+        if (!focus)
+                return;
+
+        locale_id = g_object_get_data (G_OBJECT (focus), "locale-id");
+        if (g_strcmp0 (locale_id, priv->language) == 0)
+                return;
+
+        g_signal_stop_emission_by_name (window, "activate-default");
+        gtk_widget_activate (focus);
 }
 
 static void
@@ -398,6 +424,7 @@ cc_language_chooser_new (GtkWidget *parent)
         g_object_set_data_full (G_OBJECT (chooser), "private", priv, cc_language_chooser_private_free);
         g_object_set_data_full (G_OBJECT (chooser), "builder", builder, g_object_unref);
 
+        priv->done_button = WID ("ok-button");
         priv->filter_entry = WID ("language-filter-entry");
         priv->language_list = WID ("language-list");
         priv->scrolledwindow = WID ("language-scrolledwindow");
@@ -425,6 +452,9 @@ cc_language_chooser_new (GtkWidget *parent)
         gtk_list_box_invalidate_filter (GTK_LIST_BOX (priv->language_list));
 
         gtk_window_set_transient_for (GTK_WINDOW (chooser), GTK_WINDOW (parent));
+
+        g_signal_connect (chooser, "activate-default",
+                          G_CALLBACK (activate_default), chooser);
 
         return chooser;
 }

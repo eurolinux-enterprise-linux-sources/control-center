@@ -30,6 +30,8 @@
 #include <gtk/gtk.h>
 #include <act/act.h>
 
+#include "cc-util.h"
+
 #include "um-history-dialog.h"
 #include "um-utils.h"
 
@@ -169,7 +171,7 @@ add_record (GtkWidget *box, GDateTime *datetime, gchar *record_string, gint line
         gchar *date, *time, *str;
         GtkWidget *label, *row;
 
-        date = get_smart_date (datetime);
+        date = cc_util_get_smart_date (datetime);
         /* Translators: This is a time format string in the style of "22:58".
            It indicates a login time which follows a date. */
         time = g_date_time_format (datetime, C_("login date-time", "%k:%M"));
@@ -181,6 +183,10 @@ add_record (GtkWidget *box, GDateTime *datetime, gchar *record_string, gint line
         gtk_box_set_homogeneous (GTK_BOX (row), TRUE);
         gtk_container_set_border_width (GTK_CONTAINER (row), 6);
 
+        label = gtk_label_new (record_string);
+        gtk_widget_set_halign (label, GTK_ALIGN_START);
+        gtk_box_pack_start (GTK_BOX (row), label, TRUE, TRUE, 0);
+
         label = gtk_label_new (str);
         gtk_widget_set_halign (label, GTK_ALIGN_START);
         gtk_box_pack_start (GTK_BOX (row), label, TRUE, TRUE, 0);
@@ -188,10 +194,6 @@ add_record (GtkWidget *box, GDateTime *datetime, gchar *record_string, gint line
         g_free (date);
         g_free (time);
         g_date_time_unref (datetime);
-
-        label = gtk_label_new (record_string);
-        gtk_widget_set_halign (label, GTK_ALIGN_START);
-        gtk_box_pack_start (GTK_BOX (row), label, TRUE, TRUE, 0);
 
         gtk_list_box_insert (GTK_LIST_BOX (box), row, line);
 }
@@ -232,14 +234,15 @@ show_week (UmHistoryDialog *um)
         line = 0;
         for (;i >= 0; i--) {
                 history = g_array_index (login_history, UmLoginHistory, i);
-                if (history.logout_time > 0 && history.logout_time < from) {
-                        break;
-                }
 
                 /* Display only x-session and tty records */
                 if (!g_str_has_prefix (history.type, ":") &&
                     !g_str_has_prefix (history.type, "tty")) {
                         continue;
+                }
+
+                if (history.logout_time > 0 && history.logout_time < from) {
+                        break;
                 }
 
                 if (history.logout_time > 0 && history.logout_time < to) {
@@ -286,6 +289,21 @@ show_next (GtkButton       *button,
         show_week (um);
 }
 
+static void
+update_dialog_title (UmHistoryDialog *um)
+{
+        gchar *title;
+
+        /* Translators: This is the title of the "Account Activity" dialog.
+           The %s is the user real name. */
+        title = g_strdup_printf (_("%s - Account Activity"),
+                                 act_user_get_real_name (um->user));
+
+        gtk_window_set_title (GTK_WINDOW (um->dialog), title);
+
+        g_free (title);
+}
+
 void
 um_history_dialog_set_user (UmHistoryDialog *um,
                             ActUser         *user)
@@ -297,6 +315,8 @@ um_history_dialog_set_user (UmHistoryDialog *um,
         if (user) {
                 um->user = g_object_ref (user);
         }
+
+        update_dialog_title (um);
 }
 
 void
@@ -304,6 +324,7 @@ um_history_dialog_show (UmHistoryDialog *um,
                         GtkWindow       *parent)
 {
         GDateTime *temp, *local;
+        gint parent_width;
 
         if (um->week)
                 g_date_time_unref (um->week);
@@ -323,6 +344,8 @@ um_history_dialog_show (UmHistoryDialog *um,
 
         show_week (um);
 
+        gtk_window_get_size (parent, &parent_width, NULL);
+        gtk_window_set_default_size (GTK_WINDOW (um->dialog), parent_width * 0.6, -1);
         gtk_window_set_transient_for (GTK_WINDOW (um->dialog), parent);
         gtk_window_present (GTK_WINDOW (um->dialog));
 }

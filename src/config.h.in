@@ -54,9 +54,6 @@
 /* Define to 1 if NetworkManager is available */
 #undef HAVE_NETWORK_MANAGER
 
-/* Define to 1 if NetworkManager is available */
-#undef HAVE_NM_UNSTABLE
-
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
@@ -74,6 +71,9 @@
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
+
+/* System has udev */
+#undef HAVE_UDEV
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
@@ -96,8 +96,7 @@
 /* Description */
 #undef LIBGD__VIEW_COMMON
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
 /* Define if debugging is disabled */

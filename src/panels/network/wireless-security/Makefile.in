@@ -91,10 +91,10 @@ host_triplet = @host@
 subdir = panels/network/wireless-security
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/libgd/libgd.m4 \
-	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/as-ac-expand.m4 $(top_srcdir)/m4/intltool.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -122,7 +122,8 @@ am__objects_2 = libwireless_security_la-wireless-security.lo \
 	libwireless_security_la-eap-method-peap.lo \
 	libwireless_security_la-eap-method-simple.lo \
 	libwireless_security_la-helpers.lo
-am_libwireless_security_la_OBJECTS = $(am__objects_1) $(am__objects_2)
+am_libwireless_security_la_OBJECTS = $(am__objects_1) $(am__objects_2) \
+	libwireless_security_la-utils.lo
 libwireless_security_la_OBJECTS =  \
 	$(am_libwireless_security_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -223,6 +224,8 @@ DATETIME_PANEL_CFLAGS = @DATETIME_PANEL_CFLAGS@
 DATETIME_PANEL_LIBS = @DATETIME_PANEL_LIBS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DEVICES_CFLAGS = @DEVICES_CFLAGS@
+DEVICES_LIBS = @DEVICES_LIBS@
 DISPLAY_PANEL_CFLAGS = @DISPLAY_PANEL_CFLAGS@
 DISPLAY_PANEL_LIBS = @DISPLAY_PANEL_LIBS@
 DLLTOOL = @DLLTOOL@
@@ -238,6 +241,7 @@ GDESKTOP_PREFIX = @GDESKTOP_PREFIX@
 GETTEXT_PACKAGE = @GETTEXT_PACKAGE@
 GLIB_MKENUMS = @GLIB_MKENUMS@
 GMSGFMT = @GMSGFMT@
+GNOMESESSIONDIR = @GNOMESESSIONDIR@
 GREP = @GREP@
 GVC_CFLAGS = @GVC_CFLAGS@
 GVC_LIBS = @GVC_LIBS@
@@ -279,6 +283,7 @@ LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -295,8 +300,6 @@ NETWORK_PANEL_CFLAGS = @NETWORK_PANEL_CFLAGS@
 NETWORK_PANEL_LIBS = @NETWORK_PANEL_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
-NM_UNSTABLE_CHECK_CFLAGS = @NM_UNSTABLE_CHECK_CFLAGS@
-NM_UNSTABLE_CHECK_LIBS = @NM_UNSTABLE_CHECK_LIBS@
 NM_VPN_CONFIG_DIR = @NM_VPN_CONFIG_DIR@
 NM_VPN_MODULE_DIR = @NM_VPN_MODULE_DIR@
 NOTIFICATIONS_PANEL_CFLAGS = @NOTIFICATIONS_PANEL_CFLAGS@
@@ -347,6 +350,8 @@ SMBCLIENT_LIBS = @SMBCLIENT_LIBS@
 SOUND_PANEL_CFLAGS = @SOUND_PANEL_CFLAGS@
 SOUND_PANEL_LIBS = @SOUND_PANEL_LIBS@
 STRIP = @STRIP@
+UDEV_CFLAGS = @UDEV_CFLAGS@
+UDEV_LIBS = @UDEV_LIBS@
 UNIVERSAL_ACCESS_PANEL_CFLAGS = @UNIVERSAL_ACCESS_PANEL_CFLAGS@
 UNIVERSAL_ACCESS_PANEL_LIBS = @UNIVERSAL_ACCESS_PANEL_LIBS@
 UPDATE_MIME_DATABASE = @UPDATE_MIME_DATABASE@
@@ -357,6 +362,8 @@ VERSION = @VERSION@
 WACOM_PANEL_CFLAGS = @WACOM_PANEL_CFLAGS@
 WACOM_PANEL_LIBS = @WACOM_PANEL_LIBS@
 WARN_CFLAGS = @WARN_CFLAGS@
+WAYLAND_CFLAGS = @WAYLAND_CFLAGS@
+WAYLAND_LIBS = @WAYLAND_LIBS@
 XF86MISC_LIBS = @XF86MISC_LIBS@
 XGETTEXT = @XGETTEXT@
 XMKMF = @XMKMF@
@@ -389,6 +396,7 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+gnome_session_libexecdir = @gnome_session_libexecdir@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -456,7 +464,10 @@ NM_APPLET_SOURCES = \
 
 libwireless_security_la_SOURCES = \
 	$(BUILT_SOURCES) \
-	$(NM_APPLET_SOURCES)
+	$(NM_APPLET_SOURCES) \
+	utils.c \
+	utils.h \
+	nm-default.h
 
 libwireless_security_la_CPPFLAGS = \
 	$(NETWORK_PANEL_CFLAGS) \
@@ -469,8 +480,7 @@ libwireless_security_la_LIBADD = \
 
 resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/wireless-security.gresource.xml)
 WIRELESS_SECURITY_DIR = $(top_srcdir)/../network-manager-applet/src/wireless-security
-WIRELESS_SECURITY_FILES = $(NM_APPLET_SOURCES)
-EXTRA_DIST = $(resource_files) wireless-security.gresource.xml nm-connection-editor-to-network-panel.patch
+EXTRA_DIST = $(resource_files) wireless-security.gresource.xml nm-connection-editor-to-network-panel.patch nm-connection-editor-ui-to-network-panel.patch
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -534,6 +544,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libwireless_security_la-eap-method-ttls.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libwireless_security_la-eap-method.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libwireless_security_la-helpers.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libwireless_security_la-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libwireless_security_la-wireless-security-resources.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libwireless_security_la-wireless-security.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libwireless_security_la-ws-dynamic-wep.Plo@am__quote@
@@ -543,22 +554,25 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libwireless_security_la-ws-wpa-psk.Plo@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
@@ -667,6 +681,13 @@ libwireless_security_la-helpers.lo: helpers.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='helpers.c' object='libwireless_security_la-helpers.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libwireless_security_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libwireless_security_la-helpers.lo `test -f 'helpers.c' || echo '$(srcdir)/'`helpers.c
+
+libwireless_security_la-utils.lo: utils.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libwireless_security_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libwireless_security_la-utils.lo -MD -MP -MF $(DEPDIR)/libwireless_security_la-utils.Tpo -c -o libwireless_security_la-utils.lo `test -f 'utils.c' || echo '$(srcdir)/'`utils.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libwireless_security_la-utils.Tpo $(DEPDIR)/libwireless_security_la-utils.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utils.c' object='libwireless_security_la-utils.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libwireless_security_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libwireless_security_la-utils.lo `test -f 'utils.c' || echo '$(srcdir)/'`utils.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -887,9 +908,14 @@ wireless-security-resources.c: wireless-security.gresource.xml $(resource_files)
 wireless-security-resources.h: wireless-security.gresource.xml $(resource_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-header --c-name wireless_security $<
 update-from-nma:
-	FILES="$(WIRELESS_SECURITY_FILES)" DIR="$(WIRELESS_SECURITY_DIR)" $(top_srcdir)/update-from-gsd.sh && changed=true ; \
-	patch -p0 < $(srcdir)/nm-connection-editor-to-network-panel.patch ; \
-	git commit -m "network: Update wireless-security from network-manager-applet" $(WIRELESS_SECURITY_FILES)
+	FILES="$(NM_APPLET_SOURCES)" DIR="$(WIRELESS_SECURITY_DIR)" $(top_srcdir)/update-from-gsd.sh && \
+	      patch -p4 < $(srcdir)/nm-connection-editor-to-network-panel.patch && \
+	      git add $(NM_APPLET_SOURCES) && \
+	      git commit -m "network: Update wireless-security from network-manager-applet"
+	FILES="$(resource_files)" DIR="$(WIRELESS_SECURITY_DIR)" $(top_srcdir)/update-from-gsd.sh && \
+	      patch -p4 < $(srcdir)/nm-connection-editor-ui-to-network-panel.patch && \
+	      git add $(resource_files) && \
+	      git commit -m "network: Update wireless-security UI from network-manager-applet"
 
 -include $(top_srcdir)/git.mk
 

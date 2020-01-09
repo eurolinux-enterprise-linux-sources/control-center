@@ -23,6 +23,8 @@
 #include <gtk/gtk.h>
 #include <cups/cups.h>
 
+#include "pp-print-device.h"
+
 #define ALLOWED_CHARACTERS "abcdefghijklmnopqrtsuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
 
 #define MECHANISM_BUS "org.opensuse.CupsPkHelper.Mechanism"
@@ -93,13 +95,6 @@ char       *get_dest_attr (const char *dest_name,
 gchar      *get_ppd_attribute (const gchar *ppd_file_name,
                                const gchar *attribute_name);
 
-void        cancel_cups_subscription (gint id);
-
-gint        renew_cups_subscription (gint id,
-                                     const char * const *events,
-                                     gint num_events,
-                                     gint lease_duration);
-
 void        set_local_default_printer (const gchar *printer_name);
 
 gboolean    printer_set_location (const gchar *printer_name,
@@ -143,8 +138,6 @@ gboolean    printer_is_local (cups_ptype_t  printer_type,
 gchar      *printer_get_hostname (cups_ptype_t  printer_type,
                                   const gchar  *device_uri,
                                   const gchar  *printer_uri);
-
-void        printer_set_default_media_size (const gchar *printer_name);
 
 typedef void (*PSPCallback) (gchar    *printer_name,
                              gboolean  success,
@@ -259,47 +252,9 @@ void        cups_get_jobs_async (const gchar *printer_name,
                                  CGJCallback  callback,
                                  gpointer     user_data);
 
-typedef void (*JCPCallback) (gpointer user_data);
-
-void job_cancel_purge_async (gint          job_id,
-                             gboolean      job_purge,
-                             GCancellable *cancellable,
-                             JCPCallback   callback,
-                             gpointer      user_data);
-
-typedef void (*JSHUCallback) (gpointer user_data);
-
-void job_set_hold_until_async (gint          job_id,
-                               const gchar  *job_hold_until,
-                               GCancellable *cancellable,
-                               JSHUCallback  callback,
-                               gpointer      user_data);
-typedef struct
-{
-  gboolean  is_authenticated_server;
-  gchar    *device_class;
-  gchar    *device_id;
-  gchar    *device_info;
-  gchar    *device_make_and_model;
-  gchar    *device_uri;
-  gchar    *device_location;
-  gchar    *device_name;
-  gchar    *device_ppd;
-  gchar    *host_name;
-  gint      host_port;
-  gint      acquisition_method;
-  gchar    *display_name;
-  gchar    *device_original_name;
-  gboolean  network_device;
-  gboolean  show;
-} PpPrintDevice;
-
-void           pp_print_device_free (PpPrintDevice *device);
-PpPrintDevice *pp_print_device_copy (PpPrintDevice *device);
-
 void         pp_devices_list_free (PpDevicesList *result);
 
-const gchar *get_paper_size_from_locale (void);
+const gchar *get_page_size_from_locale (void);
 
 typedef void (*GCDCallback) (GList          *devices,
                              gboolean        finished,
@@ -312,8 +267,8 @@ void        get_cups_devices_async (GCancellable *cancellable,
 
 gchar      *guess_device_hostname (PpPrintDevice *device);
 
-gchar      *canonicalize_device_name (GList         *devices,
-                                      GList         *new_devices,
+gchar      *canonicalize_device_name (GList         *device_names,
+                                      GList         *local_cups_devices,
                                       cups_dest_t   *dests,
                                       gint           num_of_dests,
                                       PpPrintDevice *device);

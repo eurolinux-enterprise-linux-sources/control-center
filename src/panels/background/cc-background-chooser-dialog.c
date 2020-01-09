@@ -99,7 +99,7 @@ cc_background_chooser_dialog_realize (GtkWidget *widget)
 
   if (parent == NULL)
     {
-      gtk_widget_set_size_request (GTK_WIDGET (chooser), -1, 550);
+      gtk_window_set_default_size (GTK_WINDOW (chooser), -1, 550);
     }
   else if (gtk_window_is_maximized (parent))
     {
@@ -111,7 +111,7 @@ cc_background_chooser_dialog_realize (GtkWidget *widget)
       gint height;
 
       gtk_window_get_size (parent, &width, &height);
-      gtk_widget_set_size_request (GTK_WIDGET (chooser), -1, (gint) (0.9 * height));
+      gtk_window_set_default_size (GTK_WINDOW (chooser), -1, (gint) (0.9 * height));
     }
 
   GTK_WIDGET_CLASS (cc_background_chooser_dialog_parent_class)->realize (widget);
@@ -395,7 +395,6 @@ create_view (CcBackgroundChooserDialog *chooser, GtkTreeModel *model)
 
   sw = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-  gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (sw), GTK_SHADOW_IN);
   gtk_widget_set_hexpand (sw, TRUE);
   gtk_widget_set_vexpand (sw, TRUE);
 
@@ -478,15 +477,13 @@ cc_background_chooser_dialog_init (CcBackgroundChooserDialog *chooser)
   priv->pictures_source = bg_pictures_source_new (GTK_WINDOW (chooser));
   priv->colors_source = bg_colors_source_new (GTK_WINDOW (chooser));
 
-  gtk_container_set_border_width (GTK_CONTAINER (chooser), 6);
   gtk_window_set_modal (GTK_WINDOW (chooser), TRUE);
   gtk_window_set_resizable (GTK_WINDOW (chooser), FALSE);
   /* translators: This is the title of the wallpaper chooser dialog. */
   gtk_window_set_title (GTK_WINDOW (chooser), _("Select Background"));
 
   vbox = gtk_dialog_get_content_area (GTK_DIALOG (chooser));
-  gtk_container_set_border_width (GTK_CONTAINER (vbox), 5);
-  gtk_widget_set_margin_bottom (vbox, 6);
+  gtk_container_set_border_width (GTK_CONTAINER (vbox), 0);
 
   priv->stack = gtk_stack_new ();
   gtk_stack_set_homogeneous (GTK_STACK (priv->stack), TRUE);
@@ -540,7 +537,7 @@ cc_background_chooser_dialog_init (CcBackgroundChooserDialog *chooser)
   gtk_container_add (GTK_CONTAINER (empty_pictures_box), labels_grid);
   label = gtk_label_new ("");
   gtk_label_set_use_markup (GTK_LABEL (label), TRUE);
-  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_set_halign (label, GTK_ALIGN_START);
   markup = g_markup_printf_escaped ("<b><span size='large'>%s</span></b>",
                                     /* translators: No pictures were found */
                                     _("No Pictures Found"));
@@ -552,7 +549,7 @@ cc_background_chooser_dialog_init (CcBackgroundChooserDialog *chooser)
   gtk_label_set_max_width_chars (GTK_LABEL (label), 24);
   gtk_label_set_line_wrap (GTK_LABEL (label), TRUE);
   gtk_label_set_use_markup (GTK_LABEL (label), TRUE);
-  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_widget_set_halign (label, GTK_ALIGN_START);
 
   pictures_dir = g_get_user_special_dir (G_USER_DIRECTORY_PICTURES);
   if (pictures_dir == NULL)
@@ -581,7 +578,7 @@ cc_background_chooser_dialog_init (CcBackgroundChooserDialog *chooser)
   gtk_container_add (GTK_CONTAINER (labels_grid), label);
 
   gtk_dialog_add_button (GTK_DIALOG (chooser), _("_Cancel"), GTK_RESPONSE_CANCEL);
-  gtk_dialog_add_button (GTK_DIALOG (chooser), _("Select"), GTK_RESPONSE_OK);
+  gtk_dialog_add_button (GTK_DIALOG (chooser), _("_Select"), GTK_RESPONSE_OK);
   gtk_dialog_set_default_response (GTK_DIALOG (chooser), GTK_RESPONSE_OK);
   gtk_dialog_set_response_sensitive (GTK_DIALOG (chooser), GTK_RESPONSE_OK, FALSE);
 }

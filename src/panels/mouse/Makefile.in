@@ -94,10 +94,10 @@ noinst_PROGRAMS = test-gnome-mouse-test$(EXEEXT)
 subdir = panels/mouse
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/libgd/libgd.m4 \
-	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/as-ac-expand.m4 $(top_srcdir)/m4/intltool.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -108,11 +108,12 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libmouse_properties_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) \
+	$(top_builddir)/panels/common/libdevice.la
 am__objects_1 = cc-mouse-resources.lo
-am_libmouse_properties_la_OBJECTS = $(am__objects_1) cc-mouse-panel.lo \
-	gnome-mouse-properties.lo gsd-input-helper.lo \
-	gnome-mouse-test.lo
+am_libmouse_properties_la_OBJECTS = $(am__objects_1) \
+	cc-mouse-caps-helper.lo cc-mouse-panel.lo \
+	gnome-mouse-properties.lo gnome-mouse-test.lo
 libmouse_properties_la_OBJECTS = $(am_libmouse_properties_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -253,6 +254,8 @@ DATETIME_PANEL_CFLAGS = @DATETIME_PANEL_CFLAGS@
 DATETIME_PANEL_LIBS = @DATETIME_PANEL_LIBS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DEVICES_CFLAGS = @DEVICES_CFLAGS@
+DEVICES_LIBS = @DEVICES_LIBS@
 DISPLAY_PANEL_CFLAGS = @DISPLAY_PANEL_CFLAGS@
 DISPLAY_PANEL_LIBS = @DISPLAY_PANEL_LIBS@
 DLLTOOL = @DLLTOOL@
@@ -268,6 +271,7 @@ GDESKTOP_PREFIX = @GDESKTOP_PREFIX@
 GETTEXT_PACKAGE = @GETTEXT_PACKAGE@
 GLIB_MKENUMS = @GLIB_MKENUMS@
 GMSGFMT = @GMSGFMT@
+GNOMESESSIONDIR = @GNOMESESSIONDIR@
 GREP = @GREP@
 GVC_CFLAGS = @GVC_CFLAGS@
 GVC_LIBS = @GVC_LIBS@
@@ -309,6 +313,7 @@ LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -325,8 +330,6 @@ NETWORK_PANEL_CFLAGS = @NETWORK_PANEL_CFLAGS@
 NETWORK_PANEL_LIBS = @NETWORK_PANEL_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
-NM_UNSTABLE_CHECK_CFLAGS = @NM_UNSTABLE_CHECK_CFLAGS@
-NM_UNSTABLE_CHECK_LIBS = @NM_UNSTABLE_CHECK_LIBS@
 NM_VPN_CONFIG_DIR = @NM_VPN_CONFIG_DIR@
 NM_VPN_MODULE_DIR = @NM_VPN_MODULE_DIR@
 NOTIFICATIONS_PANEL_CFLAGS = @NOTIFICATIONS_PANEL_CFLAGS@
@@ -377,6 +380,8 @@ SMBCLIENT_LIBS = @SMBCLIENT_LIBS@
 SOUND_PANEL_CFLAGS = @SOUND_PANEL_CFLAGS@
 SOUND_PANEL_LIBS = @SOUND_PANEL_LIBS@
 STRIP = @STRIP@
+UDEV_CFLAGS = @UDEV_CFLAGS@
+UDEV_LIBS = @UDEV_LIBS@
 UNIVERSAL_ACCESS_PANEL_CFLAGS = @UNIVERSAL_ACCESS_PANEL_CFLAGS@
 UNIVERSAL_ACCESS_PANEL_LIBS = @UNIVERSAL_ACCESS_PANEL_LIBS@
 UPDATE_MIME_DATABASE = @UPDATE_MIME_DATABASE@
@@ -387,6 +392,8 @@ VERSION = @VERSION@
 WACOM_PANEL_CFLAGS = @WACOM_PANEL_CFLAGS@
 WACOM_PANEL_LIBS = @WACOM_PANEL_LIBS@
 WARN_CFLAGS = @WARN_CFLAGS@
+WAYLAND_CFLAGS = @WAYLAND_CFLAGS@
+WAYLAND_LIBS = @WAYLAND_LIBS@
 XF86MISC_LIBS = @XF86MISC_LIBS@
 XGETTEXT = @XGETTEXT@
 XMKMF = @XMKMF@
@@ -419,6 +426,7 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+gnome_session_libexecdir = @gnome_session_libexecdir@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -455,6 +463,7 @@ cappletname = mouse
 AM_CPPFLAGS = \
 	$(PANEL_CFLAGS)					\
 	$(MOUSE_PANEL_CFLAGS)				\
+	-I$(top_srcdir)/panels/common			\
 	-DGNOMELOCALEDIR="\"$(datadir)/locale\""	\
 	$(NULL)
 
@@ -465,16 +474,16 @@ BUILT_SOURCES = \
 
 libmouse_properties_la_SOURCES = \
 	$(BUILT_SOURCES)		\
+	cc-mouse-caps-helper.c		\
+	cc-mouse-caps-helper.h		\
 	cc-mouse-panel.c		\
 	cc-mouse-panel.h		\
 	gnome-mouse-properties.c	\
 	gnome-mouse-properties.h	\
-	gsd-input-helper.c		\
-	gsd-input-helper.h		\
 	gnome-mouse-test.c		\
 	gnome-mouse-test.h
 
-libmouse_properties_la_LIBADD = $(PANEL_LIBS) $(MOUSE_PANEL_LIBS)
+libmouse_properties_la_LIBADD = $(PANEL_LIBS) $(MOUSE_PANEL_LIBS) $(top_builddir)/panels/common/libdevice.la
 test_gnome_mouse_test_SOURCES = \
 	$(BUILT_SOURCES)		\
 	gnome-mouse-test.c		\
@@ -487,9 +496,7 @@ resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate
 desktopdir = $(datadir)/applications
 Desktop_in_files = gnome-mouse-panel.desktop.in
 desktop_DATA = $(Desktop_in_files:.desktop.in=.desktop)
-INPUTDIR = $(top_srcdir)/../gnome-settings-daemon/plugins/common/
-INPUTFILES = gsd-input-helper.h gsd-input-helper.c
-CLEANFILES = $(Desktop_in_files) $(desktop_DATA)
+CLEANFILES = $(Desktop_in_files) $(desktop_DATA) $(BUILT_SOURCES)
 EXTRA_DIST = $(resource_files) mouse.gresource.xml
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -561,32 +568,35 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cc-mouse-caps-helper.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cc-mouse-panel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cc-mouse-resources.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gnome-mouse-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gnome-mouse-test.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gsd-input-helper.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_gnome_mouse_test-cc-mouse-resources.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_gnome_mouse_test-gnome-mouse-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_gnome_mouse_test-test-gnome-mouse-test.Po@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
@@ -879,9 +889,6 @@ cc-mouse-resources.h: mouse.gresource.xml $(resource_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-header --c-name cc_mouse $<
 
 @INTLTOOL_DESKTOP_RULE@
-update-from-gsd:
-	FILES="$(INPUTFILES)" DIR="$(INPUTDIR)" $(top_srcdir)/update-from-gsd.sh && changed=true ; \
-	git commit -m "mouse: Update from gnome-settings-daemon" $(INPUTFILES)
 
 -include $(top_srcdir)/git.mk
 

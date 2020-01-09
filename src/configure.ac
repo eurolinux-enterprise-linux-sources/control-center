@@ -1,4 +1,4 @@
-m4_define([gnome_control_center_version], 3.14.5)
+m4_define([gnome_control_center_version], 3.22.2)
 AC_INIT([gnome-control-center], [gnome_control_center_version],
         [http://bugzilla.gnome.org/enter_bug.cgi?product=gnome-control-center])
 
@@ -6,9 +6,12 @@ AC_CONFIG_SRCDIR([shell])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_INIT_AUTOMAKE([1.11 no-dist-gzip dist-xz tar-ustar check-news])
+AM_INIT_AUTOMAKE([1.11.2 no-dist-gzip dist-xz tar-ustar check-news subdir-objects])
 AM_MAINTAINER_MODE([enable])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
+
+GNOME_DEBUG_CHECK
+GNOME_COMPILE_WARNINGS([maximum])
 
 # Check for programs
 AC_PROG_CC
@@ -28,9 +31,6 @@ AC_SUBST(GETTEXT_PACKAGE)
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Gettext package])
 
 AC_DEFINE(USER_DIR_MODE, 0700, [Permissions for creating the user's config, cache and data directories])
-
-GNOME_DEBUG_CHECK
-GNOME_COMPILE_WARNINGS([maximum])
 
 AC_PATH_XTRA
 x_libs="$X_PRE_LIBS $X_LIBS -lX11 $X_EXTRA_LIBS"
@@ -85,27 +85,27 @@ dnl ==============================================
 dnl Check that we meet the  dependencies
 dnl ==============================================
 
-GLIB_REQUIRED_VERSION=2.39.91
-GTK_REQUIRED_VERSION=3.13.0
+GLIB_REQUIRED_VERSION=2.44.0
+GTK_REQUIRED_VERSION=3.22.0
 PA_REQUIRED_VERSION=2.0
 CANBERRA_REQUIRED_VERSION=0.13
 GDKPIXBUF_REQUIRED_VERSION=2.23.0
 POLKIT_REQUIRED_VERSION=0.103
-GSD_REQUIRED_VERSION=3.7.3
-NETWORK_MANAGER_REQUIRED_VERSION=0.9.8
-NETWORK_MANAGER_APPLET_REQUIRED_VERSION=0.9.7.995
+GSD_REQUIRED_VERSION=3.19.1
+NETWORK_MANAGER_REQUIRED_VERSION=1.2.0
+NETWORK_MANAGER_APPLET_REQUIRED_VERSION=1.2.0
 MODEM_MANAGER_REQUIRED_VERSION=0.7
 LIBNOTIFY_REQUIRED_VERSION=0.7.3
-GNOME_DESKTOP_REQUIRED_VERSION=3.11.3
-SCHEMAS_REQUIRED_VERSION=3.13.91
+GNOME_DESKTOP_REQUIRED_VERSION=3.21.2
+SCHEMAS_REQUIRED_VERSION=3.21.4
 LIBWACOM_REQUIRED_VERSION=0.7
 CLUTTER_REQUIRED_VERSION=1.11.3
-GOA_REQUIRED_VERSION=3.9.90
-ACCOUNTSSERVICE_REQUIRED_VERSION=0.6.33
+GOA_REQUIRED_VERSION=3.21.5
+ACCOUNTSSERVICE_REQUIRED_VERSION=0.6.39
 COLORD_REQUIRED_VERSION=0.1.34
 COLORD_GTK_REQUIRED_VERSION=0.1.24
 PWQUALITY_REQUIRED_VERSION=1.2.2
-GRILO_REQUIRED_VERSION=0.2.6
+GRILO_REQUIRED_VERSION=0.3.0
 
 COMMON_MODULES="gtk+-3.0 >= $GTK_REQUIRED_VERSION
  glib-2.0 >= $GLIB_REQUIRED_VERSION
@@ -122,14 +122,14 @@ PKG_CHECK_MODULES(SHELL, $COMMON_MODULES x11 polkit-gobject-1 >= $POLKIT_REQUIRE
 PKG_CHECK_MODULES(BACKGROUND_PANEL, $COMMON_MODULES cairo-gobject libxml-2.0 gnome-desktop-3.0
                   gdk-pixbuf-2.0 >= $GDKPIXBUF_REQUIRED_VERSION
                   goa-1.0 >= $GOA_REQUIRED_VERSION
-                  grilo-0.2 >= $GRILO_REQUIRED_VERSION)
+                  grilo-0.3 >= $GRILO_REQUIRED_VERSION)
 PKG_CHECK_MODULES(DATETIME_PANEL, $COMMON_MODULES
                   gnome-desktop-3.0 >= $GNOME_DESKTOP_REQUIRED_VERSION
                   polkit-gobject-1 >= $POLKIT_REQUIRED_VERSION
                   gdk-pixbuf-2.0 >= $GDKPIXBUF_REQUIRED_VERSION)
 PKG_CHECK_MODULES(DISPLAY_PANEL, $COMMON_MODULES gnome-desktop-3.0 >= 3.1.0
                   upower-glib >= 0.99.0)
-PKG_CHECK_MODULES(INFO_PANEL, $COMMON_MODULES libgtop-2.0 gl
+PKG_CHECK_MODULES(INFO_PANEL, $COMMON_MODULES libgtop-2.0
 		  polkit-gobject-1 >= $POLKIT_REQUIRED_VERSION)
 PKG_CHECK_MODULES(KEYBOARD_PANEL, $COMMON_MODULES
                   gnome-desktop-3.0 >= $GNOME_DESKTOP_REQUIRED_VERSION
@@ -137,11 +137,10 @@ PKG_CHECK_MODULES(KEYBOARD_PANEL, $COMMON_MODULES
 PKG_CHECK_MODULES(MEDIA_PANEL, $COMMON_MODULES)
 PKG_CHECK_MODULES(MOUSE_PANEL, $COMMON_MODULES xi >= 1.2
                   gnome-settings-daemon >= $GSD_REQUIRED_VERSION x11)
-PKG_CHECK_MODULES(NETWORK_PANEL, $COMMON_MODULES gmodule-2.0)
+PKG_CHECK_MODULES(NETWORK_PANEL, $COMMON_MODULES gmodule-2.0
+                  polkit-gobject-1 >= $POLKIT_REQUIRED_VERSION)
 PKG_CHECK_MODULES(NOTIFICATIONS_PANEL, $COMMON_MODULES)
 PKG_CHECK_MODULES(ONLINE_ACCOUNTS_PANEL, $COMMON_MODULES goa-1.0 goa-backend-1.0 >= $GOA_REQUIRED_VERSION)
-PKG_CHECK_MODULES(POWER_PANEL, $COMMON_MODULES upower-glib >= 0.99.0
-                  gnome-settings-daemon >= $GSD_REQUIRED_VERSION)
 PKG_CHECK_MODULES(COLOR_PANEL, $COMMON_MODULES
                   colord >= $COLORD_REQUIRED_VERSION
                   colord-gtk >= $COLORD_GTK_REQUIRED_VERSION
@@ -177,11 +176,23 @@ AM_CONDITIONAL(HAVE_INTROSPECTION, false)
 GDESKTOP_PREFIX=`$PKG_CONFIG --variable prefix gsettings-desktop-schemas`
 AC_SUBST(GDESKTOP_PREFIX)
 
-PKG_CHECK_MODULES(NETWORK_MANAGER, NetworkManager >= $NETWORK_MANAGER_REQUIRED_VERSION
-                  libnm-glib >= $NETWORK_MANAGER_REQUIRED_VERSION
-                  libnm-glib-vpn >= $NETWORK_MANAGER_REQUIRED_VERSION
-                  libnm-util >= $NETWORK_MANAGER_REQUIRED_VERSION
-                  libnm-gtk >= $NETWORK_MANAGER_APPLET_REQUIRED_VERSION
+PKG_CHECK_MODULES(DEVICES, $COMMON_MODULES)
+PKG_CHECK_MODULES(UDEV, gudev-1.0, have_udev=yes, have_udev=no)
+if test "x$have_udev" = xyes ; then
+	AC_DEFINE(HAVE_UDEV, 1, [System has udev])
+fi
+AM_CONDITIONAL(HAVE_UDEV, [test "x$have_udev" = "xyes"])
+
+PKG_CHECK_MODULES(WAYLAND, gdk-wayland-3.0, have_wayland=yes, have_wayland=no)
+if test "x$have_wayland" = xyes ; then
+	if test "x$have_udev" != xyes ; then
+		AC_MSG_ERROR([udev is required for Wayland support])
+	fi
+fi
+
+PKG_CHECK_MODULES(NETWORK_MANAGER,
+                  libnm >= $NETWORK_MANAGER_REQUIRED_VERSION
+                  libnma >= $NETWORK_MANAGER_APPLET_REQUIRED_VERSION
                   mm-glib >= $MODEM_MANAGER_REQUIRED_VERSION,
                   [have_networkmanager=yes], have_networkmanager=no)
 if test "x$have_networkmanager" = xno ; then
@@ -198,15 +209,18 @@ if test x${have_networkmanager} = xyes; then
   AC_SUBST(NM_VPN_MODULE_DIR)
 fi
 
-# Work-around for https://bugzilla.gnome.org/show_bug.cgi?id=723769
-PKG_CHECK_MODULES(NM_UNSTABLE_CHECK, libnm-util >= 0.9.9.0, nm_unstable=yes, nm_unstable=no)
-if test x$nm_unstable = xyes; then
-  AC_DEFINE(HAVE_NM_UNSTABLE, 1, [Define to 1 if NetworkManager is available])
+# Check for power panel
+if test x${have_networkmanager} = xyes; then
+  PKG_CHECK_MODULES(POWER_PANEL, $COMMON_MODULES upower-glib >= 0.99.0
+                    libnm >= $NETWORK_MANAGER_REQUIRED_VERSION
+                    gnome-settings-daemon >= $GSD_REQUIRED_VERSION)
+else
+  PKG_CHECK_MODULES(POWER_PANEL, $COMMON_MODULES upower-glib >= 0.99.0
+                    gnome-settings-daemon >= $GSD_REQUIRED_VERSION)
 fi
-AM_CONDITIONAL(HAVE_NM_UNSTABLE, [test x$nm_unstable = xyes])
 
 # Check for gnome-bluetooth
-PKG_CHECK_MODULES(BLUETOOTH, $COMMON_MODULES gnome-bluetooth-1.0 >= 3.11.1,
+PKG_CHECK_MODULES(BLUETOOTH, $COMMON_MODULES gnome-bluetooth-1.0 >= 3.18.2,
 		  [have_bluetooth=yes], have_bluetooth=no)
 if test "x$have_bluetooth" = xyes ; then
 	AC_DEFINE(BUILD_BLUETOOTH, 1, [Define to 1 to build the Bluetooth panel])
@@ -274,7 +288,7 @@ AC_ARG_WITH([cheese],
             with_cheese=auto)
 
 if test x"$with_cheese" != x"no" ; then
-   PKG_CHECK_MODULES(CHEESE, gstreamer-1.0 cheese-gtk >= 3.5.91 cheese clutter-gtk-1.0, [have_cheese=yes], [have_cheese=no])
+   PKG_CHECK_MODULES(CHEESE, cheese-gtk >= 3.5.91 cheese clutter-gtk-1.0, [have_cheese=yes], [have_cheese=no])
    if test x${have_cheese} = xyes; then
      AC_DEFINE(HAVE_CHEESE, 1, [Define to 1 to enable cheese webcam support])
    fi
@@ -325,6 +339,17 @@ AC_SUBST(KRB5_LIBS)
 
 USER_ACCOUNTS_PANEL_CFLAGS="$USER_ACCOUNTS_PANEL_CFLAGS $KRB5_CFLAGS"
 USER_ACCOUNTS_PANEL_LIBS="$USER_ACCOUNTS_PANEL_LIBS $KRB5_LIBS"
+
+dnl Check for info panel
+AC_ARG_WITH([gnome-session-libexecdir],
+	    AS_HELP_STRING([--with-gnome-session-libexecdir=DIR], [Directory for gnome-session s libexecdir]),
+	    [],
+	    [with_gnome_session_libexecdir=${libexecdir}])
+if test x$with_gnome_session_libexecdir == xno; then
+	with_gnome_session_libexecdir=${libexecdir}
+fi
+AS_AC_EXPAND(GNOMESESSIONDIR, $with_gnome_session_libexecdir)
+AC_SUBST([gnome_session_libexecdir], [$GNOMESESSIONDIR])
 
 dnl =======================================
 dnl Panels
@@ -412,6 +437,21 @@ else
         AC_MSG_RESULT(no)
 fi
 
+case $host_os in
+  linux*)
+    if test "$host_cpu" = s390 -o "$host_cpu" = s390x; then
+      # Nothing
+      echo "USB-related panels disabled on S390"
+    else
+      if test "x$have_networkmanager" != "xyes" -o \
+              "x$have_bluetooth" != "xyes" -o \
+              "x$enable_cups" != "xyes" -o \
+              "x$have_wacom" != "xyes"; then
+        AC_MSG_ERROR([The Network, Bluetooth, Printers and Wacom panels are not optional on Linux systems])
+     fi
+    fi
+    ;;
+esac
 
 AC_CONFIG_FILES([
 Makefile
@@ -520,6 +560,8 @@ panels/wacom/gnome-wacom-panel.desktop.in
 po/Makefile.in
 libgd/Makefile
 search-provider/Makefile
+shell/appdata/Makefile
+shell/alt/Makefile
 shell/Makefile
 shell/gnome-control-center.desktop.in
 man/Makefile
@@ -553,9 +595,10 @@ if test "x$have_wacom" = "xyes"; then
 else
 	AC_MSG_NOTICE([   Wacom panel disabled])
 fi
-if test "x$enable_ibus" == "xyes"; then
+if test "x$enable_ibus" = "xyes"; then
 	AC_MSG_NOTICE([** IBus (Region panel IBus support)])
 else
 	AC_MSG_NOTICE([   Region panel IBus support disabled])
 fi
+AC_MSG_NOTICE([** gnome-session libexecdir: $GNOMESESSIONDIR])
 AC_MSG_NOTICE([End options])

@@ -40,7 +40,7 @@ struct _CcSearchPanelPrivate
   GSettings  *search_settings;
   GHashTable *sort_order;
 
-  GtkWidget  *locations_dialog;
+  CcSearchLocationsDialog  *locations_dialog;
 };
 
 #define SHELL_PROVIDER_GROUP "Shell Search Provider"
@@ -435,6 +435,7 @@ search_panel_add_one_app_info (CcSearchPanel *self,
 {
   GtkWidget *row, *box, *w;
   GIcon *icon;
+  gint width, height;
 
   /* gnome-control-center is special cased in the shell,
      and is not configurable */
@@ -462,6 +463,8 @@ search_panel_add_one_app_info (CcSearchPanel *self,
     g_object_ref (icon);
 
   w = gtk_image_new_from_gicon (icon, GTK_ICON_SIZE_DIALOG);
+  gtk_icon_size_lookup (GTK_ICON_SIZE_DIALOG, &width, &height);
+  gtk_image_set_pixel_size (GTK_IMAGE (w), MAX (width, height));
   gtk_container_add (GTK_CONTAINER (box), w);
   g_object_unref (icon);
 
@@ -516,7 +519,10 @@ search_panel_add_one_provider (CcSearchPanel *self,
     }
 
   if (!g_key_file_has_group (keyfile, SHELL_PROVIDER_GROUP))
-    goto out;
+    {
+      g_debug ("Shell search provider group missing from '%s', ignoring", path);
+      goto out;
+    }
 
   desktop_id = g_key_file_get_string (keyfile, SHELL_PROVIDER_GROUP,
                                       "DesktopId", &error);
@@ -529,11 +535,16 @@ search_panel_add_one_provider (CcSearchPanel *self,
     }
 
   app_info = G_APP_INFO (g_desktop_app_info_new (desktop_id));
-  g_free (desktop_id);
 
   if (app_info == NULL)
-    goto out;
+    {
+      g_debug ("Could not find application with desktop ID '%s' referenced in '%s', ignoring",
+               desktop_id, path);
+      g_free (desktop_id);
+      goto out;
+    }
 
+  g_free (desktop_id);
   default_disabled = g_key_file_get_boolean (keyfile, SHELL_PROVIDER_GROUP,
                                              "DefaultDisabled", NULL);
   search_panel_add_one_app_info (self, app_info, !default_disabled);
@@ -698,7 +709,7 @@ cc_search_panel_finalize (GObject *object)
   g_hash_table_destroy (priv->sort_order);
 
   if (priv->locations_dialog)
-    gtk_widget_destroy (priv->locations_dialog);
+    gtk_widget_destroy (GTK_WIDGET (priv->locations_dialog));
 
   G_OBJECT_CLASS (cc_search_panel_parent_class)->finalize (object);
 }

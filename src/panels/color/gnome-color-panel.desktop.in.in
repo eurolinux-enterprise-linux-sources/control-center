@@ -1,5 +1,6 @@
 [Desktop Entry]
-_Name=Color
+# Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+_Name=Co­lor
 _Comment=Calibrate the color of your devices, such as displays, cameras or printers
 Exec=gnome-control-center color
 Icon=preferences-color
@@ -7,7 +8,7 @@ Terminal=false
 Type=Application
 NoDisplay=true
 StartupNotify=true
-Categories=GNOME;GTK;Settings;X-GNOME-Settings-Panel;HardwareSettings;
+Categories=GNOME;GTK;Settings;X-GNOME-Settings-Panel;HardwareSettings;X-GNOME-DevicesSettings;
 OnlyShowIn=GNOME;Unity;
 X-GNOME-Bugzilla-Bugzilla=GNOME
 X-GNOME-Bugzilla-Product=gnome-control-center

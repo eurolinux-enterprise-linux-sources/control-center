@@ -35,7 +35,8 @@
 struct CcKeyboardItemPrivate
 {
   /* properties */
-  int foo;
+  /* common */
+  char *binding;
 
   /* internal */
   CcKeyboardItem *reverse_item;
@@ -49,6 +50,7 @@ enum {
   PROP_BINDING,
   PROP_EDITABLE,
   PROP_TYPE,
+  PROP_IS_VALUE_DEFAULT,
   PROP_COMMAND
 };
 
@@ -57,6 +59,17 @@ static void     cc_keyboard_item_init           (CcKeyboardItem      *keyboard_i
 static void     cc_keyboard_item_finalize       (GObject               *object);
 
 G_DEFINE_TYPE (CcKeyboardItem, cc_keyboard_item, G_TYPE_OBJECT)
+
+static const gchar *
+get_binding_from_variant (GVariant *variant)
+{
+  if (g_variant_is_of_type (variant, G_VARIANT_TYPE_STRING))
+    return g_variant_get_string (variant, NULL);
+  else if (g_variant_is_of_type (variant, G_VARIANT_TYPE_STRING_ARRAY))
+    return g_variant_get_strv (variant, NULL)[0];
+  else
+    return "";
+}
 
 static gboolean
 binding_from_string (const char             *str,
@@ -145,22 +158,53 @@ _set_binding (CcKeyboardItem *item,
               const char     *value,
 	      gboolean        set_backend)
 {
-  g_free (item->binding);
-  item->binding = g_strdup (value);
-  binding_from_string (item->binding, &item->keyval, &item->keycode, &item->mask);
+  CcKeyboardItem *reverse;
+  gboolean enabled;
+
+  reverse = item->priv->reverse_item;
+  enabled = value && strlen (value) > 0;
+
+  g_clear_pointer (&item->priv->binding, g_free);
+  item->priv->binding = enabled ? g_strdup (value) : g_strdup ("");
+
+  binding_from_string (item->priv->binding, &item->keyval,
+                       &item->keycode, &item->mask);
+
+  /*
+   * Always treat the pair (item, reverse) as a unit: setting one also
+   * disables the other, disabling one up also sets the other.
+   */
+  if (reverse)
+    {
+      GdkModifierType reverse_mask;
+
+      reverse_mask = enabled ? item->mask ^ GDK_SHIFT_MASK : item->mask;
+
+      g_clear_pointer (&reverse->priv->binding, g_free);
+      if (enabled)
+        reverse->priv->binding = gtk_accelerator_name_with_keycode (NULL,
+                                                                    item->keyval,
+                                                                    item->keycode,
+                                                                    reverse_mask);
+
+      binding_from_string (reverse->priv->binding,
+                           &reverse->keyval,
+                           &reverse->keycode,
+                           &reverse->mask);
+    }
 
   if (set_backend == FALSE)
     return;
 
-  settings_set_binding (item->settings, item->key, item->binding);
-}
+  settings_set_binding (item->settings, item->key, item->priv->binding);
 
-const char *
-cc_keyboard_item_get_binding (CcKeyboardItem *item)
-{
-  g_return_val_if_fail (CC_IS_KEYBOARD_ITEM (item), NULL);
+  g_object_notify (G_OBJECT (item), "is-value-default");
 
-  return item->binding;
+  if (reverse)
+    {
+      settings_set_binding (reverse->settings, reverse->key, reverse->priv->binding);
+      g_object_notify (G_OBJECT (reverse), "is-value-default");
+    }
 }
 
 static void
@@ -230,7 +274,7 @@ cc_keyboard_item_get_property (GObject    *object,
     g_value_set_string (value, self->description);
     break;
   case PROP_BINDING:
-    g_value_set_string (value, self->binding);
+    g_value_set_string (value, self->priv->binding);
     break;
   case PROP_EDITABLE:
     g_value_set_boolean (value, self->editable);
@@ -238,24 +282,13 @@ cc_keyboard_item_get_property (GObject    *object,
   case PROP_COMMAND:
     g_value_set_string (value, self->command);
     break;
+  case PROP_IS_VALUE_DEFAULT:
+    g_value_set_boolean (value, cc_keyboard_item_is_value_default (self));
+    break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
     break;
   }
-}
-
-static GObject *
-cc_keyboard_item_constructor (GType                  type,
-                              guint                  n_construct_properties,
-                              GObjectConstructParam *construct_properties)
-{
-  CcKeyboardItem      *keyboard_item;
-
-  keyboard_item = CC_KEYBOARD_ITEM (G_OBJECT_CLASS (cc_keyboard_item_parent_class)->constructor (type,
-                                                                                                 n_construct_properties,
-                                                                                                 construct_properties));
-
-  return G_OBJECT (keyboard_item);
 }
 
 static void
@@ -265,7 +298,6 @@ cc_keyboard_item_class_init (CcKeyboardItemClass *klass)
 
   object_class->get_property = cc_keyboard_item_get_property;
   object_class->set_property = cc_keyboard_item_set_property;
-  object_class->constructor = cc_keyboard_item_constructor;
   object_class->finalize = cc_keyboard_item_finalize;
 
   g_object_class_install_property (object_class,
@@ -310,6 +342,14 @@ cc_keyboard_item_class_init (CcKeyboardItemClass *klass)
                                                         NULL,
                                                         G_PARAM_READWRITE));
 
+  g_object_class_install_property (object_class,
+                                   PROP_IS_VALUE_DEFAULT,
+                                   g_param_spec_boolean ("is-value-default",
+                                                         "is value default",
+                                                         "is value default",
+                                                         TRUE,
+                                                         G_PARAM_READABLE));
+
   g_type_class_add_private (klass, sizeof (CcKeyboardItemPrivate));
 }
 
@@ -335,8 +375,7 @@ cc_keyboard_item_finalize (GObject *object)
     g_object_unref (item->settings);
 
   /* Free memory */
-  g_free (item->binding);
-  g_free (item->gettext_package);
+  g_free (item->priv->binding);
   g_free (item->gsettings_path);
   g_free (item->description);
   g_free (item->command);
@@ -375,6 +414,7 @@ settings_get_binding (GSettings  *settings,
 
       str_array = g_variant_get_strv (variant, NULL);
       value = g_strdup (str_array[0]);
+      g_free (str_array);
     }
   g_variant_unref (variant);
 
@@ -420,8 +460,10 @@ cc_keyboard_item_load_from_gsettings_path (CcKeyboardItem *item,
   g_settings_bind (item->settings, "command",
                    G_OBJECT (item), "command", G_SETTINGS_BIND_DEFAULT);
 
-  item->binding = settings_get_binding (item->settings, item->key);
-  binding_from_string (item->binding, &item->keyval, &item->keycode, &item->mask);
+  g_free (item->priv->binding);
+  item->priv->binding = settings_get_binding (item->settings, item->key);
+  binding_from_string (item->priv->binding, &item->keyval,
+                       &item->keycode, &item->mask);
   g_signal_connect (G_OBJECT (item->settings), "changed::binding",
 		    G_CALLBACK (binding_changed), item);
 
@@ -441,9 +483,11 @@ cc_keyboard_item_load_from_gsettings (CcKeyboardItem *item,
   item->description = g_strdup (description);
 
   item->settings = g_settings_new (item->schema);
-  item->binding = settings_get_binding (item->settings, item->key);
+  g_free (item->priv->binding);
+  item->priv->binding = settings_get_binding (item->settings, item->key);
   item->editable = g_settings_is_writable (item->settings, item->key);
-  binding_from_string (item->binding, &item->keyval, &item->keycode, &item->mask);
+  binding_from_string (item->priv->binding, &item->keyval,
+                       &item->keycode, &item->mask);
 
   signal_name = g_strdup_printf ("changed::%s", item->key);
   g_signal_connect (G_OBJECT (item->settings), signal_name,
@@ -510,6 +554,80 @@ cc_keyboard_item_is_hidden (CcKeyboardItem *item)
 {
   return item->priv->hidden;
 }
+
+/**
+ * cc_keyboard_item_is_value_default:
+ * @self: a #CcKeyboardItem
+ *
+ * Retrieves whether the shortcut is the default value or not.
+ *
+ * Returns: %TRUE if the shortcut is the default value, %FALSE otherwise.
+ */
+gboolean
+cc_keyboard_item_is_value_default (CcKeyboardItem *self)
+{
+  GVariant *user_value;
+  gboolean is_value_default;
+
+  g_return_val_if_fail (CC_IS_KEYBOARD_ITEM (self), FALSE);
+
+  /*
+   * When the shortcut is custom, we don't treat it as modified
+   * since we don't know what would be its default value.
+   */
+  if (self->type == CC_KEYBOARD_ITEM_TYPE_GSETTINGS_PATH)
+    return TRUE;
+
+  user_value = g_settings_get_user_value (self->settings, self->key);
+
+  is_value_default = TRUE;
+
+  if (user_value)
+    {
+      GVariant *default_value;
+      const gchar *default_binding, *user_binding;
+
+      default_value = g_settings_get_default_value (self->settings, self->key);
+
+      default_binding = get_binding_from_variant (default_value);
+      user_binding = get_binding_from_variant (user_value);
+
+      is_value_default = (g_strcmp0 (default_binding, user_binding) == 0);
+
+      g_clear_pointer (&default_value, g_variant_unref);
+    }
+
+  g_clear_pointer (&user_value, g_variant_unref);
+
+  return is_value_default;
+}
+
+/**
+ * cc_keyboard_item_reset:
+ * @self: a #CcKeyboardItem
+ *
+ * Reset the keyboard binding to the default value.
+ */
+void
+cc_keyboard_item_reset (CcKeyboardItem *self)
+{
+  CcKeyboardItem *reverse;
+
+  g_return_if_fail (CC_IS_KEYBOARD_ITEM (self));
+
+  reverse = self->priv->reverse_item;
+
+  g_settings_reset (self->settings, self->key);
+  g_object_notify (G_OBJECT (self), "is-value-default");
+
+  /* Also reset the reverse item */
+  if (reverse)
+    {
+      g_settings_reset (reverse->settings, reverse->key);
+      g_object_notify (G_OBJECT (reverse), "is-value-default");
+    }
+}
+
 /*
  * vim: sw=2 ts=8 cindent noai bs=2
  */

@@ -1,0 +1,195 @@
+From 563fc80c6baafd4e93b5e470a7666b0e3f7e539b Mon Sep 17 00:00:00 2001
+From: Carlos Garnacho <carlosg@gnome.org>
+Date: Thu, 8 Jun 2017 16:51:58 +0200
+Subject: [PATCH] wacom: Fix eraser pressure sensitivity
+
+If was made to follow the very same GSettings path than the stylus tip.
+Since we don't have easy access to the matching eraser from a GsdWacomStylus,
+make it keep both GSettings whenever the stylus has an eraser.
+---
+ panels/wacom/cc-wacom-stylus-page.c |  2 +-
+ panels/wacom/gsd-wacom-device.c     | 81 ++++++++++++++++++++++++++++++++-----
+ panels/wacom/gsd-wacom-device.h     |  1 +
+ 3 files changed, 73 insertions(+), 11 deletions(-)
+
+diff --git a/panels/wacom/cc-wacom-stylus-page.c b/panels/wacom/cc-wacom-stylus-page.c
+index 5b8f5b796..e7494c731 100644
+--- a/panels/wacom/cc-wacom-stylus-page.c
++++ b/panels/wacom/cc-wacom-stylus-page.c
+@@ -451,7 +451,7 @@ cc_wacom_stylus_page_new (GsdWacomStylus *stylus)
+ 	priv->stylus_settings = gsd_wacom_stylus_get_settings (stylus);
+ 	has_eraser = gsd_wacom_stylus_get_has_eraser (stylus);
+ 	if (has_eraser)
+-		priv->eraser_settings = gsd_wacom_stylus_get_settings (stylus);
++		priv->eraser_settings = gsd_wacom_stylus_get_eraser_settings (stylus);
+ 
+ 	/* Stylus name */
+ 	gtk_label_set_text (GTK_LABEL (WID ("label-stylus")), gsd_wacom_stylus_get_name (stylus));
+diff --git a/panels/wacom/gsd-wacom-device.c b/panels/wacom/gsd-wacom-device.c
+index 0cf725b35..b13050538 100644
+--- a/panels/wacom/gsd-wacom-device.c
++++ b/panels/wacom/gsd-wacom-device.c
+@@ -69,6 +69,7 @@ struct GsdWacomStylusPrivate
+ 	char *name;
+ 	const char *icon_name;
+ 	GSettings *settings;
++	GSettings *eraser_settings;
+ 	gboolean has_eraser;
+ 	int num_buttons;
+ };
+@@ -115,6 +116,11 @@ gsd_wacom_stylus_finalize (GObject *object)
+                 p->settings = NULL;
+         }
+ 
++        if (p->eraser_settings != NULL) {
++                g_object_unref (p->eraser_settings);
++                p->eraser_settings = NULL;
++        }
++
+         g_free (p->name);
+         p->name = NULL;
+ 
+@@ -148,7 +154,8 @@ get_icon_name_from_type (const WacomStylus *wstylus)
+ static GsdWacomStylus *
+ gsd_wacom_stylus_new (GsdWacomDevice    *device,
+ 		      const WacomStylus *wstylus,
+-		      GSettings         *settings)
++		      GSettings         *settings,
++		      GSettings         *eraser_settings)
+ {
+ 	GsdWacomStylus *stylus;
+ 
+@@ -161,6 +168,7 @@ gsd_wacom_stylus_new (GsdWacomDevice    *device,
+ 	stylus->priv->id = libwacom_stylus_get_id (wstylus);
+ 	stylus->priv->name = g_strdup (libwacom_stylus_get_name (wstylus));
+ 	stylus->priv->settings = settings;
++	stylus->priv->eraser_settings = eraser_settings;
+ 	stylus->priv->type = libwacom_stylus_get_type (wstylus);
+ 	stylus->priv->icon_name = get_icon_name_from_type (wstylus);
+ 	stylus->priv->has_eraser = libwacom_stylus_has_eraser (wstylus);
+@@ -177,6 +185,14 @@ gsd_wacom_stylus_get_settings (GsdWacomStylus *stylus)
+ 	return stylus->priv->settings;
+ }
+ 
++GSettings *
++gsd_wacom_stylus_get_eraser_settings (GsdWacomStylus *stylus)
++{
++	g_return_val_if_fail (GSD_IS_WACOM_STYLUS (stylus), NULL);
++
++	return stylus->priv->eraser_settings;
++}
++
+ const char *
+ gsd_wacom_stylus_get_name (GsdWacomStylus *stylus)
+ {
+@@ -878,8 +894,54 @@ gsd_wacom_device_get_display_rotation (GsdWacomDevice *device)
+ 	return get_rotation_wacom (rotation);
+ }
+ 
++static GSettings *
++get_stylus_settings (const WacomStylus *stylus,
++		     const gchar       *settings_path,
++		     const gchar       *schema)
++{
++	gchar *stylus_settings_path;
++	GSettings *settings;
++
++	stylus_settings_path = g_strdup_printf ("%s0x%x/", settings_path, libwacom_stylus_get_id (stylus));
++	settings = g_settings_new_with_path (schema, stylus_settings_path);
++	g_free (stylus_settings_path);
++
++	return settings;
++}
++
++static GSettings *
++find_eraser_settings (WacomDevice       *device,
++		      const WacomStylus *stylus,
++		      const gchar       *settings_path)
++{
++	const WacomStylus *other;
++	const int *ids;
++	int i, num_styli;
++
++	if (!libwacom_stylus_has_eraser (stylus) ||
++	    libwacom_stylus_is_eraser (stylus))
++		return NULL;
++
++	ids = libwacom_get_supported_styli (device, &num_styli);
++
++	for (i = 0; i < num_styli; i++) {
++		if (ids[i] == libwacom_stylus_get_id (stylus))
++			continue;
++
++		other = libwacom_stylus_get_for_id (db, ids[i]);
++
++		if (libwacom_stylus_is_eraser (other) &&
++		    libwacom_stylus_get_type (other) == libwacom_stylus_get_type (stylus)) {
++			return get_stylus_settings (other, settings_path, WACOM_ERASER_SCHEMA);
++		}
++	}
++
++	return NULL;
++}
++
+ static void
+ add_stylus_to_device (GsdWacomDevice *device,
++		      WacomDevice    *wacom_device,
+ 		      const char     *settings_path,
+ 		      int             id)
+ {
+@@ -888,8 +950,7 @@ add_stylus_to_device (GsdWacomDevice *device,
+ 	wstylus = libwacom_stylus_get_for_id (db, id);
+ 	if (wstylus) {
+ 		GsdWacomStylus *stylus;
+-		char *stylus_settings_path;
+-		GSettings *settings;
++		GSettings *settings, *eraser_settings;
+ 
+ 		if (device->priv->type == WACOM_TYPE_STYLUS &&
+ 		    libwacom_stylus_is_eraser (wstylus))
+@@ -898,15 +959,15 @@ add_stylus_to_device (GsdWacomDevice *device,
+ 		    libwacom_stylus_is_eraser (wstylus) == FALSE)
+ 			return;
+ 
+-		stylus_settings_path = g_strdup_printf ("%s0x%x/", settings_path, id);
+ 		if (device->priv->type == WACOM_TYPE_STYLUS) {
+-			settings = g_settings_new_with_path (WACOM_STYLUS_SCHEMA, stylus_settings_path);
+-			stylus = gsd_wacom_stylus_new (device, wstylus, settings);
++			settings = get_stylus_settings (wstylus, settings_path, WACOM_STYLUS_SCHEMA);
++			eraser_settings = find_eraser_settings (wacom_device, wstylus, settings_path);
+ 		} else {
+-			settings = g_settings_new_with_path (WACOM_ERASER_SCHEMA, stylus_settings_path);
+-			stylus = gsd_wacom_stylus_new (device, wstylus, settings);
++			settings = get_stylus_settings (wstylus, settings_path, WACOM_ERASER_SCHEMA);
++			eraser_settings = NULL;
+ 		}
+-		g_free (stylus_settings_path);
++
++		stylus = gsd_wacom_stylus_new (device, wstylus, settings, eraser_settings);
+ 		device->priv->styli = g_list_prepend (device->priv->styli, stylus);
+ 	}
+ }
+@@ -1421,7 +1482,7 @@ gsd_wacom_device_update_from_db (GsdWacomDevice *device,
+ 		ids = libwacom_get_supported_styli (wacom_device, &num_styli);
+ 		g_assert (num_styli >= 1);
+ 		for (i = 0; i < num_styli; i++)
+-			add_stylus_to_device (device, settings_path, ids[i]);
++			add_stylus_to_device (device, wacom_device, settings_path, ids[i]);
+ 		device->priv->styli = g_list_reverse (device->priv->styli);
+ 	}
+ 	g_free (settings_path);
+diff --git a/panels/wacom/gsd-wacom-device.h b/panels/wacom/gsd-wacom-device.h
+index 374eca91d..9feafd70b 100644
+--- a/panels/wacom/gsd-wacom-device.h
++++ b/panels/wacom/gsd-wacom-device.h
+@@ -79,6 +79,7 @@ typedef enum {
+ 
+ GType            gsd_wacom_stylus_get_type       (void);
+ GSettings      * gsd_wacom_stylus_get_settings   (GsdWacomStylus *stylus);
++GSettings      * gsd_wacom_stylus_get_eraser_settings (GsdWacomStylus *stylus);
+ const char     * gsd_wacom_stylus_get_name       (GsdWacomStylus *stylus);
+ const char     * gsd_wacom_stylus_get_icon_name  (GsdWacomStylus *stylus);
+ GsdWacomDevice * gsd_wacom_stylus_get_device     (GsdWacomStylus *stylus);
+-- 
+2.13.0
+

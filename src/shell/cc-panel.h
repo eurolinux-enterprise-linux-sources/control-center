@@ -50,6 +50,8 @@ typedef struct CcPanelPrivate CcPanelPrivate;
 typedef struct _CcPanel       CcPanel;
 typedef struct _CcPanelClass  CcPanelClass;
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (CcPanel, g_object_unref)
+
 /* cc-shell.h requires CcPanel, so make sure it is defined first */
 #include "cc-shell.h"
 
@@ -74,15 +76,11 @@ struct _CcPanelClass
   /*< private >*/
   GtkBinClass parent_class;
 
-  GOptionGroup * (* get_option_group) (GVariantBuilder *builder);
   GPermission * (* get_permission) (CcPanel *panel);
   const char  * (* get_help_uri)   (CcPanel *panel);
 };
 
 GType        cc_panel_get_type         (void);
-
-GOptionGroup *cc_panel_get_option_group (GType            panel_type,
-                                         GVariantBuilder *builder);
 
 CcShell*     cc_panel_get_shell        (CcPanel     *panel);
 

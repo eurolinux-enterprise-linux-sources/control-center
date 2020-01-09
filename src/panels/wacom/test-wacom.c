@@ -54,7 +54,7 @@ add_page (GList *devices,
 	}
 	g_list_free (devices);
 
-	widget = cc_wacom_page_new (NULL, stylus, eraser, pad);
+	widget = cc_wacom_page_new (NULL, stylus, pad);
 	cc_wacom_page_set_navigation (CC_WACOM_PAGE (widget), GTK_NOTEBOOK (notebook), FALSE);
 	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), widget, NULL);
 	gtk_widget_show (widget);
@@ -86,7 +86,7 @@ int main (int argc, char **argv)
 
 	window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_resizable (GTK_WINDOW (window), FALSE);
-	gtk_widget_set_size_request (window, FIXED_WIDTH, -1);
+	gtk_window_set_default_size (GTK_WINDOW (window), FIXED_WIDTH, -1);
 	g_signal_connect (G_OBJECT (window), "delete-event",
 			  G_CALLBACK (delete_event_cb), NULL);
 	notebook = gtk_notebook_new ();
@@ -107,6 +107,9 @@ int main (int argc, char **argv)
 	add_page (devices, notebook);
 
 	devices = gsd_wacom_device_create_fake_x201 ();
+	add_page (devices, notebook);
+
+	devices = gsd_wacom_device_create_fake_h610pro ();
 	add_page (devices, notebook);
 
 	gtk_widget_show (window);

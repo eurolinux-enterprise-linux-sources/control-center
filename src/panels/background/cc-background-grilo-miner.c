@@ -150,7 +150,7 @@ query_online_source (CcBackgroundGriloMiner *self, GrlSource *source)
   caps = grl_source_get_caps (source, GRL_OP_BROWSE);
   options = grl_operation_options_new (caps);
   grl_operation_options_set_count (options, REMOTE_ITEM_COUNT);
-  grl_operation_options_set_flags (options, GRL_RESOLVE_FAST_ONLY);
+  grl_operation_options_set_resolution_flags (options, GRL_RESOLVE_FAST_ONLY);
   grl_operation_options_set_type_filter (options, GRL_TYPE_FILTER_IMAGE);
 
   grl_source_search (source, NULL, keys, options, searched_online_source, g_object_ref (self));
@@ -308,7 +308,8 @@ cc_background_grilo_miner_class_init (CcBackgroundGriloMinerClass *klass)
   registry = grl_registry_get_default ();
 
   error = NULL;
-  if (!grl_registry_load_plugin_by_id (registry, "grl-flickr", &error))
+  if (!grl_registry_load_all_plugins (registry, FALSE, &error) ||
+      !grl_registry_activate_plugin_by_id (registry, "grl-flickr", &error))
     {
       g_warning ("%s", error->message);
       g_error_free (error);

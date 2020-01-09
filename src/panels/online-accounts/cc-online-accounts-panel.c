@@ -159,12 +159,12 @@ cc_goa_panel_set_property (GObject *object,
           const gchar *first_arg = NULL;
 
           parameters = g_value_get_variant (value);
-          if (parameters == NULL || g_variant_n_children (parameters) == 0)
+          if (parameters == NULL)
             return;
 
-          if (g_variant_n_children (parameters) > 1)
+          if (g_variant_n_children (parameters) > 0)
             {
-                g_variant_get_child (parameters, 1, "v", &v);
+                g_variant_get_child (parameters, 0, "v", &v);
                 if (g_variant_is_of_type (v, G_VARIANT_TYPE_STRING))
                   first_arg = g_variant_get_string (v, NULL);
                 else
@@ -298,11 +298,10 @@ cc_goa_panel_init (CcGoaPanel *panel)
                                        NULL);
 
   renderer = gtk_cell_renderer_text_new ();
-  gtk_tree_view_column_pack_start (column, renderer, FALSE);
+  gtk_tree_view_column_pack_start (column, renderer, TRUE);
   g_object_set (G_OBJECT (renderer),
                 "ellipsize", PANGO_ELLIPSIZE_END,
                 "ellipsize-set", TRUE,
-                "width-chars", 30,
                 NULL);
   gtk_tree_view_column_set_attributes (column,
                                        renderer,
@@ -378,76 +377,15 @@ show_page_nothing_selected (CcGoaPanel *panel)
 }
 
 static void
-on_sign_in_button_clicked (GtkButton *button,
-                           gpointer   user_data)
-{
-  CcGoaPanel *panel = CC_GOA_PANEL (user_data);
-  GtkTreeIter iter;
-
-  if (gtk_tree_selection_get_selected (gtk_tree_view_get_selection (GTK_TREE_VIEW (panel->accounts_treeview)),
-                                       NULL,
-                                       &iter))
-    {
-      GoaProvider *provider;
-      const gchar *provider_type;
-      GoaAccount *account;
-      GoaObject *object;
-      GtkWindow *parent;
-      GError *error;
-
-      gtk_tree_model_get (GTK_TREE_MODEL (panel->accounts_model),
-                          &iter,
-                          GOA_PANEL_ACCOUNTS_MODEL_COLUMN_OBJECT, &object,
-                          -1);
-
-      account = goa_object_peek_account (object);
-      provider_type = goa_account_get_provider_type (account);
-      provider = goa_provider_get_for_provider_type (provider_type);
-
-      parent = GTK_WINDOW (cc_shell_get_toplevel (cc_panel_get_shell (CC_PANEL (panel))));
-
-      error = NULL;
-      if (!goa_provider_refresh_account (provider,
-                                         panel->client,
-                                         object,
-                                         parent,
-                                         &error))
-        {
-          if (!(error->domain == GOA_ERROR && error->code == GOA_ERROR_DIALOG_DISMISSED))
-            {
-              GtkWidget *dialog;
-              dialog = gtk_message_dialog_new (parent,
-                                               GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                               GTK_MESSAGE_ERROR,
-                                               GTK_BUTTONS_CLOSE,
-                                               _("Error logging into the account"));
-              gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
-                                                        "%s",
-                                                        error->message);
-              gtk_widget_show_all (dialog);
-              gtk_dialog_run (GTK_DIALOG (dialog));
-              gtk_widget_destroy (dialog);
-            }
-          g_error_free (error);
-        }
-      g_object_unref (provider);
-      g_object_unref (object);
-    }
-}
-
-static void
 show_page_account (CcGoaPanel  *panel,
                    GoaObject *object)
 {
   GList *children;
   GList *l;
   GtkWidget *box;
-  GtkWidget *button;
-  GtkWidget *grid;
   GtkWidget *label;
   GoaProvider *provider;
   GoaAccount *account;
-  GtkWidget *image;
   const gchar *provider_type;
 
   provider = NULL;
@@ -469,63 +407,16 @@ show_page_account (CcGoaPanel  *panel,
   provider_type = goa_account_get_provider_type (account);
   provider = goa_provider_get_for_provider_type (provider_type);
 
-  /* And in with the new */
-  if (goa_account_get_attention_needed (account))
-    {
-      GtkWidget *labels_grid;
-
-      grid = gtk_grid_new ();
-      gtk_orientable_set_orientation (GTK_ORIENTABLE (grid), GTK_ORIENTATION_HORIZONTAL);
-      gtk_grid_set_column_spacing (GTK_GRID (grid), 12);
-
-      image = gtk_image_new_from_icon_name ("dialog-warning", GTK_ICON_SIZE_SMALL_TOOLBAR);
-      gtk_widget_set_valign (image, GTK_ALIGN_CENTER);
-      gtk_container_add (GTK_CONTAINER (grid), image);
-
-      labels_grid = gtk_grid_new ();
-      gtk_widget_set_halign (labels_grid, GTK_ALIGN_FILL);
-      gtk_widget_set_hexpand (labels_grid, TRUE);
-      gtk_widget_set_valign (labels_grid, GTK_ALIGN_CENTER);
-      gtk_orientable_set_orientation (GTK_ORIENTABLE (labels_grid), GTK_ORIENTATION_VERTICAL);
-      gtk_grid_set_column_spacing (GTK_GRID (labels_grid), 0);
-      gtk_container_add (GTK_CONTAINER (grid), labels_grid);
-
-      label = gtk_label_new (_("Credentials have expired."));
-      gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
-      gtk_container_add (GTK_CONTAINER (labels_grid), label);
-
-      label = gtk_label_new (_("Sign in to enable this account."));
-      gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
-      gtk_style_context_add_class (gtk_widget_get_style_context (label), "dim-label");
-      gtk_container_add (GTK_CONTAINER (labels_grid), label);
-
-      button = gtk_button_new_with_mnemonic (_("_Sign In"));
-      if (provider == NULL)
-        gtk_widget_set_sensitive (button, FALSE);
-      gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
-      gtk_container_add (GTK_CONTAINER (grid), button);
-      g_signal_connect (button, "clicked", G_CALLBACK (on_sign_in_button_clicked), panel);
-
-      gtk_box_pack_end (GTK_BOX (panel->accounts_vbox), grid, FALSE, TRUE, 0);
-    }
-
-  grid = gtk_grid_new ();
-  gtk_widget_set_halign (grid, GTK_ALIGN_CENTER);
-  gtk_widget_set_hexpand (grid, TRUE);
-  gtk_grid_set_column_spacing (GTK_GRID (grid), 12);
-  gtk_grid_set_row_spacing (GTK_GRID (grid), 6);
-
   if (provider != NULL)
     {
       goa_provider_show_account (provider,
                                  panel->client,
                                  object,
                                  GTK_BOX (panel->accounts_vbox),
-                                 GTK_GRID (grid),
-                                 GTK_GRID (grid));
+                                 NULL,
+                                 NULL);
     }
 
-  gtk_box_pack_start (GTK_BOX (panel->accounts_vbox), grid, FALSE, TRUE, 0);
   gtk_widget_show_all (panel->accounts_vbox);
 
   g_clear_object (&provider);
@@ -577,11 +468,17 @@ on_tree_view_selection_changed (GtkTreeSelection *selection,
   if (gtk_tree_selection_get_selected (selection, NULL, &iter))
     {
       GoaObject *object;
+      gboolean is_locked;
+
       gtk_tree_model_get (GTK_TREE_MODEL (panel->accounts_model),
                           &iter,
                           GOA_PANEL_ACCOUNTS_MODEL_COLUMN_OBJECT, &object,
                           -1);
       show_page_account (panel, object);
+
+      is_locked = goa_account_get_is_locked (goa_object_peek_account (object));
+      gtk_widget_set_sensitive (panel->toolbar_remove_button, !is_locked);
+
       g_object_unref (object);
     }
   else

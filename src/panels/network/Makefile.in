@@ -89,14 +89,13 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@HAVE_NM_UNSTABLE_TRUE@am__append_1 = $(TEAM_FILES)
 subdir = panels/network
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/libgd/libgd.m4 \
-	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/as-ac-expand.m4 $(top_srcdir)/m4/intltool.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -109,26 +108,12 @@ am__DEPENDENCIES_1 =
 libnetwork_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(builddir)/connection-editor/libconnection-editor.la
-am__libnetwork_la_SOURCES_DIST = cc-network-resources.c \
-	cc-network-resources.h panel-common.c panel-common.h \
-	net-object.c net-object.h net-device.c net-device.h \
-	net-device-wifi.c net-device-wifi.h net-device-simple.c \
-	net-device-simple.h net-device-ethernet.c \
-	net-device-ethernet.h net-device-mobile.c net-device-mobile.h \
-	net-device-bond.c net-device-bond.h net-device-bridge.c \
-	net-device-bridge.h net-virtual-device.c net-virtual-device.h \
-	net-vpn.c net-vpn.h net-proxy.c net-proxy.h network-dialogs.c \
-	network-dialogs.h cc-network-panel.c cc-network-panel.h \
-	net-device-team.c net-device-team.h
 am__objects_1 = cc-network-resources.lo
-am__objects_2 = net-device-team.lo
-@HAVE_NM_UNSTABLE_TRUE@am__objects_3 = $(am__objects_2)
 am_libnetwork_la_OBJECTS = $(am__objects_1) panel-common.lo \
 	net-object.lo net-device.lo net-device-wifi.lo \
 	net-device-simple.lo net-device-ethernet.lo \
-	net-device-mobile.lo net-device-bond.lo net-device-bridge.lo \
-	net-virtual-device.lo net-vpn.lo net-proxy.lo \
-	network-dialogs.lo cc-network-panel.lo $(am__objects_3)
+	net-device-mobile.lo net-vpn.lo net-proxy.lo \
+	network-dialogs.lo cc-network-panel.lo
 libnetwork_la_OBJECTS = $(am_libnetwork_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -172,7 +157,7 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(libnetwork_la_SOURCES)
-DIST_SOURCES = $(am__libnetwork_la_SOURCES_DIST)
+DIST_SOURCES = $(libnetwork_la_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -304,6 +289,8 @@ DATETIME_PANEL_CFLAGS = @DATETIME_PANEL_CFLAGS@
 DATETIME_PANEL_LIBS = @DATETIME_PANEL_LIBS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DEVICES_CFLAGS = @DEVICES_CFLAGS@
+DEVICES_LIBS = @DEVICES_LIBS@
 DISPLAY_PANEL_CFLAGS = @DISPLAY_PANEL_CFLAGS@
 DISPLAY_PANEL_LIBS = @DISPLAY_PANEL_LIBS@
 DLLTOOL = @DLLTOOL@
@@ -319,6 +306,7 @@ GDESKTOP_PREFIX = @GDESKTOP_PREFIX@
 GETTEXT_PACKAGE = @GETTEXT_PACKAGE@
 GLIB_MKENUMS = @GLIB_MKENUMS@
 GMSGFMT = @GMSGFMT@
+GNOMESESSIONDIR = @GNOMESESSIONDIR@
 GREP = @GREP@
 GVC_CFLAGS = @GVC_CFLAGS@
 GVC_LIBS = @GVC_LIBS@
@@ -360,6 +348,7 @@ LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -376,8 +365,6 @@ NETWORK_PANEL_CFLAGS = @NETWORK_PANEL_CFLAGS@
 NETWORK_PANEL_LIBS = @NETWORK_PANEL_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
-NM_UNSTABLE_CHECK_CFLAGS = @NM_UNSTABLE_CHECK_CFLAGS@
-NM_UNSTABLE_CHECK_LIBS = @NM_UNSTABLE_CHECK_LIBS@
 NM_VPN_CONFIG_DIR = @NM_VPN_CONFIG_DIR@
 NM_VPN_MODULE_DIR = @NM_VPN_MODULE_DIR@
 NOTIFICATIONS_PANEL_CFLAGS = @NOTIFICATIONS_PANEL_CFLAGS@
@@ -428,6 +415,8 @@ SMBCLIENT_LIBS = @SMBCLIENT_LIBS@
 SOUND_PANEL_CFLAGS = @SOUND_PANEL_CFLAGS@
 SOUND_PANEL_LIBS = @SOUND_PANEL_LIBS@
 STRIP = @STRIP@
+UDEV_CFLAGS = @UDEV_CFLAGS@
+UDEV_LIBS = @UDEV_LIBS@
 UNIVERSAL_ACCESS_PANEL_CFLAGS = @UNIVERSAL_ACCESS_PANEL_CFLAGS@
 UNIVERSAL_ACCESS_PANEL_LIBS = @UNIVERSAL_ACCESS_PANEL_LIBS@
 UPDATE_MIME_DATABASE = @UPDATE_MIME_DATABASE@
@@ -438,6 +427,8 @@ VERSION = @VERSION@
 WACOM_PANEL_CFLAGS = @WACOM_PANEL_CFLAGS@
 WACOM_PANEL_LIBS = @WACOM_PANEL_LIBS@
 WARN_CFLAGS = @WARN_CFLAGS@
+WAYLAND_CFLAGS = @WAYLAND_CFLAGS@
+WAYLAND_LIBS = @WAYLAND_LIBS@
 XF86MISC_LIBS = @XF86MISC_LIBS@
 XGETTEXT = @XGETTEXT@
 XMKMF = @XMKMF@
@@ -470,6 +461,7 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+gnome_session_libexecdir = @gnome_session_libexecdir@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -515,18 +507,31 @@ BUILT_SOURCES = \
 	cc-network-resources.c	\
 	cc-network-resources.h
 
-libnetwork_la_SOURCES = $(BUILT_SOURCES) panel-common.c panel-common.h \
-	net-object.c net-object.h net-device.c net-device.h \
-	net-device-wifi.c net-device-wifi.h net-device-simple.c \
-	net-device-simple.h net-device-ethernet.c \
-	net-device-ethernet.h net-device-mobile.c net-device-mobile.h \
-	net-device-bond.c net-device-bond.h net-device-bridge.c \
-	net-device-bridge.h net-virtual-device.c net-virtual-device.h \
-	net-vpn.c net-vpn.h net-proxy.c net-proxy.h network-dialogs.c \
-	network-dialogs.h cc-network-panel.c cc-network-panel.h \
-	$(am__append_1)
-TEAM_FILES = net-device-team.c net-device-team.h
-EXTRA_DIST = $(TEAM_FILES) $(resource_files) network.gresource.xml
+libnetwork_la_SOURCES = \
+	$(BUILT_SOURCES)				\
+	panel-common.c					\
+	panel-common.h					\
+	net-object.c					\
+	net-object.h					\
+	net-device.c					\
+	net-device.h					\
+	net-device-wifi.c				\
+	net-device-wifi.h				\
+	net-device-simple.c				\
+	net-device-simple.h				\
+	net-device-ethernet.c				\
+	net-device-ethernet.h				\
+	net-device-mobile.c				\
+	net-device-mobile.h				\
+	net-vpn.c					\
+	net-vpn.h					\
+	net-proxy.c					\
+	net-proxy.h					\
+	network-dialogs.c				\
+	network-dialogs.h				\
+	cc-network-panel.c				\
+	cc-network-panel.h
+
 libnetwork_la_LIBADD = $(PANEL_LIBS) $(NETWORK_PANEL_LIBS) $(NETWORK_MANAGER_LIBS) $(builddir)/connection-editor/libconnection-editor.la
 libnetwork_la_LDFLAGS = $(PANEL_LDFLAGS)
 resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/network.gresource.xml)
@@ -534,6 +539,7 @@ desktopdir = $(datadir)/applications
 desktop_in_files = gnome-network-panel.desktop.in
 desktop_DATA = $(desktop_in_files:.desktop.in=.desktop)
 CLEANFILES = $(desktop_in_files) $(desktop_DATA) $(BUILT_SOURCES)
+EXTRA_DIST = $(resource_files) network.gresource.xml
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -593,38 +599,37 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cc-network-panel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cc-network-resources.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net-device-bond.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net-device-bridge.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net-device-ethernet.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net-device-mobile.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net-device-simple.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net-device-team.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net-device-wifi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net-device.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net-object.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net-proxy.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net-virtual-device.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net-vpn.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/network-dialogs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/panel-common.Plo@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<

@@ -22,8 +22,6 @@
 #include <gio/gio.h>
 #include <gtk/gtk.h>
 
-#include "um-editable-button.h"
-
 #include "um-fingerprint-dialog.h"
 
 #include "fingerprint-strings.h"
@@ -33,6 +31,8 @@
 
 /* Translate fprintd strings */
 #define TR(s) dgettext("fprintd", s)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
 /* This must match the number of images on the 2nd page in the UI file */
 #define MAX_ENROLL_STAGES 5
@@ -176,7 +176,7 @@ get_error_dialog (const char *title,
 }
 
 gboolean
-set_fingerprint_label (GtkWidget *editable_button)
+set_fingerprint_label (GtkWidget *button)
 {
         GDBusProxy *device;
         GVariant *result;
@@ -210,11 +210,12 @@ set_fingerprint_label (GtkWidget *editable_button)
 
         if (fingers == NULL || g_variant_iter_n_children (fingers) == 0) {
                 is_disable = FALSE;
-                um_editable_button_set_text (UM_EDITABLE_BUTTON (editable_button), _("Disabled"));
+                gtk_button_set_label (GTK_BUTTON (button), _("Disabled"));
         } else {
                 is_disable = TRUE;
-                um_editable_button_set_text (UM_EDITABLE_BUTTON (editable_button), _("Enabled"));
+                gtk_button_set_label (GTK_BUTTON (button), _("Enabled"));
         }
+        gtk_widget_set_halign (gtk_bin_get_child (GTK_BIN (button)), GTK_ALIGN_START);
 
         if (result != NULL)
                 g_variant_unref (result);
@@ -271,10 +272,7 @@ delete_fingerprints_question (GtkWindow *parent,
 
         gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (question),
                                                   _("Do you want to delete your registered fingerprints so fingerprint login is disabled?"));
-        gtk_container_set_border_width (GTK_CONTAINER (question), 5);
         gtk_dialog_set_default_response (GTK_DIALOG (question), GTK_RESPONSE_OK);
-        gtk_window_set_position (GTK_WINDOW (question), GTK_WIN_POS_CENTER_ON_PARENT);
-        gtk_window_set_modal (GTK_WINDOW (question), TRUE);
 
         if (gtk_dialog_run (GTK_DIALOG (question)) == GTK_RESPONSE_OK) {
                 delete_fingerprints ();
@@ -760,3 +758,4 @@ fingerprint_button_clicked (GtkWindow *parent,
         }
 }
 
+#pragma GCC diagnostic pop

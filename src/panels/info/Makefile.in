@@ -15,6 +15,7 @@
 @SET_MAKE@
 
 
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -89,13 +90,14 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+noinst_PROGRAMS = test-info-cleanup$(EXEEXT)
 subdir = panels/info
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/libgd/libgd.m4 \
-	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/as-ac-expand.m4 $(top_srcdir)/m4/intltool.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -108,12 +110,23 @@ am__DEPENDENCIES_1 =
 libinfo_la_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am__objects_1 = cc-info-resources.lo
 am_libinfo_la_OBJECTS = $(am__objects_1) cc-info-panel.lo \
-	gsd-disk-space-helper.lo
+	gsd-disk-space-helper.lo info-cleanup.lo
 libinfo_la_OBJECTS = $(am_libinfo_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+PROGRAMS = $(noinst_PROGRAMS)
+am_test_info_cleanup_OBJECTS =  \
+	test_info_cleanup-test-info-cleanup.$(OBJEXT) \
+	test_info_cleanup-info-cleanup.$(OBJEXT)
+test_info_cleanup_OBJECTS = $(am_test_info_cleanup_OBJECTS)
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+test_info_cleanup_DEPENDENCIES = $(am__DEPENDENCIES_2)
+test_info_cleanup_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(test_info_cleanup_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -148,8 +161,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libinfo_la_SOURCES)
-DIST_SOURCES = $(libinfo_la_SOURCES)
+SOURCES = $(libinfo_la_SOURCES) $(test_info_cleanup_SOURCES)
+DIST_SOURCES = $(libinfo_la_SOURCES) $(test_info_cleanup_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -204,7 +217,8 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 am__DIST_COMMON = $(srcdir)/Makefile.in \
-	$(srcdir)/gnome-info-panel.desktop.in.in $(top_srcdir)/depcomp
+	$(srcdir)/gnome-info-panel.desktop.in.in \
+	$(top_srcdir)/Makefile.decl $(top_srcdir)/depcomp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 ALL_LINGUAS = @ALL_LINGUAS@
@@ -238,6 +252,8 @@ DATETIME_PANEL_CFLAGS = @DATETIME_PANEL_CFLAGS@
 DATETIME_PANEL_LIBS = @DATETIME_PANEL_LIBS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DEVICES_CFLAGS = @DEVICES_CFLAGS@
+DEVICES_LIBS = @DEVICES_LIBS@
 DISPLAY_PANEL_CFLAGS = @DISPLAY_PANEL_CFLAGS@
 DISPLAY_PANEL_LIBS = @DISPLAY_PANEL_LIBS@
 DLLTOOL = @DLLTOOL@
@@ -253,6 +269,7 @@ GDESKTOP_PREFIX = @GDESKTOP_PREFIX@
 GETTEXT_PACKAGE = @GETTEXT_PACKAGE@
 GLIB_MKENUMS = @GLIB_MKENUMS@
 GMSGFMT = @GMSGFMT@
+GNOMESESSIONDIR = @GNOMESESSIONDIR@
 GREP = @GREP@
 GVC_CFLAGS = @GVC_CFLAGS@
 GVC_LIBS = @GVC_LIBS@
@@ -294,6 +311,7 @@ LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -310,8 +328,6 @@ NETWORK_PANEL_CFLAGS = @NETWORK_PANEL_CFLAGS@
 NETWORK_PANEL_LIBS = @NETWORK_PANEL_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
-NM_UNSTABLE_CHECK_CFLAGS = @NM_UNSTABLE_CHECK_CFLAGS@
-NM_UNSTABLE_CHECK_LIBS = @NM_UNSTABLE_CHECK_LIBS@
 NM_VPN_CONFIG_DIR = @NM_VPN_CONFIG_DIR@
 NM_VPN_MODULE_DIR = @NM_VPN_MODULE_DIR@
 NOTIFICATIONS_PANEL_CFLAGS = @NOTIFICATIONS_PANEL_CFLAGS@
@@ -362,6 +378,8 @@ SMBCLIENT_LIBS = @SMBCLIENT_LIBS@
 SOUND_PANEL_CFLAGS = @SOUND_PANEL_CFLAGS@
 SOUND_PANEL_LIBS = @SOUND_PANEL_LIBS@
 STRIP = @STRIP@
+UDEV_CFLAGS = @UDEV_CFLAGS@
+UDEV_LIBS = @UDEV_LIBS@
 UNIVERSAL_ACCESS_PANEL_CFLAGS = @UNIVERSAL_ACCESS_PANEL_CFLAGS@
 UNIVERSAL_ACCESS_PANEL_LIBS = @UNIVERSAL_ACCESS_PANEL_LIBS@
 UPDATE_MIME_DATABASE = @UPDATE_MIME_DATABASE@
@@ -372,6 +390,8 @@ VERSION = @VERSION@
 WACOM_PANEL_CFLAGS = @WACOM_PANEL_CFLAGS@
 WACOM_PANEL_LIBS = @WACOM_PANEL_LIBS@
 WARN_CFLAGS = @WARN_CFLAGS@
+WAYLAND_CFLAGS = @WAYLAND_CFLAGS@
+WAYLAND_LIBS = @WAYLAND_LIBS@
 XF86MISC_LIBS = @XF86MISC_LIBS@
 XGETTEXT = @XGETTEXT@
 XMKMF = @XMKMF@
@@ -404,6 +424,7 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+gnome_session_libexecdir = @gnome_session_libexecdir@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -434,13 +455,19 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+GTESTER = gtester		# in $PATH for non-GLIB packages
+GTESTER_REPORT = gtester-report		# in $PATH for non-GLIB packages
+
+# initialize variables for unconditional += appending
+TEST_PROGS = $(noinst_PROGRAMS)
 cappletname = info
 AM_CPPFLAGS = \
-	$(PANEL_CFLAGS)					\
-	$(INFO_PANEL_CFLAGS)				\
-	-DGNOMELOCALEDIR="\"$(datadir)/locale\""	\
-	-DDATADIR="\"$(datadir)\""			\
-	-DBINDIR="\"$(bindir)\""			\
+	$(PANEL_CFLAGS)						\
+	$(INFO_PANEL_CFLAGS)					\
+	-DGNOMELOCALEDIR="\"$(datadir)/locale\""		\
+	-DDATADIR="\"$(datadir)\""				\
+	-DGNOME_SESSION_DIR="\"$(gnome_session_libexecdir)\""	\
+	-DBINDIR="\"$(bindir)\""				\
 	$(NULL)
 
 noinst_LTLIBRARIES = libinfo.la
@@ -453,9 +480,18 @@ libinfo_la_SOURCES = \
 	cc-info-panel.c		\
 	cc-info-panel.h		\
 	gsd-disk-space-helper.h	\
-	gsd-disk-space-helper.c
+	gsd-disk-space-helper.c	\
+	info-cleanup.h		\
+	info-cleanup.c
 
 libinfo_la_LIBADD = $(PANEL_LIBS) $(INFO_PANEL_LIBS)
+test_info_cleanup_SOURCES = \
+	test-info-cleanup.c		\
+	info-cleanup.h			\
+	info-cleanup.c
+
+test_info_cleanup_LDADD = $(libinfo_la_LIBADD)
+test_info_cleanup_CFLAGS = $(AM_CPPFLAGS) -DTEST_SRCDIR="\"$(srcdir)\""
 resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/info.gresource.xml)
 desktopdir = $(datadir)/applications
 desktop_in_files = gnome-info-panel.desktop.in
@@ -463,13 +499,13 @@ desktop_DATA = $(desktop_in_files:.desktop.in=.desktop)
 SPACEDIR = $(top_srcdir)/../gnome-settings-daemon/plugins/housekeeping/
 SPACEFILES = gsd-disk-space-helper.c gsd-disk-space-helper.h
 CLEANFILES = $(desktop_in_files) $(desktop_DATA) $(BUILT_SOURCES)
-EXTRA_DIST = $(resource_files) info.gresource.xml
+EXTRA_DIST = $(resource_files) info.gresource.xml info-cleanup-test.txt
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/Makefile.decl $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -489,6 +525,7 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)'; \
 	    cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe);; \
 	esac;
+$(top_srcdir)/Makefile.decl $(am__empty):
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
@@ -515,6 +552,19 @@ clean-noinstLTLIBRARIES:
 libinfo.la: $(libinfo_la_OBJECTS) $(libinfo_la_DEPENDENCIES) $(EXTRA_libinfo_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK)  $(libinfo_la_OBJECTS) $(libinfo_la_LIBADD) $(LIBS)
 
+clean-noinstPROGRAMS:
+	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
+	echo " rm -f" $$list; \
+	rm -f $$list || exit $$?; \
+	test -n "$(EXEEXT)" || exit 0; \
+	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
+	echo " rm -f" $$list; \
+	rm -f $$list
+
+test-info-cleanup$(EXEEXT): $(test_info_cleanup_OBJECTS) $(test_info_cleanup_DEPENDENCIES) $(EXTRA_test_info_cleanup_DEPENDENCIES) 
+	@rm -f test-info-cleanup$(EXEEXT)
+	$(AM_V_CCLD)$(test_info_cleanup_LINK) $(test_info_cleanup_OBJECTS) $(test_info_cleanup_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -524,27 +574,61 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cc-info-panel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cc-info-resources.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gsd-disk-space-helper.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info-cleanup.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_info_cleanup-info-cleanup.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_info_cleanup-test-info-cleanup.Po@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+test_info_cleanup-test-info-cleanup.o: test-info-cleanup.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_info_cleanup_CFLAGS) $(CFLAGS) -MT test_info_cleanup-test-info-cleanup.o -MD -MP -MF $(DEPDIR)/test_info_cleanup-test-info-cleanup.Tpo -c -o test_info_cleanup-test-info-cleanup.o `test -f 'test-info-cleanup.c' || echo '$(srcdir)/'`test-info-cleanup.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/test_info_cleanup-test-info-cleanup.Tpo $(DEPDIR)/test_info_cleanup-test-info-cleanup.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test-info-cleanup.c' object='test_info_cleanup-test-info-cleanup.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_info_cleanup_CFLAGS) $(CFLAGS) -c -o test_info_cleanup-test-info-cleanup.o `test -f 'test-info-cleanup.c' || echo '$(srcdir)/'`test-info-cleanup.c
+
+test_info_cleanup-test-info-cleanup.obj: test-info-cleanup.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_info_cleanup_CFLAGS) $(CFLAGS) -MT test_info_cleanup-test-info-cleanup.obj -MD -MP -MF $(DEPDIR)/test_info_cleanup-test-info-cleanup.Tpo -c -o test_info_cleanup-test-info-cleanup.obj `if test -f 'test-info-cleanup.c'; then $(CYGPATH_W) 'test-info-cleanup.c'; else $(CYGPATH_W) '$(srcdir)/test-info-cleanup.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/test_info_cleanup-test-info-cleanup.Tpo $(DEPDIR)/test_info_cleanup-test-info-cleanup.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test-info-cleanup.c' object='test_info_cleanup-test-info-cleanup.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_info_cleanup_CFLAGS) $(CFLAGS) -c -o test_info_cleanup-test-info-cleanup.obj `if test -f 'test-info-cleanup.c'; then $(CYGPATH_W) 'test-info-cleanup.c'; else $(CYGPATH_W) '$(srcdir)/test-info-cleanup.c'; fi`
+
+test_info_cleanup-info-cleanup.o: info-cleanup.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_info_cleanup_CFLAGS) $(CFLAGS) -MT test_info_cleanup-info-cleanup.o -MD -MP -MF $(DEPDIR)/test_info_cleanup-info-cleanup.Tpo -c -o test_info_cleanup-info-cleanup.o `test -f 'info-cleanup.c' || echo '$(srcdir)/'`info-cleanup.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/test_info_cleanup-info-cleanup.Tpo $(DEPDIR)/test_info_cleanup-info-cleanup.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='info-cleanup.c' object='test_info_cleanup-info-cleanup.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_info_cleanup_CFLAGS) $(CFLAGS) -c -o test_info_cleanup-info-cleanup.o `test -f 'info-cleanup.c' || echo '$(srcdir)/'`info-cleanup.c
+
+test_info_cleanup-info-cleanup.obj: info-cleanup.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_info_cleanup_CFLAGS) $(CFLAGS) -MT test_info_cleanup-info-cleanup.obj -MD -MP -MF $(DEPDIR)/test_info_cleanup-info-cleanup.Tpo -c -o test_info_cleanup-info-cleanup.obj `if test -f 'info-cleanup.c'; then $(CYGPATH_W) 'info-cleanup.c'; else $(CYGPATH_W) '$(srcdir)/info-cleanup.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/test_info_cleanup-info-cleanup.Tpo $(DEPDIR)/test_info_cleanup-info-cleanup.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='info-cleanup.c' object='test_info_cleanup-info-cleanup.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_info_cleanup_CFLAGS) $(CFLAGS) -c -o test_info_cleanup-info-cleanup.obj `if test -f 'info-cleanup.c'; then $(CYGPATH_W) 'info-cleanup.c'; else $(CYGPATH_W) '$(srcdir)/info-cleanup.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -656,9 +740,10 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
+	$(MAKE) $(AM_MAKEFLAGS) check-local
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
-all-am: Makefile $(LTLIBRARIES) $(DATA)
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(DATA)
 installdirs:
 	for dir in "$(DESTDIR)$(desktopdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -699,7 +784,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
-	mostlyclean-am
+	clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -767,24 +852,73 @@ ps-am:
 
 uninstall-am: uninstall-desktopDATA
 
-.MAKE: all check install install-am install-strip
+.MAKE: all check check-am install install-am install-strip
 
-.PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-noinstLTLIBRARIES cscopelist-am ctags \
-	ctags-am distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-desktopDATA install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
+.PHONY: CTAGS GTAGS TAGS all all-am check check-am check-local clean \
+	clean-generic clean-libtool clean-noinstLTLIBRARIES \
+	clean-noinstPROGRAMS cscopelist-am ctags ctags-am distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am \
+	install-desktopDATA install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags tags-am uninstall uninstall-am uninstall-desktopDATA
 
 .PRECIOUS: Makefile
 
+
+# test: run all tests in cwd and subdirs
+test:	${TEST_PROGS}
+	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS}
+	@ for subdir in $(SUBDIRS) . ; do \
+	    test "$$subdir" = "." -o "$$subdir" = "po" || \
+	    ( cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $@ ) || exit $? ; \
+	  done
+
+# test-report: run tests in subdirs and generate report
+# perf-report: run tests in subdirs with -m perf and generate report
+# full-report: like test-report: with -m perf and -m slow
+test-report perf-report full-report:	${TEST_PROGS}
+	@test -z "${TEST_PROGS}" || { \
+	  case $@ in \
+	  test-report) test_options="-k";; \
+	  perf-report) test_options="-k -m=perf";; \
+	  full-report) test_options="-k -m=perf -m=slow";; \
+	  esac ; \
+	  if test -z "$$GTESTER_LOGDIR" ; then	\
+	    ${GTESTER} --verbose $$test_options -o test-report.xml ${TEST_PROGS} ; \
+	  elif test -n "${TEST_PROGS}" ; then \
+	    ${GTESTER} --verbose $$test_options -o `mktemp "$$GTESTER_LOGDIR/log-XXXXXX"` ${TEST_PROGS} ; \
+	  fi ; \
+	}
+	@ ignore_logdir=true ; \
+	  if test -z "$$GTESTER_LOGDIR" ; then \
+	    GTESTER_LOGDIR=`mktemp -d "\`pwd\`/.testlogs-XXXXXX"`; export GTESTER_LOGDIR ; \
+	    ignore_logdir=false ; \
+	  fi ; \
+	  for subdir in $(SUBDIRS) . ; do \
+	    test "$$subdir" = "." -o "$$subdir" = "po" || \
+	    ( cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $@ ) || exit $? ; \
+	  done ; \
+	  $$ignore_logdir || { \
+	    echo '<?xml version="1.0"?>' > $@.xml ; \
+	    echo '<report-collection>'  >> $@.xml ; \
+	    for lf in `ls -L "$$GTESTER_LOGDIR"/.` ; do \
+	      sed '1,1s/^<?xml\b[^>?]*?>//' <"$$GTESTER_LOGDIR"/"$$lf" >> $@.xml ; \
+	    done ; \
+	    echo >> $@.xml ; \
+	    echo '</report-collection>' >> $@.xml ; \
+	    rm -rf "$$GTESTER_LOGDIR"/ ; \
+	    ${GTESTER_REPORT} --version 2>/dev/null 1>&2 ; test "$$?" != 0 || ${GTESTER_REPORT} $@.xml >$@.html ; \
+	  }
+.PHONY: test test-report perf-report full-report
+# run make test as part of make check
+check-local: test
 cc-info-resources.c: info.gresource.xml $(resource_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-source --c-name cc_info $<
 cc-info-resources.h: info.gresource.xml $(resource_files)

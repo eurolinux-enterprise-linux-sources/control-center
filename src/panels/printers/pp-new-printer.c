@@ -161,7 +161,7 @@ pp_new_printer_get_property (GObject    *object,
         g_value_set_boolean (value, self->priv->is_network_device);
         break;
       case PROP_WINDOW_ID:
-        g_value_set_int (value, self->priv->window_id);
+        g_value_set_uint (value, self->priv->window_id);
         break;
       default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object,
@@ -228,7 +228,7 @@ pp_new_printer_set_property (GObject      *object,
         self->priv->is_network_device = g_value_get_boolean (value);
         break;
       case PROP_WINDOW_ID:
-        self->priv->window_id = g_value_get_int (value);
+        self->priv->window_id = g_value_get_uint (value);
         break;
       default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object,
@@ -335,11 +335,11 @@ pp_new_printer_class_init (PpNewPrinterClass *klass)
                           G_PARAM_READWRITE));
 
   g_object_class_install_property (gobject_class, PROP_WINDOW_ID,
-    g_param_spec_int ("window-id",
-                      "WindowID",
-                      "Window ID of parent window",
-                      0, G_MAXINT32, 631,
-                      G_PARAM_READWRITE));
+    g_param_spec_uint ("window-id",
+                       "WindowID",
+                       "Window ID of parent window",
+                       0, G_MAXUINT, 0,
+                       G_PARAM_READWRITE));
 }
 
 static void
@@ -1326,9 +1326,9 @@ printer_configure_async (PpNewPrinter *new_printer)
 
   /* Set media size for printer */
   values = g_new0 (gchar *, 2);
-  values[0] = g_strdup (get_paper_size_from_locale ());
+  values[0] = g_strdup (get_page_size_from_locale ());
 
-  printer_add_option_async (priv->name, "media", values, TRUE, NULL, pao_cb, data);
+  printer_add_option_async (priv->name, "PageSize", values, FALSE, NULL, pao_cb, data);
 
   g_strfreev (values);
 

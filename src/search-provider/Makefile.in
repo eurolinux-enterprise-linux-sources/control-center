@@ -93,10 +93,10 @@ libexec_PROGRAMS = gnome-control-center-search-provider$(EXEEXT)
 subdir = search-provider
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/libgd/libgd.m4 \
-	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/as-ac-expand.m4 $(top_srcdir)/m4/intltool.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(dist_searchprovider_DATA) \
@@ -111,7 +111,6 @@ PROGRAMS = $(libexec_PROGRAMS)
 am__objects_1 = cc-shell-search-provider-generated.$(OBJEXT)
 am__objects_2 = $(am__objects_1)
 am_gnome_control_center_search_provider_OBJECTS = $(am__objects_2) \
-	cc-panel-loader.$(OBJEXT) \
 	control-center-search-provider.$(OBJEXT) \
 	cc-search-provider.$(OBJEXT)
 gnome_control_center_search_provider_OBJECTS =  \
@@ -119,7 +118,8 @@ gnome_control_center_search_provider_OBJECTS =  \
 am__DEPENDENCIES_1 =
 gnome_control_center_search_provider_DEPENDENCIES =  \
 	$(top_builddir)/panels/common/liblanguage.la \
-	$(top_builddir)/shell/libshell.la $(am__DEPENDENCIES_1)
+	$(top_builddir)/shell/libshell.la \
+	$(top_builddir)/shell/libpanel_loader.la $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -246,6 +246,8 @@ DATETIME_PANEL_CFLAGS = @DATETIME_PANEL_CFLAGS@
 DATETIME_PANEL_LIBS = @DATETIME_PANEL_LIBS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DEVICES_CFLAGS = @DEVICES_CFLAGS@
+DEVICES_LIBS = @DEVICES_LIBS@
 DISPLAY_PANEL_CFLAGS = @DISPLAY_PANEL_CFLAGS@
 DISPLAY_PANEL_LIBS = @DISPLAY_PANEL_LIBS@
 DLLTOOL = @DLLTOOL@
@@ -261,6 +263,7 @@ GDESKTOP_PREFIX = @GDESKTOP_PREFIX@
 GETTEXT_PACKAGE = @GETTEXT_PACKAGE@
 GLIB_MKENUMS = @GLIB_MKENUMS@
 GMSGFMT = @GMSGFMT@
+GNOMESESSIONDIR = @GNOMESESSIONDIR@
 GREP = @GREP@
 GVC_CFLAGS = @GVC_CFLAGS@
 GVC_LIBS = @GVC_LIBS@
@@ -302,6 +305,7 @@ LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -318,8 +322,6 @@ NETWORK_PANEL_CFLAGS = @NETWORK_PANEL_CFLAGS@
 NETWORK_PANEL_LIBS = @NETWORK_PANEL_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
-NM_UNSTABLE_CHECK_CFLAGS = @NM_UNSTABLE_CHECK_CFLAGS@
-NM_UNSTABLE_CHECK_LIBS = @NM_UNSTABLE_CHECK_LIBS@
 NM_VPN_CONFIG_DIR = @NM_VPN_CONFIG_DIR@
 NM_VPN_MODULE_DIR = @NM_VPN_MODULE_DIR@
 NOTIFICATIONS_PANEL_CFLAGS = @NOTIFICATIONS_PANEL_CFLAGS@
@@ -370,6 +372,8 @@ SMBCLIENT_LIBS = @SMBCLIENT_LIBS@
 SOUND_PANEL_CFLAGS = @SOUND_PANEL_CFLAGS@
 SOUND_PANEL_LIBS = @SOUND_PANEL_LIBS@
 STRIP = @STRIP@
+UDEV_CFLAGS = @UDEV_CFLAGS@
+UDEV_LIBS = @UDEV_LIBS@
 UNIVERSAL_ACCESS_PANEL_CFLAGS = @UNIVERSAL_ACCESS_PANEL_CFLAGS@
 UNIVERSAL_ACCESS_PANEL_LIBS = @UNIVERSAL_ACCESS_PANEL_LIBS@
 UPDATE_MIME_DATABASE = @UPDATE_MIME_DATABASE@
@@ -380,6 +384,8 @@ VERSION = @VERSION@
 WACOM_PANEL_CFLAGS = @WACOM_PANEL_CFLAGS@
 WACOM_PANEL_LIBS = @WACOM_PANEL_LIBS@
 WARN_CFLAGS = @WARN_CFLAGS@
+WAYLAND_CFLAGS = @WAYLAND_CFLAGS@
+WAYLAND_LIBS = @WAYLAND_LIBS@
 XF86MISC_LIBS = @XF86MISC_LIBS@
 XGETTEXT = @XGETTEXT@
 XMKMF = @XMKMF@
@@ -412,6 +418,7 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+gnome_session_libexecdir = @gnome_session_libexecdir@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -448,7 +455,6 @@ dbus_shell_search_provider_built_sources = \
 
 AM_CPPFLAGS = \
 	-DGNOMELOCALEDIR="\"$(datadir)/locale\""\
-	-DCC_PANEL_LOADER_NO_GTYPES		\
 	-I$(top_srcdir)				\
 	$(SHELL_CFLAGS)				\
 	-I$(top_srcdir)/panels/common/		\
@@ -457,8 +463,6 @@ AM_CPPFLAGS = \
 BUILT_SOURCES = $(dbus_shell_search_provider_built_sources)
 gnome_control_center_search_provider_SOURCES = \
 	$(BUILT_SOURCES)			\
-	$(top_srcdir)/shell/cc-panel-loader.c	\
-	$(top_srcdir)/shell/cc-panel-loader.h	\
 	control-center-search-provider.c	\
 	control-center-search-provider.h	\
 	cc-search-provider.c			\
@@ -466,7 +470,8 @@ gnome_control_center_search_provider_SOURCES = \
 
 gnome_control_center_search_provider_LDADD = \
 	$(top_builddir)/panels/common/liblanguage.la	\
-	$(top_builddir)/shell/libshell.la	\
+	$(top_builddir)/shell/libshell.la		\
+	$(top_builddir)/shell/libpanel_loader.la	\
 	$(SHELL_LIBS)
 
 CLEANFILES = $(BUILT_SOURCES) $(service_DATA)
@@ -572,45 +577,33 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cc-panel-loader.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cc-search-provider.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cc-shell-search-provider-generated.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/control-center-search-provider.Po@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
-
-cc-panel-loader.o: $(top_srcdir)/shell/cc-panel-loader.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cc-panel-loader.o -MD -MP -MF $(DEPDIR)/cc-panel-loader.Tpo -c -o cc-panel-loader.o `test -f '$(top_srcdir)/shell/cc-panel-loader.c' || echo '$(srcdir)/'`$(top_srcdir)/shell/cc-panel-loader.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cc-panel-loader.Tpo $(DEPDIR)/cc-panel-loader.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shell/cc-panel-loader.c' object='cc-panel-loader.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cc-panel-loader.o `test -f '$(top_srcdir)/shell/cc-panel-loader.c' || echo '$(srcdir)/'`$(top_srcdir)/shell/cc-panel-loader.c
-
-cc-panel-loader.obj: $(top_srcdir)/shell/cc-panel-loader.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cc-panel-loader.obj -MD -MP -MF $(DEPDIR)/cc-panel-loader.Tpo -c -o cc-panel-loader.obj `if test -f '$(top_srcdir)/shell/cc-panel-loader.c'; then $(CYGPATH_W) '$(top_srcdir)/shell/cc-panel-loader.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shell/cc-panel-loader.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cc-panel-loader.Tpo $(DEPDIR)/cc-panel-loader.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shell/cc-panel-loader.c' object='cc-panel-loader.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cc-panel-loader.obj `if test -f '$(top_srcdir)/shell/cc-panel-loader.c'; then $(CYGPATH_W) '$(top_srcdir)/shell/cc-panel-loader.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shell/cc-panel-loader.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

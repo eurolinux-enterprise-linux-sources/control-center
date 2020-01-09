@@ -94,10 +94,10 @@ noinst_PROGRAMS = test-wacom$(EXEEXT)
 subdir = panels/wacom
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/libgd/libgd.m4 \
-	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/as-ac-expand.m4 $(top_srcdir)/m4/intltool.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -109,13 +109,13 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libwacom_properties_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) \
-	$(builddir)/calibrator/libwacom-calibrator.la
+	$(builddir)/calibrator/libwacom-calibrator.la \
+	$(top_builddir)/panels/common/libdevice.la
 am__objects_1 = cc-wacom-resources.lo
 am_libwacom_properties_la_OBJECTS = $(am__objects_1) cc-wacom-panel.lo \
 	gsd-wacom-key-shortcut-button.lo cc-wacom-button-row.lo \
 	cc-wacom-page.lo cc-wacom-stylus-page.lo gsd-wacom-device.lo \
-	gsd-input-helper.lo cc-wacom-nav-button.lo \
-	cc-wacom-mapping-panel.lo
+	cc-wacom-nav-button.lo cc-wacom-mapping-panel.lo
 libwacom_properties_la_OBJECTS = $(am_libwacom_properties_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -131,11 +131,11 @@ am_test_wacom_OBJECTS = $(am__objects_2) \
 	test_wacom-cc-wacom-stylus-page.$(OBJEXT) \
 	test_wacom-cc-wacom-nav-button.$(OBJEXT) \
 	test_wacom-cc-wacom-mapping-panel.$(OBJEXT) \
-	test_wacom-gsd-wacom-device.$(OBJEXT) \
-	test_wacom-gsd-input-helper.$(OBJEXT)
+	test_wacom-gsd-wacom-device.$(OBJEXT)
 test_wacom_OBJECTS = $(am_test_wacom_OBJECTS)
 test_wacom_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(builddir)/calibrator/libwacom-calibrator-test.la
+	$(builddir)/calibrator/libwacom-calibrator-test.la \
+	$(top_builddir)/panels/common/libdevice.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -303,6 +303,8 @@ DATETIME_PANEL_CFLAGS = @DATETIME_PANEL_CFLAGS@
 DATETIME_PANEL_LIBS = @DATETIME_PANEL_LIBS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DEVICES_CFLAGS = @DEVICES_CFLAGS@
+DEVICES_LIBS = @DEVICES_LIBS@
 DISPLAY_PANEL_CFLAGS = @DISPLAY_PANEL_CFLAGS@
 DISPLAY_PANEL_LIBS = @DISPLAY_PANEL_LIBS@
 DLLTOOL = @DLLTOOL@
@@ -318,6 +320,7 @@ GDESKTOP_PREFIX = @GDESKTOP_PREFIX@
 GETTEXT_PACKAGE = @GETTEXT_PACKAGE@
 GLIB_MKENUMS = @GLIB_MKENUMS@
 GMSGFMT = @GMSGFMT@
+GNOMESESSIONDIR = @GNOMESESSIONDIR@
 GREP = @GREP@
 GVC_CFLAGS = @GVC_CFLAGS@
 GVC_LIBS = @GVC_LIBS@
@@ -359,6 +362,7 @@ LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -375,8 +379,6 @@ NETWORK_PANEL_CFLAGS = @NETWORK_PANEL_CFLAGS@
 NETWORK_PANEL_LIBS = @NETWORK_PANEL_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
-NM_UNSTABLE_CHECK_CFLAGS = @NM_UNSTABLE_CHECK_CFLAGS@
-NM_UNSTABLE_CHECK_LIBS = @NM_UNSTABLE_CHECK_LIBS@
 NM_VPN_CONFIG_DIR = @NM_VPN_CONFIG_DIR@
 NM_VPN_MODULE_DIR = @NM_VPN_MODULE_DIR@
 NOTIFICATIONS_PANEL_CFLAGS = @NOTIFICATIONS_PANEL_CFLAGS@
@@ -427,6 +429,8 @@ SMBCLIENT_LIBS = @SMBCLIENT_LIBS@
 SOUND_PANEL_CFLAGS = @SOUND_PANEL_CFLAGS@
 SOUND_PANEL_LIBS = @SOUND_PANEL_LIBS@
 STRIP = @STRIP@
+UDEV_CFLAGS = @UDEV_CFLAGS@
+UDEV_LIBS = @UDEV_LIBS@
 UNIVERSAL_ACCESS_PANEL_CFLAGS = @UNIVERSAL_ACCESS_PANEL_CFLAGS@
 UNIVERSAL_ACCESS_PANEL_LIBS = @UNIVERSAL_ACCESS_PANEL_LIBS@
 UPDATE_MIME_DATABASE = @UPDATE_MIME_DATABASE@
@@ -437,6 +441,8 @@ VERSION = @VERSION@
 WACOM_PANEL_CFLAGS = @WACOM_PANEL_CFLAGS@
 WACOM_PANEL_LIBS = @WACOM_PANEL_LIBS@
 WARN_CFLAGS = @WARN_CFLAGS@
+WAYLAND_CFLAGS = @WAYLAND_CFLAGS@
+WAYLAND_LIBS = @WAYLAND_LIBS@
 XF86MISC_LIBS = @XF86MISC_LIBS@
 XGETTEXT = @XGETTEXT@
 XMKMF = @XMKMF@
@@ -469,6 +475,7 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+gnome_session_libexecdir = @gnome_session_libexecdir@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -507,6 +514,7 @@ AM_CPPFLAGS = \
 	$(PANEL_CFLAGS)					\
 	$(WACOM_PANEL_CFLAGS)				\
 	-I$(srcdir)/calibrator				\
+	-I$(top_srcdir)/panels/common			\
 	-DGNOMELOCALEDIR="\"$(datadir)/locale\""	\
 	$(NULL)
 
@@ -529,15 +537,13 @@ libwacom_properties_la_SOURCES = \
 	cc-wacom-stylus-page.h		\
 	gsd-wacom-device.c		\
 	gsd-wacom-device.h		\
-	gsd-input-helper.c		\
-	gsd-input-helper.h		\
 	cc-wacom-nav-button.c		\
 	cc-wacom-nav-button.h		\
 	cc-wacom-mapping-panel.c	\
 	cc-wacom-mapping-panel.h	\
 	gsd-enums.h
 
-libwacom_properties_la_LIBADD = $(PANEL_LIBS) $(WACOM_PANEL_LIBS) $(builddir)/calibrator/libwacom-calibrator.la
+libwacom_properties_la_LIBADD = $(PANEL_LIBS) $(WACOM_PANEL_LIBS) $(builddir)/calibrator/libwacom-calibrator.la $(top_builddir)/panels/common/libdevice.la
 test_wacom_SOURCES = \
 	$(BUILT_SOURCES)		\
 	test-wacom.c			\
@@ -555,20 +561,16 @@ test_wacom_SOURCES = \
 	cc-wacom-mapping-panel.h	\
 	gsd-wacom-device.c		\
 	gsd-wacom-device.h		\
-	gsd-input-helper.c		\
-	gsd-input-helper.h		\
 	gsd-enums.h
 
 test_wacom_CPPFLAGS = $(AM_CPPFLAGS) -DFAKE_AREA
-test_wacom_LDADD = $(PANEL_LIBS) $(WACOM_PANEL_LIBS) $(builddir)/calibrator/libwacom-calibrator-test.la
+test_wacom_LDADD = $(PANEL_LIBS) $(WACOM_PANEL_LIBS) $(builddir)/calibrator/libwacom-calibrator-test.la $(top_builddir)/panels/common/libdevice.la
 resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/wacom.gresource.xml)
 desktopdir = $(datadir)/applications
 desktop_in_files = gnome-wacom-panel.desktop.in
 desktop_DATA = $(desktop_in_files:.desktop.in=.desktop)
 WACOMDIR = $(top_srcdir)/../gnome-settings-daemon/plugins/wacom/
 WACOMFILES = gsd-wacom-device.c gsd-wacom-device.h gsd-wacom-key-shortcut-button.c gsd-wacom-key-shortcut-button.h
-COMMONDIR = $(top_srcdir)/../gnome-settings-daemon/plugins/common/
-COMMONFILES = gsd-input-helper.c gsd-input-helper.h
 CLEANFILES = $(Desktop_in_files) $(desktop_DATA) $(BUILT_SOURCES)
 EXTRA_DIST = $(resource_files) wacom.gresource.xml
 all: $(BUILT_SOURCES)
@@ -648,7 +650,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cc-wacom-panel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cc-wacom-resources.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cc-wacom-stylus-page.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gsd-input-helper.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gsd-wacom-device.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gsd-wacom-key-shortcut-button.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_wacom-cc-wacom-button-row.Po@am__quote@
@@ -657,28 +658,30 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_wacom-cc-wacom-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_wacom-cc-wacom-resources.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_wacom-cc-wacom-stylus-page.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_wacom-gsd-input-helper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_wacom-gsd-wacom-device.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_wacom-gsd-wacom-key-shortcut-button.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_wacom-test-wacom.Po@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
@@ -808,20 +811,6 @@ test_wacom-gsd-wacom-device.obj: gsd-wacom-device.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gsd-wacom-device.c' object='test_wacom-gsd-wacom-device.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wacom_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test_wacom-gsd-wacom-device.obj `if test -f 'gsd-wacom-device.c'; then $(CYGPATH_W) 'gsd-wacom-device.c'; else $(CYGPATH_W) '$(srcdir)/gsd-wacom-device.c'; fi`
-
-test_wacom-gsd-input-helper.o: gsd-input-helper.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wacom_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test_wacom-gsd-input-helper.o -MD -MP -MF $(DEPDIR)/test_wacom-gsd-input-helper.Tpo -c -o test_wacom-gsd-input-helper.o `test -f 'gsd-input-helper.c' || echo '$(srcdir)/'`gsd-input-helper.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/test_wacom-gsd-input-helper.Tpo $(DEPDIR)/test_wacom-gsd-input-helper.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gsd-input-helper.c' object='test_wacom-gsd-input-helper.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wacom_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test_wacom-gsd-input-helper.o `test -f 'gsd-input-helper.c' || echo '$(srcdir)/'`gsd-input-helper.c
-
-test_wacom-gsd-input-helper.obj: gsd-input-helper.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wacom_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test_wacom-gsd-input-helper.obj -MD -MP -MF $(DEPDIR)/test_wacom-gsd-input-helper.Tpo -c -o test_wacom-gsd-input-helper.obj `if test -f 'gsd-input-helper.c'; then $(CYGPATH_W) 'gsd-input-helper.c'; else $(CYGPATH_W) '$(srcdir)/gsd-input-helper.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/test_wacom-gsd-input-helper.Tpo $(DEPDIR)/test_wacom-gsd-input-helper.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gsd-input-helper.c' object='test_wacom-gsd-input-helper.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wacom_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test_wacom-gsd-input-helper.obj `if test -f 'gsd-input-helper.c'; then $(CYGPATH_W) 'gsd-input-helper.c'; else $(CYGPATH_W) '$(srcdir)/gsd-input-helper.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -1146,8 +1135,7 @@ cc-wacom-resources.h: wacom.gresource.xml $(resource_files)
 @INTLTOOL_DESKTOP_RULE@
 update-from-gsd:
 	FILES="$(WACOMFILES)" DIR="$(WACOMDIR)" $(top_srcdir)/update-from-gsd.sh && changed=true ; \
-	FILES="$(COMMONFILES)" DIR="$(COMMONDIR)" $(top_srcdir)/update-from-gsd.sh && changed=true ; \
-	git commit -m "wacom: Update from gnome-settings-daemon" $(WACOMFILES) $(COMMONFILES)
+	git commit -m "wacom: Update from gnome-settings-daemon" $(WACOMFILES)
 
 -include $(top_srcdir)/git.mk
 

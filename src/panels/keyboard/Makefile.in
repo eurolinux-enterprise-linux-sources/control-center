@@ -92,10 +92,10 @@ host_triplet = @host@
 subdir = panels/keyboard
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/libgd/libgd.m4 \
-	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/as-ac-expand.m4 $(top_srcdir)/m4/intltool.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -110,10 +110,12 @@ libkeyboard_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 am__objects_1 = libkeyboard_la-cc-keyboard-resources.lo
 am_libkeyboard_la_OBJECTS = $(am__objects_1) \
+	libkeyboard_la-cc-keyboard-manager.lo \
 	libkeyboard_la-cc-keyboard-panel.lo \
 	libkeyboard_la-cc-keyboard-item.lo \
 	libkeyboard_la-cc-keyboard-option.lo \
-	libkeyboard_la-wm-common.lo libkeyboard_la-keyboard-general.lo \
+	libkeyboard_la-cc-keyboard-shortcut-editor.lo \
+	libkeyboard_la-wm-common.lo \
 	libkeyboard_la-keyboard-shortcuts.lo
 libkeyboard_la_OBJECTS = $(am_libkeyboard_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -192,9 +194,9 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(desktopdir)" \
+am__installdirs = "$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(itsdir)" \
 	"$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(xmldir)"
-DATA = $(desktop_DATA) $(pkgconfig_DATA) $(xml_DATA)
+DATA = $(desktop_DATA) $(its_DATA) $(pkgconfig_DATA) $(xml_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
@@ -251,6 +253,8 @@ DATETIME_PANEL_CFLAGS = @DATETIME_PANEL_CFLAGS@
 DATETIME_PANEL_LIBS = @DATETIME_PANEL_LIBS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DEVICES_CFLAGS = @DEVICES_CFLAGS@
+DEVICES_LIBS = @DEVICES_LIBS@
 DISPLAY_PANEL_CFLAGS = @DISPLAY_PANEL_CFLAGS@
 DISPLAY_PANEL_LIBS = @DISPLAY_PANEL_LIBS@
 DLLTOOL = @DLLTOOL@
@@ -266,6 +270,7 @@ GDESKTOP_PREFIX = @GDESKTOP_PREFIX@
 GETTEXT_PACKAGE = @GETTEXT_PACKAGE@
 GLIB_MKENUMS = @GLIB_MKENUMS@
 GMSGFMT = @GMSGFMT@
+GNOMESESSIONDIR = @GNOMESESSIONDIR@
 GREP = @GREP@
 GVC_CFLAGS = @GVC_CFLAGS@
 GVC_LIBS = @GVC_LIBS@
@@ -307,6 +312,7 @@ LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -323,8 +329,6 @@ NETWORK_PANEL_CFLAGS = @NETWORK_PANEL_CFLAGS@
 NETWORK_PANEL_LIBS = @NETWORK_PANEL_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
-NM_UNSTABLE_CHECK_CFLAGS = @NM_UNSTABLE_CHECK_CFLAGS@
-NM_UNSTABLE_CHECK_LIBS = @NM_UNSTABLE_CHECK_LIBS@
 NM_VPN_CONFIG_DIR = @NM_VPN_CONFIG_DIR@
 NM_VPN_MODULE_DIR = @NM_VPN_MODULE_DIR@
 NOTIFICATIONS_PANEL_CFLAGS = @NOTIFICATIONS_PANEL_CFLAGS@
@@ -375,6 +379,8 @@ SMBCLIENT_LIBS = @SMBCLIENT_LIBS@
 SOUND_PANEL_CFLAGS = @SOUND_PANEL_CFLAGS@
 SOUND_PANEL_LIBS = @SOUND_PANEL_LIBS@
 STRIP = @STRIP@
+UDEV_CFLAGS = @UDEV_CFLAGS@
+UDEV_LIBS = @UDEV_LIBS@
 UNIVERSAL_ACCESS_PANEL_CFLAGS = @UNIVERSAL_ACCESS_PANEL_CFLAGS@
 UNIVERSAL_ACCESS_PANEL_LIBS = @UNIVERSAL_ACCESS_PANEL_LIBS@
 UPDATE_MIME_DATABASE = @UPDATE_MIME_DATABASE@
@@ -385,6 +391,8 @@ VERSION = @VERSION@
 WACOM_PANEL_CFLAGS = @WACOM_PANEL_CFLAGS@
 WACOM_PANEL_LIBS = @WACOM_PANEL_LIBS@
 WARN_CFLAGS = @WARN_CFLAGS@
+WAYLAND_CFLAGS = @WAYLAND_CFLAGS@
+WAYLAND_LIBS = @WAYLAND_LIBS@
 XF86MISC_LIBS = @XF86MISC_LIBS@
 XGETTEXT = @XGETTEXT@
 XMKMF = @XMKMF@
@@ -417,6 +425,7 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+gnome_session_libexecdir = @gnome_session_libexecdir@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -457,16 +466,18 @@ BUILT_SOURCES = \
 
 libkeyboard_la_SOURCES = \
 	$(BUILT_SOURCES)		\
+	cc-keyboard-manager.c		\
+	cc-keyboard-manager.h		\
 	cc-keyboard-panel.c		\
 	cc-keyboard-panel.h		\
 	cc-keyboard-item.c		\
 	cc-keyboard-item.h		\
 	cc-keyboard-option.c		\
 	cc-keyboard-option.h		\
+	cc-keyboard-shortcut-editor.c	\
+	cc-keyboard-shortcut-editor.h	\
 	wm-common.c			\
 	wm-common.h			\
-	keyboard-general.c		\
-	keyboard-general.h		\
 	keyboard-shortcuts.c		\
 	keyboard-shortcuts.h
 
@@ -476,6 +487,8 @@ resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate
 desktopdir = $(datadir)/applications
 Desktop_in_files = gnome-keyboard-panel.desktop.in
 desktop_DATA = $(Desktop_in_files:.desktop.in=.desktop)
+itsdir = $(datadir)/gettext/its
+its_DATA = gnome-keybindings.loc gnome-keybindings.its
 xmldir = $(pkgdatadir)/keybindings
 xml_in_files = \
 	00-multimedia.xml.in 	\
@@ -497,7 +510,13 @@ CLEANFILES = \
 	$(xml_DATA) \
 	$(BUILT_SOURCES)
 
-EXTRA_DIST = $(xml_in_files) gnome-keybindings.pc.in $(resource_files) keyboard.gresource.xml
+EXTRA_DIST = $(xml_in_files) \
+	gnome-keybindings.its \
+	gnome-keybindings.loc \
+	gnome-keybindings.pc.in \
+	$(resource_files) \
+	keyboard.gresource.xml
+
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -558,30 +577,34 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libkeyboard_la-cc-keyboard-item.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libkeyboard_la-cc-keyboard-manager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libkeyboard_la-cc-keyboard-option.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libkeyboard_la-cc-keyboard-panel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libkeyboard_la-cc-keyboard-resources.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libkeyboard_la-keyboard-general.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libkeyboard_la-cc-keyboard-shortcut-editor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libkeyboard_la-keyboard-shortcuts.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libkeyboard_la-wm-common.Plo@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
@@ -592,6 +615,13 @@ libkeyboard_la-cc-keyboard-resources.lo: cc-keyboard-resources.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cc-keyboard-resources.c' object='libkeyboard_la-cc-keyboard-resources.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libkeyboard_la_CFLAGS) $(CFLAGS) -c -o libkeyboard_la-cc-keyboard-resources.lo `test -f 'cc-keyboard-resources.c' || echo '$(srcdir)/'`cc-keyboard-resources.c
+
+libkeyboard_la-cc-keyboard-manager.lo: cc-keyboard-manager.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libkeyboard_la_CFLAGS) $(CFLAGS) -MT libkeyboard_la-cc-keyboard-manager.lo -MD -MP -MF $(DEPDIR)/libkeyboard_la-cc-keyboard-manager.Tpo -c -o libkeyboard_la-cc-keyboard-manager.lo `test -f 'cc-keyboard-manager.c' || echo '$(srcdir)/'`cc-keyboard-manager.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libkeyboard_la-cc-keyboard-manager.Tpo $(DEPDIR)/libkeyboard_la-cc-keyboard-manager.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cc-keyboard-manager.c' object='libkeyboard_la-cc-keyboard-manager.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libkeyboard_la_CFLAGS) $(CFLAGS) -c -o libkeyboard_la-cc-keyboard-manager.lo `test -f 'cc-keyboard-manager.c' || echo '$(srcdir)/'`cc-keyboard-manager.c
 
 libkeyboard_la-cc-keyboard-panel.lo: cc-keyboard-panel.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libkeyboard_la_CFLAGS) $(CFLAGS) -MT libkeyboard_la-cc-keyboard-panel.lo -MD -MP -MF $(DEPDIR)/libkeyboard_la-cc-keyboard-panel.Tpo -c -o libkeyboard_la-cc-keyboard-panel.lo `test -f 'cc-keyboard-panel.c' || echo '$(srcdir)/'`cc-keyboard-panel.c
@@ -614,19 +644,19 @@ libkeyboard_la-cc-keyboard-option.lo: cc-keyboard-option.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libkeyboard_la_CFLAGS) $(CFLAGS) -c -o libkeyboard_la-cc-keyboard-option.lo `test -f 'cc-keyboard-option.c' || echo '$(srcdir)/'`cc-keyboard-option.c
 
+libkeyboard_la-cc-keyboard-shortcut-editor.lo: cc-keyboard-shortcut-editor.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libkeyboard_la_CFLAGS) $(CFLAGS) -MT libkeyboard_la-cc-keyboard-shortcut-editor.lo -MD -MP -MF $(DEPDIR)/libkeyboard_la-cc-keyboard-shortcut-editor.Tpo -c -o libkeyboard_la-cc-keyboard-shortcut-editor.lo `test -f 'cc-keyboard-shortcut-editor.c' || echo '$(srcdir)/'`cc-keyboard-shortcut-editor.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libkeyboard_la-cc-keyboard-shortcut-editor.Tpo $(DEPDIR)/libkeyboard_la-cc-keyboard-shortcut-editor.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cc-keyboard-shortcut-editor.c' object='libkeyboard_la-cc-keyboard-shortcut-editor.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libkeyboard_la_CFLAGS) $(CFLAGS) -c -o libkeyboard_la-cc-keyboard-shortcut-editor.lo `test -f 'cc-keyboard-shortcut-editor.c' || echo '$(srcdir)/'`cc-keyboard-shortcut-editor.c
+
 libkeyboard_la-wm-common.lo: wm-common.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libkeyboard_la_CFLAGS) $(CFLAGS) -MT libkeyboard_la-wm-common.lo -MD -MP -MF $(DEPDIR)/libkeyboard_la-wm-common.Tpo -c -o libkeyboard_la-wm-common.lo `test -f 'wm-common.c' || echo '$(srcdir)/'`wm-common.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libkeyboard_la-wm-common.Tpo $(DEPDIR)/libkeyboard_la-wm-common.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='wm-common.c' object='libkeyboard_la-wm-common.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libkeyboard_la_CFLAGS) $(CFLAGS) -c -o libkeyboard_la-wm-common.lo `test -f 'wm-common.c' || echo '$(srcdir)/'`wm-common.c
-
-libkeyboard_la-keyboard-general.lo: keyboard-general.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libkeyboard_la_CFLAGS) $(CFLAGS) -MT libkeyboard_la-keyboard-general.lo -MD -MP -MF $(DEPDIR)/libkeyboard_la-keyboard-general.Tpo -c -o libkeyboard_la-keyboard-general.lo `test -f 'keyboard-general.c' || echo '$(srcdir)/'`keyboard-general.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libkeyboard_la-keyboard-general.Tpo $(DEPDIR)/libkeyboard_la-keyboard-general.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='keyboard-general.c' object='libkeyboard_la-keyboard-general.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libkeyboard_la_CFLAGS) $(CFLAGS) -c -o libkeyboard_la-keyboard-general.lo `test -f 'keyboard-general.c' || echo '$(srcdir)/'`keyboard-general.c
 
 libkeyboard_la-keyboard-shortcuts.lo: keyboard-shortcuts.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libkeyboard_la_CFLAGS) $(CFLAGS) -MT libkeyboard_la-keyboard-shortcuts.lo -MD -MP -MF $(DEPDIR)/libkeyboard_la-keyboard-shortcuts.Tpo -c -o libkeyboard_la-keyboard-shortcuts.lo `test -f 'keyboard-shortcuts.c' || echo '$(srcdir)/'`keyboard-shortcuts.c
@@ -661,6 +691,27 @@ uninstall-desktopDATA:
 	@list='$(desktop_DATA)'; test -n "$(desktopdir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(desktopdir)'; $(am__uninstall_files_from_dir)
+install-itsDATA: $(its_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(its_DATA)'; test -n "$(itsdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(itsdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(itsdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(itsdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(itsdir)" || exit $$?; \
+	done
+
+uninstall-itsDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(its_DATA)'; test -n "$(itsdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(itsdir)'; $(am__uninstall_files_from_dir)
 install-pkgconfigDATA: $(pkgconfig_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(pkgconfig_DATA)'; test -n "$(pkgconfigdir)" || list=; \
@@ -791,7 +842,7 @@ check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(LTLIBRARIES) $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(xmldir)"; do \
+	for dir in "$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(itsdir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(xmldir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -850,8 +901,8 @@ info: info-am
 
 info-am:
 
-install-data-am: install-desktopDATA install-pkgconfigDATA \
-	install-xmlDATA
+install-data-am: install-desktopDATA install-itsDATA \
+	install-pkgconfigDATA install-xmlDATA
 
 install-dvi: install-dvi-am
 
@@ -897,8 +948,8 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-desktopDATA uninstall-pkgconfigDATA \
-	uninstall-xmlDATA
+uninstall-am: uninstall-desktopDATA uninstall-itsDATA \
+	uninstall-pkgconfigDATA uninstall-xmlDATA
 
 .MAKE: all check install install-am install-strip
 
@@ -909,14 +960,14 @@ uninstall-am: uninstall-desktopDATA uninstall-pkgconfigDATA \
 	html-am info info-am install install-am install-data \
 	install-data-am install-desktopDATA install-dvi install-dvi-am \
 	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-pkgconfigDATA install-ps install-ps-am \
-	install-strip install-xmlDATA installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-desktopDATA uninstall-pkgconfigDATA \
-	uninstall-xmlDATA
+	install-info install-info-am install-itsDATA install-man \
+	install-pdf install-pdf-am install-pkgconfigDATA install-ps \
+	install-ps-am install-strip install-xmlDATA installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags tags-am uninstall uninstall-am uninstall-desktopDATA \
+	uninstall-itsDATA uninstall-pkgconfigDATA uninstall-xmlDATA
 
 .PRECIOUS: Makefile
 

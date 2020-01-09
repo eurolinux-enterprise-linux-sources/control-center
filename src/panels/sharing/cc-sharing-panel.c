@@ -32,6 +32,9 @@
 #include "cc-sharing-switch.h"
 #include "org.gnome.SettingsDaemon.Sharing.h"
 
+#ifdef GDK_WINDOWING_WAYLAND
+#include <gdk/gdkwayland.h>
+#endif
 #include <glib/gi18n.h>
 #include <config.h>
 
@@ -76,7 +79,6 @@ struct _CcSharingPanelPrivate
   GtkWidget *personal_file_sharing_switch;
   GtkWidget *screen_sharing_switch;
 
-  GtkWidget *bluetooth_sharing_dialog;
   GtkWidget *media_sharing_dialog;
   GtkWidget *personal_file_sharing_dialog;
   GtkWidget *remote_login_dialog;
@@ -107,8 +109,6 @@ cc_sharing_panel_master_switch_notify (GtkSwitch      *gtkswitch,
       OFF_IF_VISIBLE(priv->screen_sharing_switch);
 
       gtk_switch_set_active (GTK_SWITCH (WID ("remote-login-switch")), FALSE);
-      gtk_switch_set_active (GTK_SWITCH (WID ("save-received-files-to-downloads-switch")),
-                             FALSE);
     }
 
   gtk_widget_set_sensitive (WID ("main-list-box"), active);
@@ -133,12 +133,6 @@ cc_sharing_panel_dispose (GObject *object)
 
   g_clear_object (&priv->rfkill);
   g_clear_object (&priv->builder);
-
-  if (priv->bluetooth_sharing_dialog)
-    {
-      gtk_widget_destroy (priv->bluetooth_sharing_dialog);
-      priv->bluetooth_sharing_dialog = NULL;
-    }
 
   if (priv->media_sharing_dialog)
     {
@@ -359,116 +353,6 @@ cc_sharing_panel_bind_switch_to_widgets (GtkWidget *gtkswitch,
     }
 
   va_end (w);
-}
-
-static gboolean
-bluetooth_get_accept_files (GValue   *value,
-                            GVariant *variant,
-                            gpointer  user_data)
-{
-  gboolean bonded;
-
-  bonded = g_str_equal (g_variant_get_string (variant, NULL), "bonded");
-
-  g_value_set_boolean (value, bonded);
-
-  return TRUE;
-}
-
-static GVariant *
-bluetooth_set_accept_files (const GValue       *value,
-                            const GVariantType *type,
-                            gpointer            user_data)
-{
-  if (g_value_get_boolean (value))
-    return g_variant_new_string ("bonded");
-  else
-    return g_variant_new_string ("ask");
-}
-
-static gboolean
-get_boolean_property (GDBusProxy *proxy,
-		      const char *name)
-{
-	GVariant *v;
-	gboolean ret;
-
-	v = g_dbus_proxy_get_cached_property (proxy, name);
-	ret = g_variant_get_boolean (v);
-	g_variant_unref (v);
-
-	return ret;
-}
-
-static void
-bluetooth_state_changed (CcSharingPanel *self)
-{
-  CcSharingPanelPrivate *priv = self->priv;
-  gboolean state;
-
-  state = get_boolean_property (priv->rfkill, "BluetoothHasAirplaneMode");
-  if (!state)
-    {
-      gtk_widget_hide (WID ("bluetooth-sharing-button"));
-      return;
-    }
-
-  if (get_boolean_property (priv->rfkill, "BluetoothAirplaneMode") ||
-      get_boolean_property (priv->rfkill, "BluetoothHardwareAirplaneMode"))
-    {
-      gtk_widget_hide (WID ("bluetooth-sharing-button"));
-      return;
-    }
-
-  gtk_widget_show (WID ("bluetooth-sharing-button"));
-}
-
-static void
-cc_sharing_panel_setup_bluetooth_sharing_dialog (CcSharingPanel *self)
-{
-  CcSharingPanelPrivate *priv = self->priv;
-  GSettings *settings;
-
-  priv->rfkill = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-						G_DBUS_PROXY_FLAGS_NONE,
-						NULL,
-						"org.gnome.SettingsDaemon.Rfkill",
-						"/org/gnome/SettingsDaemon/Rfkill",
-						"org.gnome.SettingsDaemon.Rfkill",
-						NULL, NULL);
-  if (!priv->rfkill)
-    {
-      /* No rfkill, not Linux */
-      gtk_widget_hide (WID ("bluetooth-sharing-button"));
-      return;
-    }
-
-  /* get the initial state */
-  bluetooth_state_changed (self);
-
-  g_signal_connect_swapped (priv->rfkill, "g-properties-changed",
-                            G_CALLBACK (bluetooth_state_changed), self);
-
-  cc_sharing_panel_bind_switch_to_label (self,
-                                         WID ("save-received-files-to-downloads-switch"),
-                                         WID ("bluetooth-sharing-status-label"));
-
-  cc_sharing_panel_bind_switch_to_widgets (WID ("save-received-files-to-downloads-switch"),
-                                           WID ("receive-files-grid"),
-                                           NULL);
-
-  settings = g_settings_new (FILE_SHARING_SCHEMA_ID);
-  g_settings_bind (settings, "bluetooth-obexpush-enabled",
-                   WID ("save-received-files-to-downloads-switch"), "active",
-                   G_SETTINGS_BIND_DEFAULT);
-
-  g_settings_bind_with_mapping (settings, "bluetooth-accept-files",
-                                WID ("only-receive-from-trusted-devices-switch"),
-                                "active",
-                                G_SETTINGS_BIND_DEFAULT,
-                                bluetooth_get_accept_files,
-                                bluetooth_set_accept_files, NULL, NULL);
-
 }
 
 static void
@@ -788,25 +672,23 @@ copy_uri_to_clipboard (GtkMenuItem *item,
 }
 
 static void
-cc_sharing_panel_setup_label (GtkLabel    *label,
-                              const gchar *hostname)
+cc_sharing_panel_setup_label (CcSharingPanel *self,
+                              GtkWidget      *label,
+                              const gchar    *hostname)
 {
+  CcSharingPanelPrivate *priv = self->priv;
   gchar *text;
-  const gchar *format;
 
-  format = g_object_get_data (G_OBJECT (label), "format-label");
-  if (!format)
-    {
-      format = gtk_label_get_label (label);
+  if (label == WID ("personal-file-sharing-label"))
+    text = g_strdup_printf (_("Personal File Sharing allows you to share your Public folder with others on your current network using: <a href=\"dav://%s\">dav://%s</a>"), hostname, hostname);
+  else if (label == WID ("remote-login-label"))
+    text = g_strdup_printf (_("When remote login is enabled, remote users can connect using the Secure Shell command:\n<a href=\"ssh %s\">ssh %s</a>"), hostname, hostname);
+  else if (label == WID ("screen-sharing-label"))
+    text = g_strdup_printf (_("Screen sharing allows remote users to view or control your screen by connecting to <a href=\"vnc://%s\">vnc://%s</a>"), hostname, hostname);
+  else
+    g_assert_not_reached ();
 
-      /* save the original format string so that it can be used again later */
-      g_object_set_data_full (G_OBJECT (label), "format-label",
-                              g_strdup (format), g_free);
-    }
-
-  text = g_strdup_printf (format, hostname, hostname);
-
-  gtk_label_set_label (label, text);
+  gtk_label_set_label (GTK_LABEL (label), text);
 
   g_free (text);
 }
@@ -839,7 +721,7 @@ cc_sharing_panel_get_host_name_fqdn_done (GDBusConnection *connection,
 
           hostname = cc_hostname_entry_get_hostname (CC_HOSTNAME_ENTRY (data->panel->priv->hostname_entry));
 
-          cc_sharing_panel_setup_label (GTK_LABEL (data->label), hostname);
+          cc_sharing_panel_setup_label (data->panel, data->label, hostname);
 
           g_free (hostname);
         }
@@ -851,7 +733,7 @@ cc_sharing_panel_get_host_name_fqdn_done (GDBusConnection *connection,
 
   g_variant_get (variant, "(&s)", &fqdn);
 
-  cc_sharing_panel_setup_label (GTK_LABEL (data->label), fqdn);
+  cc_sharing_panel_setup_label (data->panel, data->label, fqdn);
 
   g_variant_unref (variant);
   g_object_unref (connection);
@@ -878,7 +760,7 @@ cc_sharing_panel_bus_ready (GObject         *object,
 
           hostname = cc_hostname_entry_get_hostname (CC_HOSTNAME_ENTRY (data->panel->priv->hostname_entry));
 
-          cc_sharing_panel_setup_label (GTK_LABEL (data->label), hostname);
+          cc_sharing_panel_setup_label (data->panel, data->label, hostname);
 
           g_free (hostname);
         }
@@ -1046,22 +928,19 @@ static gboolean
 cc_sharing_panel_check_schema_available (CcSharingPanel *self,
                                          const gchar *schema_id)
 {
-  const gchar * const* schema_list;
+  GSettingsSchemaSource *source;
+  GSettingsSchema *schema;
 
-  if (schema_id == NULL)
+  source = g_settings_schema_source_get_default ();
+  if (!source)
     return FALSE;
 
-  schema_list = g_settings_list_schemas ();
+  schema = g_settings_schema_source_lookup (source, schema_id, TRUE);
+  if (!schema)
+    return FALSE;
 
-  while (*schema_list)
-    {
-      if (g_str_equal (*schema_list, schema_id))
-        return TRUE;
-
-      schema_list++;
-    }
-
-  return FALSE;
+  g_settings_schema_unref (schema);
+  return TRUE;
 }
 
 static void
@@ -1137,7 +1016,7 @@ cc_sharing_panel_setup_screen_sharing_dialog (CcSharingPanel *self)
 
   /* settings bindings */
   settings = g_settings_new (VINO_SCHEMA_ID);
-  g_settings_bind (settings, "view-only", WID ("remote-control-switch"),
+  g_settings_bind (settings, "view-only", WID ("remote-control-checkbutton"),
                    "active",
                    G_SETTINGS_BIND_DEFAULT | G_SETTINGS_BIND_INVERT_BOOLEAN);
   g_settings_bind (settings, "prompt-enabled",
@@ -1191,7 +1070,6 @@ cc_sharing_panel_init (CcSharingPanel *self)
   GError *err = NULL;
   gchar *objects[] = {
       "sharing-panel",
-      "bluetooth-sharing-dialog",
       "media-sharing-dialog",
       "personal-file-sharing-dialog",
       "remote-login-dialog",
@@ -1219,15 +1097,12 @@ cc_sharing_panel_init (CcSharingPanel *self)
 
   priv->hostname_cancellable = g_cancellable_new ();
 
-  priv->bluetooth_sharing_dialog = WID ("bluetooth-sharing-dialog");
   priv->media_sharing_dialog = WID ("media-sharing-dialog");
   priv->personal_file_sharing_dialog = WID ("personal-file-sharing-dialog");
   priv->remote_login_dialog = WID ("remote-login-dialog");
   priv->remote_login_cancellable = g_cancellable_new ();
   priv->screen_sharing_dialog = WID ("screen-sharing-dialog");
 
-  g_signal_connect (priv->bluetooth_sharing_dialog, "response",
-                    G_CALLBACK (gtk_widget_hide), NULL);
   g_signal_connect (priv->media_sharing_dialog, "response",
                     G_CALLBACK (gtk_widget_hide), NULL);
   g_signal_connect (priv->personal_file_sharing_dialog, "response",
@@ -1247,6 +1122,7 @@ cc_sharing_panel_init (CcSharingPanel *self)
   box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
 
   priv->master_switch = gtk_switch_new ();
+  atk_object_set_name (ATK_OBJECT (gtk_widget_get_accessible (priv->master_switch)), _("Sharing"));
   gtk_widget_set_valign (priv->master_switch, GTK_ALIGN_CENTER);
   gtk_box_pack_start (GTK_BOX (box), priv->master_switch, FALSE, FALSE, 4);
   gtk_widget_show_all (box);
@@ -1268,12 +1144,6 @@ cc_sharing_panel_init (CcSharingPanel *self)
     g_error_free (error);
   }
 
-  /* bluetooth */
-  if (cc_sharing_panel_check_schema_available (self, FILE_SHARING_SCHEMA_ID))
-    cc_sharing_panel_setup_bluetooth_sharing_dialog (self);
-  else
-    gtk_widget_hide (WID ("bluetooth-sharing-button"));
-
   /* media sharing */
   cc_sharing_panel_setup_media_sharing_dialog (self);
 
@@ -1287,6 +1157,11 @@ cc_sharing_panel_init (CcSharingPanel *self)
   cc_sharing_panel_setup_remote_login_dialog (self);
 
   /* screen sharing */
+#ifdef GDK_WINDOWING_WAYLAND
+  if (GDK_IS_WAYLAND_DISPLAY (gdk_display_get_default ()))
+    gtk_widget_hide (WID ("screen-sharing-button"));
+  else
+#endif
   if (cc_sharing_panel_check_schema_available (self, VINO_SCHEMA_ID))
     cc_sharing_panel_setup_screen_sharing_dialog (self);
   else

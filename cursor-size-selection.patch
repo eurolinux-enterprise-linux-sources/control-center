@@ -1,0 +1,666 @@
+From d0e477e42b8d9567d3e675a49e9eafccaa6cda79 Mon Sep 17 00:00:00 2001
+From: Bastien Nocera <hadess@hadess.net>
+Date: Mon, 6 Mar 2017 16:39:29 +0100
+Subject: [PATCH 1/4] universal-access: Don't use C++ style comments
+
+---
+ panels/universal-access/cc-ua-panel.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/panels/universal-access/cc-ua-panel.c b/panels/universal-access/cc-ua-panel.c
+index 477a6895a..88e55e66e 100644
+--- a/panels/universal-access/cc-ua-panel.c
++++ b/panels/universal-access/cc-ua-panel.c
+@@ -358,7 +358,7 @@ activate_row (CcUaPanel *self, GtkListBoxRow *row)
+   const gchar *dialog_id;
+   const gchar *widget_name;
+ 
+-  // Check switches to toggle
++  /* Check switches to toggle */
+   widget_name = gtk_buildable_get_name (GTK_BUILDABLE (row));
+   if (widget_name)
+     {
+@@ -384,7 +384,7 @@ activate_row (CcUaPanel *self, GtkListBoxRow *row)
+         }
+     }
+ 
+-  // Check dialog to open
++  /* Check dialog to open */
+   dialog_id = (const gchar *)g_object_get_data (G_OBJECT (row), "dialog-id");
+   if (g_strcmp0 (dialog_id, "zoom") == 0)
+     {
+-- 
+2.12.0
+
+
+From 1d3aadcf331572b770b89d22101edc8fdfc1ca8d Mon Sep 17 00:00:00 2001
+From: Bastien Nocera <hadess@hadess.net>
+Date: Mon, 6 Mar 2017 17:30:07 +0100
+Subject: [PATCH 2/4] universal-access: Add bits for glade to shut up
+
+---
+ panels/universal-access/uap.ui | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/panels/universal-access/uap.ui b/panels/universal-access/uap.ui
+index e6c7955dc..636b7740d 100644
+--- a/panels/universal-access/uap.ui
++++ b/panels/universal-access/uap.ui
+@@ -1,5 +1,7 @@
+ <?xml version="1.0" encoding="UTF-8"?>
++<!-- Generated with glade 3.20.0 -->
+ <interface>
++  <requires lib="gtk+" version="3.0"/>
+   <object class="GtkAdjustment" id="double-click-delay-adjustment">
+     <property name="lower">100</property>
+     <property name="upper">1000</property>
+-- 
+2.12.0
+
+
+From d0c8026172f441d00519577064aad04d7cd68429 Mon Sep 17 00:00:00 2001
+From: Bastien Nocera <hadess@hadess.net>
+Date: Mon, 6 Mar 2017 17:28:33 +0100
+Subject: [PATCH 3/4] universal-access: Add Cursor Size selection dialogue
+
+The dialogue offers the 5 separate cursor sizes that adwaita's cursor
+theme supports, aligned in a row.
+
+The cursor sizes are described in a way that doesn't judge their
+respective sizes, but simply describes them.
+
+https://bugzilla.gnome.org/show_bug.cgi?id=608231
+---
+ panels/universal-access/cc-ua-panel.c              | 118 +++++++++++++++++++++
+ panels/universal-access/left_ptr_24px.png          | Bin 0 -> 762 bytes
+ panels/universal-access/left_ptr_32px.png          | Bin 0 -> 1081 bytes
+ panels/universal-access/left_ptr_48px.png          | Bin 0 -> 1766 bytes
+ panels/universal-access/left_ptr_64px.png          | Bin 0 -> 2447 bytes
+ panels/universal-access/left_ptr_96px.png          | Bin 0 -> 3995 bytes
+ panels/universal-access/uap.ui                     | 111 +++++++++++++++++++
+ .../universal-access.gresource.xml                 |   5 +
+ 8 files changed, 234 insertions(+)
+ create mode 100644 panels/universal-access/left_ptr_24px.png
+ create mode 100644 panels/universal-access/left_ptr_32px.png
+ create mode 100644 panels/universal-access/left_ptr_48px.png
+ create mode 100644 panels/universal-access/left_ptr_64px.png
+ create mode 100644 panels/universal-access/left_ptr_96px.png
+
+diff --git a/panels/universal-access/cc-ua-panel.c b/panels/universal-access/cc-ua-panel.c
+index 88e55e66e..1985f7718 100644
+--- a/panels/universal-access/cc-ua-panel.c
++++ b/panels/universal-access/cc-ua-panel.c
+@@ -50,6 +50,7 @@
+ #define KEY_ICON_THEME               "icon-theme"
+ #define KEY_CURSOR_BLINKING          "cursor-blink"
+ #define KEY_CURSOR_BLINKING_TIME     "cursor-blink-time"
++#define KEY_MOUSE_CURSOR_SIZE        "cursor-size"
+ 
+ /* application settings */
+ #define APPLICATION_SETTINGS         "org.gnome.desktop.a11y.applications"
+@@ -178,6 +179,67 @@ zoom_options_launch (CcUaPanel *self)
+ 			     GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (self))));
+ }
+ 
++/* cursor size dialog */
++static void
++cursor_size_toggled (GtkWidget *button,
++                     CcUaPanel *self)
++{
++  CcUaPanelPrivate *priv = self->priv;
++  guint cursor_size;
++
++  if (!gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (button)))
++    return;
++
++  cursor_size = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (button), "cursor-size"));
++  g_settings_set_int (priv->interface_settings, KEY_MOUSE_CURSOR_SIZE, cursor_size);
++  g_debug ("Setting cursor size to %d", cursor_size);
++}
++
++static void
++cursor_size_setup (CcUaPanel *self)
++{
++  guint cursor_sizes[] = { 24, 32, 48, 64, 96 };
++  guint current_cursor_size, i;
++  CcUaPanelPrivate *priv = self->priv;
++  GtkWidget *grid;
++  GtkSizeGroup *size_group;
++  GtkWidget *last_radio_button = NULL;
++
++  grid = WID ("cursor_size_grid");
++  gtk_style_context_add_class (gtk_widget_get_style_context (grid), "linked");
++
++  current_cursor_size = g_settings_get_int (priv->interface_settings,
++                                            KEY_MOUSE_CURSOR_SIZE);
++  size_group = gtk_size_group_new (GTK_SIZE_GROUP_BOTH);
++
++  for (i = 0; i < G_N_ELEMENTS(cursor_sizes); i++)
++    {
++      GtkWidget *image, *button;
++      char *cursor_image_name;
++
++      cursor_image_name = g_strdup_printf ("/org/gnome/control-center/universal-access/left_ptr_%dpx.png", cursor_sizes[i]);
++      image = gtk_image_new_from_resource (cursor_image_name);
++      g_free (cursor_image_name);
++
++      button = gtk_radio_button_new_from_widget (GTK_RADIO_BUTTON (last_radio_button));
++      last_radio_button = button;
++      gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (button), FALSE);
++      g_object_set_data (G_OBJECT (button), "cursor-size", GUINT_TO_POINTER (cursor_sizes[i]));
++
++      gtk_container_add (GTK_CONTAINER (button), image);
++      gtk_grid_attach (GTK_GRID (grid), button, i, 0, 1, 1);
++      gtk_size_group_add_widget (size_group, button);
++
++      g_signal_connect (button, "toggled",
++                        G_CALLBACK (cursor_size_toggled), self);
++
++      if (current_cursor_size == cursor_sizes[i])
++        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (button), TRUE);
++    }
++
++  gtk_widget_show_all (grid);
++}
++
+ /* seeing section */
+ 
+ static gboolean
+@@ -271,6 +333,45 @@ on_off_label_mapping_get (GValue   *value,
+   return TRUE;
+ }
+ 
++static gboolean
++cursor_size_label_mapping_get (GValue   *value,
++                               GVariant *variant,
++                               gpointer  user_data)
++{
++  char *label;
++  int cursor_size;
++
++  cursor_size = g_variant_get_int32 (variant);
++
++  switch (cursor_size)
++    {
++      case 24:
++        /* translators: the labels will read:
++         * Cursor Size: Default */
++        label = g_strdup (C_("cursor size", "Default"));
++        break;
++      case 32:
++        label = g_strdup (C_("cursor size", "Medium"));
++        break;
++      case 48:
++        label = g_strdup (C_("cursor size", "Large"));
++        break;
++      case 64:
++        label = g_strdup (C_("cursor size", "Larger"));
++        break;
++      case 96:
++        label = g_strdup (C_("cursor size", "Largest"));
++        break;
++      default:
++        label = g_strdup_printf (_("%d pixels"), g_variant_get_int32 (variant));
++        break;
++    }
++
++  g_value_take_string (value, label);
++
++  return TRUE;
++}
++
+ static void
+ add_separators (GtkListBox *list)
+ {
+@@ -434,6 +535,23 @@ cc_ua_panel_init_seeing (CcUaPanel *self)
+                                 priv->interface_settings,
+                                 NULL);
+ 
++  /* cursor size */
++
++  cursor_size_setup (self);
++
++  g_settings_bind_with_mapping (priv->interface_settings, KEY_MOUSE_CURSOR_SIZE,
++                                WID ("value_cursor_size"),
++                                "label", G_SETTINGS_BIND_GET,
++                                cursor_size_label_mapping_get,
++                                NULL, NULL, NULL);
++
++  dialog = WID ("cursor_size_dialog");
++  priv->toplevels = g_slist_prepend (priv->toplevels, dialog);
++
++  g_object_set_data (G_OBJECT (WID ("row_cursor_size")), "dialog", dialog);
++  g_signal_connect (dialog, "delete-event",
++                    G_CALLBACK (gtk_widget_hide_on_delete), NULL);
++
+   /* zoom */
+ 
+   g_settings_bind_with_mapping (priv->application_settings, "screen-magnifier-enabled",
+diff --git a/panels/universal-access/left_ptr_24px.png b/panels/universal-access/left_ptr_24px.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..46f77601dea43e8a9a0739a145633b2218230f0e
+GIT binary patch
+literal 762
+zcmV<W0tNkvP)<h;3K|Lk000e1NJLTq000jF000#T1^@s6nVYn?00006VoOIv0RI60
+z0RN!9r;`8x010qNS#tmY3ljhU3ljkVnw%H_000McNliru;R6Q=EeV~R`6>Va0*6UN
+zK~y-)m6I_@TTv8-KTT5`W71$_B`Q%w;-D_#P>~K!wNh{>3Y|(7B`BR*`#RbwL(EW@
+z2En1yDIgTZfI~rW5W%IOQ>%g^LX>ABrs|9F?-C^{wR)C&hx>o$Kj+*7U^h)O3b=tn
+z?ifx<T3lS51j_FUa7og}#>UCq+}u~-@m&BeNos6t)YjIPH8V341-!QfxFpH#cB`eO
+zMcdok*6i%;XW-Fo04_;#I2<Y~D^q)WyAp|n6^q3}K<WPgE=jW4Z1Q+Ks;a6|XJ@DO
+z_V%n;EcOZT+yrn*5+JA3sq*r2)z#Ihr>94zX<Cz$lOKSGK*5b-yWOtR(o*^Tel;{S
+zsJFLQ$z;-sMx$?Y|DfQXVn8J&CGz=v3IqabZf@4l(2!E8)JZfN4FayKfJ@?{q9S>{
+zUe(mpsHv$*t*xyx3`40@>LeTvzsUz&YeXiK!LqDN=hD&=;c)o=z`($lP$<*|6rTew
+zWd`JMIOOyBw7$N6rYn(7rw<~LNC#lQCa$io*5KfvJRXk>!_e~b@)i&TUIJafbD#-$
+za7kQSTdU2@&CLG({%K`prTl)s5{X2nudnYNP?hVrJ7>G_qUJy#z{0}9>GbsUkCl~`
+zpTS@-dw6)r#KeTHzrX)Aa1TfW2f!cT>>~5d&Q4}@bo4vWIXpc4!Zb~*qM}0e_4P_7
+zlbP=B?pJ{G+MKi5Y&H^!d;^~4Hp;cSx;j5HGLrRry^6=<*4WtC1W<N$&c*R~{3Gxr
+zZ<7kg$H$+Vrg=0!KYzTtyL;5u*7iOJz7Q7xww#?TaCBY^;4loMLsIM1)YR{_wY5dy
+s7jT>}&bOhwdjU`cl;nVEz{-E~7sl3M3zH_@{r~^~07*qoM6N<$g72Pdm;e9(
+
+literal 0
+HcmV?d00001
+
+diff --git a/panels/universal-access/left_ptr_32px.png b/panels/universal-access/left_ptr_32px.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..5d9ba96be4a15321c24a371038e7bbc3b0002a1b
+GIT binary patch
+literal 1081
+zcmV-91jhS`P)<h;3K|Lk000e1NJLTq000vJ0012b1^@s6NLp9C00006VoOIv0RI60
+z0RN!9r;`8x010qNS#tmY3ljhU3ljkVnw%H_000McNliru;R6Q=EggqOEmr^l1I9^2
+zK~zY`t<_&ht92L$@b9}bw@zm=-Jg~*3#6sip|(Rrt27yUkzR=4z*8pdCYFmG@It~R
+zF=6-*>>|vIE)3aBCCE7t#9avL!gUkkF&v^B3q#m(LhCT!{oeQK=G~ZXo;;_1@Lav`
+z`+1(<pXc`i0EkG3|6>@9#@js4?>U{$y8tQy$etO~>-8!kqSMpUgQljYcm5MtU0tmv
+zA`(TB5{blt#bSB;nZZ0ZF)=}BXJ<kpk$Bk9&~Oic>Z!pz*4NiZHk*yk&(DS9<KtbE
+z$@CV0J5L4XvEJTZ(rUHT+1W{%Oh!03IQZ3IFuWmw+)b=PRzVQJ7(+A~g~Q>H)z;SD
+z3x~rqDwV1h!0nrWB^YB2J3BjYxm+@n$@D=a68TP{P#6I`_itbUBccMv7{lh~CI$xw
+zxyHuEmPjP>4S<&bD4zsgTHIocF^2W^bqoy+ab~mmqphv2Q2;eh0xx03Q_aWP+8TU5
+zA7`~%?Hd~#UH}FFigIAdwqL~<V+e&pn4FwMb93{j;c)nC056sUZ-g<%5DW$}GcyC5
+z&E^P&LW2NaxC)kFS2v<KmX?;__xsV&(b2!MvN8Zb51=9smOb6qVT>`%&COwPaS`q9
+z?GF|f7Cr}{%Y*WAm?(;ck2#J*TU#3x3I&u(B@_w;j*gCyNF=!K?(Q#VXJ@kxhvRzy
+zj|%N%x7!IoA>?v7RaRD#!C;_BBtqAXTrQUj1Oi_GsFGiI0G&=J=I7_Z7{m1RG^|!D
+zy1Kf4SYBTK4ZvRj1S#=j0Dk~bmaWX|^%4=$z`y{h)oQA#siFP-eIXi+J_OJXpaH-u
+z0A2=Qly>&{5^QvIlmtPb!^6WrPfkt*tyW7qosL{C7cs`fo}M13)LIn)Zb=~nz+J+o
+zrlyE7CXS7b1uYiKSJ`Zqx!rE6s;VNR(Ma)lT-e^;-U4v9Y~$y#-Q8Wv<#OW4$jDCs
+zJ^}FV-rnBN$z+mgG#b+D_2lt*=;GpnwYIi?EFB41S&Zj-VR(4>M*#N$ybhq+<MF)5
+z^E~VC?<b8$Lv?j^luoCGKp-#=;8kg=modf|@ALV-1z?vJ_l~p{>R2omjK||lr_+(y
+zY^GEyCHVdR6##FR+#q_rUbVWq`Wb-t0ho&JeGWi{*Xy-rGMUGzREp(tIWd_`KB}*;
+ze*oaMtG&rdrRFR78^DEhMDov7ZnyixmX?<Lu~>{BA0PiEolfrq_#HqRfLM%iQYFP5
+zP&{r)$+XhHAS)pm0Ic|Z?uI`xSy6~mlqCKKwtYsZ`atu@00000NkvXXu0mjfq1E$r
+
+literal 0
+HcmV?d00001
+
+diff --git a/panels/universal-access/left_ptr_48px.png b/panels/universal-access/left_ptr_48px.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..51b1dc2f726b2adc3fff54246b5b799a91db35b9
+GIT binary patch
+literal 1766
+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
+IM6N<$g64`<umAu6
+
+literal 0
+HcmV?d00001
+
+diff --git a/panels/universal-access/left_ptr_64px.png b/panels/universal-access/left_ptr_64px.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..4cf77a45b5d03b3e066ffc5b36f1a17fe98ac0f6
+GIT binary patch
+literal 2447
+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
+N002ovPDHLkV1k<^tf>G1
+
+literal 0
+HcmV?d00001
+
+diff --git a/panels/universal-access/left_ptr_96px.png b/panels/universal-access/left_ptr_96px.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..5897a7c3d03a87d018184fbcc2a23ade15ad6a02
+GIT binary patch
+literal 3995
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/panels/universal-access/uap.ui b/panels/universal-access/uap.ui
+index 636b7740d..ab0c0c4a7 100644
+--- a/panels/universal-access/uap.ui
++++ b/panels/universal-access/uap.ui
+@@ -224,6 +224,53 @@
+                               </object>
+                             </child>
+                             <child>
++                              <object class="GtkListBoxRow" id="row_cursor_size">
++                                <property name="visible">True</property>
++                                <property name="can_focus">True</property>
++                                <child>
++                                  <object class="GtkBox" id="box_cursor_size">
++                                    <property name="visible">True</property>
++                                    <property name="can_focus">False</property>
++                                    <child>
++                                      <object class="GtkLabel" id="heading_cursor_size">
++                                        <property name="visible">True</property>
++                                        <property name="can_focus">False</property>
++                                        <property name="margin_start">20</property>
++                                        <property name="margin_end">20</property>
++                                        <property name="margin_top">6</property>
++                                        <property name="margin_bottom">6</property>
++                                        <property name="label" translatable="yes">C_ursor Size</property>
++                                        <property name="use_underline">True</property>
++                                        <property name="xalign">0</property>
++                                      </object>
++                                      <packing>
++                                        <property name="expand">True</property>
++                                        <property name="fill">True</property>
++                                        <property name="position">0</property>
++                                      </packing>
++                                    </child>
++                                    <child>
++                                      <object class="GtkLabel" id="value_cursor_size">
++                                        <property name="visible">True</property>
++                                        <property name="can_focus">False</property>
++                                        <property name="margin_start">20</property>
++                                        <property name="margin_end">20</property>
++                                        <property name="margin_top">6</property>
++                                        <property name="margin_bottom">6</property>
++                                        <property name="label">24 pixels</property>
++                                        <property name="xalign">1</property>
++                                      </object>
++                                      <packing>
++                                        <property name="expand">False</property>
++                                        <property name="fill">True</property>
++                                        <property name="position">1</property>
++                                      </packing>
++                                    </child>
++                                  </object>
++                                </child>
++                              </object>
++                            </child>
++                            <child>
+                               <object class="GtkListBoxRow" id="row_zoom">
+                                 <property name="visible">True</property>
+                                 <property name="can_focus">True</property>
+@@ -952,6 +999,7 @@
+     <widgets>
+       <widget name="row_highcontrast"/>
+       <widget name="row_large_text"/>
++      <widget name="row_cursor_size"/>
+       <widget name="row_zoom"/>
+       <widget name="row_screen_reader"/>
+       <widget name="row_sound_keys"/>
+@@ -962,6 +1010,69 @@
+       <widget name="row_click_assist"/>
+     </widgets>
+   </object>
++  <object class="GtkDialog" id="cursor_size_dialog">
++    <property name="can_focus">False</property>
++    <property name="border_width">5</property>
++    <property name="title" translatable="yes">Cursor Size</property>
++    <property name="resizable">False</property>
++    <property name="modal">True</property>
++    <property name="type_hint">dialog</property>
++    <child internal-child="vbox">
++      <object class="GtkBox" id="dialog-vbox7">
++        <property name="can_focus">False</property>
++        <property name="orientation">vertical</property>
++        <property name="spacing">2</property>
++        <child internal-child="action_area">
++          <object class="GtkButtonBox">
++            <property name="can_focus">False</property>
++          </object>
++          <packing>
++            <property name="expand">False</property>
++            <property name="fill">False</property>
++            <property name="position">0</property>
++          </packing>
++        </child>
++        <child>
++          <object class="GtkLabel" id="cursor_size_blurb">
++            <property name="visible">True</property>
++            <property name="can_focus">False</property>
++            <property name="margin_start">12</property>
++            <property name="margin_end">6</property>
++            <property name="margin_top">6</property>
++            <property name="margin_bottom">6</property>
++            <property name="label" translatable="yes">Cursor size can be combined with zoom to make it easier to see the cursor.</property>
++            <property name="wrap">True</property>
++            <property name="max_width_chars">45</property>
++            <property name="xalign">0</property>
++          </object>
++          <packing>
++            <property name="expand">False</property>
++            <property name="fill">True</property>
++            <property name="position">0</property>
++          </packing>
++        </child>
++        <child>
++          <object class="GtkGrid" id="cursor_size_grid">
++            <property name="visible">True</property>
++            <property name="can_focus">False</property>
++          </object>
++          <packing>
++            <property name="expand">False</property>
++            <property name="fill">True</property>
++            <property name="position">2</property>
++          </packing>
++        </child>
++      </object>
++    </child>
++    <child>
++      <placeholder/>
++    </child>
++    <child internal-child="headerbar">
++      <object class="GtkHeaderBar">
++        <property name="can_focus">False</property>
++      </object>
++    </child>
++  </object>
+   <object class="GtkDialog" id="screen_reader_dialog">
+     <property name="can_focus">False</property>
+     <property name="border_width">5</property>
+diff --git a/panels/universal-access/universal-access.gresource.xml b/panels/universal-access/universal-access.gresource.xml
+index bc07b356f..d7f2e337a 100644
+--- a/panels/universal-access/universal-access.gresource.xml
++++ b/panels/universal-access/universal-access.gresource.xml
+@@ -3,5 +3,10 @@
+   <gresource prefix="/org/gnome/control-center/universal-access">
+     <file preprocess="xml-stripblanks">uap.ui</file>
+     <file preprocess="xml-stripblanks">zoom-options.ui</file>
++    <file>left_ptr_24px.png</file>
++    <file>left_ptr_32px.png</file>
++    <file>left_ptr_48px.png</file>
++    <file>left_ptr_64px.png</file>
++    <file>left_ptr_96px.png</file>
+   </gresource>
+ </gresources>
+-- 
+2.12.0
+
+
+From 4196874fcd6ed1ceac1923065d9bda2dce67fbe2 Mon Sep 17 00:00:00 2001
+From: Bastien Nocera <hadess@hadess.net>
+Date: Thu, 9 Mar 2017 12:44:25 +0100
+Subject: [PATCH 4/4] universal-access: Handle "pixels" plural correctly
+
+Using g_dngettext() as required.
+
+https://bugzilla.gnome.org/show_bug.cgi?id=779798
+---
+ panels/universal-access/cc-ua-panel.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/panels/universal-access/cc-ua-panel.c b/panels/universal-access/cc-ua-panel.c
+index 1985f7718..f0928555e 100644
+--- a/panels/universal-access/cc-ua-panel.c
++++ b/panels/universal-access/cc-ua-panel.c
+@@ -363,7 +363,11 @@ cursor_size_label_mapping_get (GValue   *value,
+         label = g_strdup (C_("cursor size", "Largest"));
+         break;
+       default:
+-        label = g_strdup_printf (_("%d pixels"), g_variant_get_int32 (variant));
++        label = g_strdup_printf (g_dngettext (GETTEXT_PACKAGE,
++                                              "%d pixel",
++                                              "%d pixels",
++                                              cursor_size),
++                                 cursor_size);
+         break;
+     }
+ 
+-- 
+2.12.0
+

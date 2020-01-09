@@ -45,6 +45,8 @@ struct _CEPageSecurity
 
         GtkComboBox *security_combo;
         GtkWidget   *security_heading;
+        GtkComboBox *firewall_combo;
+        GtkWidget   *firewall_heading;
         GtkSizeGroup *group;
         gboolean     adhoc;
 };
@@ -57,8 +59,7 @@ struct _CEPageSecurityClass
 GType   ce_page_security_get_type (void);
 
 CEPage *ce_page_security_new      (NMConnection     *connection,
-                                   NMClient         *client,
-                                   NMRemoteSettings *settings);
+                                   NMClient         *client);
 
 G_END_DECLS
 

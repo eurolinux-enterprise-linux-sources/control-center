@@ -177,121 +177,82 @@ pp_maintenance_command_new (const gchar *printer_name,
                        NULL);
 }
 
+static gboolean _pp_maintenance_command_is_supported (const gchar *printer_name,
+                                                      const gchar *command);
+
 static void
-_pp_maintenance_command_execute_thread (GSimpleAsyncResult *res,
-                                        GObject            *object,
-                                        GCancellable       *cancellable)
+_pp_maintenance_command_execute_thread (GTask        *task,
+                                        gpointer      source_object,
+                                        gpointer      task_data,
+                                        GCancellable *cancellable)
 {
-  PpMaintenanceCommand        *command = (PpMaintenanceCommand *) object;
+  PpMaintenanceCommand        *command = PP_MAINTENANCE_COMMAND (source_object);
   PpMaintenanceCommandPrivate *priv = command->priv;
-  static const char           *attrs[] = {"printer-commands"};
-  ipp_attribute_t             *attr = NULL;
   gboolean                     success = FALSE;
   GError                      *error = NULL;
-  ipp_t                       *request;
-  ipp_t                       *response = NULL;
-  gchar                       *printer_uri;
-  gchar                       *printer_commands = NULL;
-  gchar                       *printer_commands_lowercase = NULL;
-  gchar                       *command_lowercase;
-  gchar                       *file_name = NULL;
-  int                          fd = -1;
 
-  printer_uri = g_strdup_printf ("ipp://localhost/printers/%s",
-                                 priv->printer_name);
-
-  request = ippNewRequest (IPP_GET_PRINTER_ATTRIBUTES);
-  ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_URI,
-                "printer-uri", NULL, printer_uri);
-  ippAddStrings (request, IPP_TAG_OPERATION, IPP_TAG_KEYWORD,
-                 "requested-attributes", 1, NULL, attrs);
-  response = cupsDoRequest (CUPS_HTTP_DEFAULT, request, "/");
-
-  if (response)
+  if (_pp_maintenance_command_is_supported (priv->printer_name, priv->command))
     {
-      if (ippGetStatusCode (response) <= IPP_OK_CONFLICT)
+      ipp_t *request;
+      ipp_t *response = NULL;
+      gchar *printer_uri;
+      gchar *file_name = NULL;
+      int    fd = -1;
+
+      printer_uri = g_strdup_printf ("ipp://localhost/printers/%s",
+                                     priv->printer_name);
+
+      request = ippNewRequest (IPP_PRINT_JOB);
+
+      ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_URI,
+                    "printer-uri", NULL, printer_uri);
+      ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_NAME,
+                    "job-name", NULL, priv->title);
+      ippAddString (request, IPP_TAG_JOB, IPP_TAG_MIMETYPE,
+                    "document-format", NULL, "application/vnd.cups-command");
+
+      fd = g_file_open_tmp ("ccXXXXXX", &file_name, &error);
+
+      if (fd != -1)
         {
-          attr = ippFindAttribute (response, "printer-commands", IPP_TAG_ZERO);
-          if (attr && ippGetCount (attr) > 0 && ippGetValueTag (attr) != IPP_TAG_NOVALUE)
+          FILE *file;
+
+          file = fdopen (fd, "w");
+          fprintf (file, "#CUPS-COMMAND\n");
+          fprintf (file, "%s\n", priv->command);
+          fclose (file);
+
+          response = cupsDoFileRequest (CUPS_HTTP_DEFAULT, request, "/", file_name);
+          g_unlink (file_name);
+
+          if (response != NULL)
             {
-              if (ippGetValueTag (attr) == IPP_TAG_KEYWORD)
+              if (ippGetStatusCode (response) <= IPP_OK_CONFLICT)
                 {
-                  printer_commands = g_strdup (ippGetString (attr, 0, NULL));
+                  success = TRUE;
                 }
-            }
-          else
-            {
-              success = TRUE;
+
+              ippDelete (response);
             }
         }
 
-      ippDelete (response);
+      g_free (file_name);
+      g_free (printer_uri);
     }
-
-  if (printer_commands)
+  else
     {
-      command_lowercase = g_ascii_strdown (priv->command, -1);
-      printer_commands_lowercase = g_ascii_strdown (printer_commands, -1);
-
-      if (g_strrstr (printer_commands_lowercase, command_lowercase))
-        {
-          request = ippNewRequest (IPP_PRINT_JOB);
-
-          ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_URI,
-                        "printer-uri", NULL, printer_uri);
-          ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_NAME,
-                        "job-name", NULL, priv->title);
-          ippAddString (request, IPP_TAG_JOB, IPP_TAG_MIMETYPE,
-                        "document-format", NULL, "application/vnd.cups-command");
-
-          fd = g_file_open_tmp ("ccXXXXXX", &file_name, &error);
-
-          if (fd != -1)
-            {
-              FILE *file;
-
-              file = fdopen (fd, "w");
-              fprintf (file, "#CUPS-COMMAND\n");
-              fprintf (file, "%s\n", priv->command);
-              fclose (file);
-
-              response = cupsDoFileRequest (CUPS_HTTP_DEFAULT, request, "/", file_name);
-              g_unlink (file_name);
-
-              if (response)
-                {
-                  if (ippGetStatusCode (response) <= IPP_OK_CONFLICT)
-                    {
-                      success = TRUE;
-                    }
-
-                  ippDelete (response);
-                }
-            }
-
-          g_free (file_name);
-        }
-      else
-        {
-          success = TRUE;
-        }
-
-      g_free (command_lowercase);
-      g_free (printer_commands_lowercase);
-      g_free (printer_commands);
+      success = TRUE;
     }
-
-  g_free (printer_uri);
 
   if (!success)
     {
-      g_simple_async_result_set_error (res,
-                                       G_IO_ERROR,
-                                       G_IO_ERROR_FAILED,
-                                       "Execution of maintenance command failed.");
+      g_task_return_new_error (task,
+                               G_IO_ERROR,
+                               G_IO_ERROR_FAILED,
+                               "Execution of maintenance command failed.");
     }
 
-  g_simple_async_result_set_op_res_gboolean (res, success);
+  g_task_return_boolean (task, success);
 }
 
 void
@@ -300,29 +261,128 @@ pp_maintenance_command_execute_async (PpMaintenanceCommand *command,
                                       GAsyncReadyCallback   callback,
                                       gpointer              user_data)
 {
-  GSimpleAsyncResult *res;
+  GTask *task;
 
-  res = g_simple_async_result_new (G_OBJECT (command), callback, user_data, pp_maintenance_command_execute_async);
+  task = g_task_new (command, cancellable, callback, user_data);
+  g_task_set_check_cancellable (task, TRUE);
+  g_task_run_in_thread (task, _pp_maintenance_command_execute_thread);
 
-  g_simple_async_result_set_check_cancellable (res, cancellable);
-  g_simple_async_result_run_in_thread (res, _pp_maintenance_command_execute_thread, 0, cancellable);
-
-  g_object_unref (res);
+  g_object_unref (task);
 }
 
 gboolean
 pp_maintenance_command_execute_finish (PpMaintenanceCommand  *command,
-                                       GAsyncResult          *res,
+                                       GAsyncResult          *result,
                                        GError               **error)
 {
-  GSimpleAsyncResult *simple = G_SIMPLE_ASYNC_RESULT (res);
+  g_return_val_if_fail (g_task_is_valid (result, command), FALSE);
 
-  g_warn_if_fail (g_simple_async_result_get_source_tag (simple) == pp_maintenance_command_execute_async);
+  return g_task_propagate_boolean (G_TASK (result), error);
+}
 
-  if (g_simple_async_result_propagate_error (simple, error))
+static gboolean
+_pp_maintenance_command_is_supported (const gchar *printer_name,
+                                      const gchar *command)
+{
+  ipp_attribute_t   *attr = NULL;
+  gboolean           is_supported = FALSE;
+  ipp_t             *request;
+  ipp_t             *response = NULL;
+  gchar             *printer_uri;
+  gchar             *command_lowercase;
+  GPtrArray         *available_commands = NULL;
+  int                i;
+
+  printer_uri = g_strdup_printf ("ipp://localhost/printers/%s",
+                                 printer_name);
+
+  request = ippNewRequest (IPP_GET_PRINTER_ATTRIBUTES);
+  ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_URI,
+                "printer-uri", NULL, printer_uri);
+  ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_KEYWORD,
+                "requested-attributes", NULL, "printer-commands");
+  response = cupsDoRequest (CUPS_HTTP_DEFAULT, request, "/");
+  if (response != NULL)
     {
-      return FALSE;
+      if (ippGetStatusCode (response) <= IPP_OK_CONFLICT)
+        {
+          int commands_count;
+
+          attr = ippFindAttribute (response, "printer-commands", IPP_TAG_ZERO);
+          commands_count = attr != NULL ? ippGetCount (attr) : 0;
+          if (commands_count > 0 &&
+              ippGetValueTag (attr) != IPP_TAG_NOVALUE &&
+              (ippGetValueTag (attr) == IPP_TAG_KEYWORD))
+            {
+              available_commands = g_ptr_array_new_full (commands_count, g_free);
+              for (i = 0; i < commands_count; ++i)
+                {
+                  /* Array gains ownership of the lower-cased string */
+                  g_ptr_array_add (available_commands, g_ascii_strdown (ippGetString (attr, i, NULL), -1));
+                }
+            }
+        }
+
+      ippDelete (response);
     }
 
-  return g_simple_async_result_get_op_res_gboolean (simple);
+  if (available_commands != NULL)
+    {
+      command_lowercase = g_ascii_strdown (command, -1);
+      for (i = 0; i < available_commands->len; ++i)
+        {
+          const gchar *available_command = g_ptr_array_index (available_commands, i);
+          if (g_strcmp0 (available_command, command_lowercase) == 0)
+            {
+              is_supported = TRUE;
+              break;
+            }
+        }
+
+      g_free (command_lowercase);
+      g_ptr_array_free (available_commands, TRUE);
+    }
+
+  g_free (printer_uri);
+
+  return is_supported;
+}
+
+static void
+_pp_maintenance_command_is_supported_thread (GTask        *task,
+                                             gpointer      source_object,
+                                             gpointer      task_data,
+                                             GCancellable *cancellable)
+{
+  PpMaintenanceCommand        *command = PP_MAINTENANCE_COMMAND (source_object);
+  PpMaintenanceCommandPrivate *priv = command->priv;
+  gboolean                     success = FALSE;
+
+  success = _pp_maintenance_command_is_supported (priv->printer_name, priv->command);
+  g_task_return_boolean (task, success);
+}
+
+void
+pp_maintenance_command_is_supported_async  (PpMaintenanceCommand *command,
+                                            GCancellable         *cancellable,
+                                            GAsyncReadyCallback   callback,
+                                            gpointer              user_data)
+{
+  GTask *task;
+
+  task = g_task_new (command, cancellable, callback, user_data);
+  g_task_set_check_cancellable (task, TRUE);
+  g_task_run_in_thread (task, _pp_maintenance_command_is_supported_thread);
+
+  g_object_unref (task);
+}
+
+gboolean
+pp_maintenance_command_is_supported_finish (PpMaintenanceCommand  *command,
+                                            GAsyncResult          *result,
+                                            GError               **error)
+{
+  g_return_val_if_fail (g_task_is_valid (result, command), FALSE);
+
+  return g_task_propagate_boolean (G_TASK (result), error);
 }

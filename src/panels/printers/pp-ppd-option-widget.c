@@ -59,7 +59,7 @@ struct PpPPDOptionWidgetPrivate
   GCancellable *cancellable;
 };
 
-G_DEFINE_TYPE (PpPPDOptionWidget, pp_ppd_option_widget, GTK_TYPE_HBOX)
+G_DEFINE_TYPE (PpPPDOptionWidget, pp_ppd_option_widget, GTK_TYPE_BOX)
 
 /* This list comes from Gtk+ */
 static const struct {
@@ -149,6 +149,8 @@ pp_ppd_option_widget_init (PpPPDOptionWidget *widget)
 {
   PpPPDOptionWidgetPrivate *priv;
 
+  gtk_orientable_set_orientation (GTK_ORIENTABLE (widget),
+                                  GTK_ORIENTATION_HORIZONTAL);
   priv = widget->priv = PP_PPD_OPTION_WIDGET_GET_PRIVATE (widget);
 
   priv->switch_button = NULL;
@@ -522,9 +524,6 @@ update_widget_real (PpPPDOptionWidget *widget)
       if (ppd_file)
         {
           ppdMarkDefaults (ppd_file);
-          cupsMarkOptions (ppd_file,
-                           priv->destination->num_options,
-                           priv->destination->options);
 
           for (iter = ppdFirstOption(ppd_file); iter; iter = ppdNextOption(ppd_file))
             {

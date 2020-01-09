@@ -226,103 +226,6 @@ get_ppd_attribute (const gchar *ppd_file_name,
   return result;
 }
 
-/* Cancels subscription of given id */
-void
-cancel_cups_subscription (gint id)
-{
-  http_t *http;
-  ipp_t  *request;
-
-  if (id >= 0 &&
-      ((http = httpConnectEncrypt (cupsServer (), ippPort (),
-                                  cupsEncryption ())) != NULL)) {
-    request = ippNewRequest (IPP_CANCEL_SUBSCRIPTION);
-    ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_URI,
-                 "printer-uri", NULL, "/");
-    ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_NAME,
-                 "requesting-user-name", NULL, cupsUser ());
-    ippAddInteger (request, IPP_TAG_OPERATION, IPP_TAG_INTEGER,
-                  "notify-subscription-id", id);
-    ippDelete (cupsDoRequest (http, request, "/"));
-    httpClose (http);
-  }
-}
-
-/* Returns id of renewed subscription or new id */
-gint
-renew_cups_subscription (gint id,
-                         const char * const *events,
-                         gint num_events,
-                         gint lease_duration)
-{
-  ipp_attribute_t              *attr = NULL;
-  http_t                       *http;
-  ipp_t                        *request;
-  ipp_t                        *response = NULL;
-  gint                          result = -1;
-
-  if ((http = httpConnectEncrypt (cupsServer (), ippPort (),
-                                  cupsEncryption ())) == NULL) {
-    g_debug ("Connection to CUPS server \'%s\' failed.", cupsServer ());
-  }
-  else {
-    if (id >= 0) {
-      request = ippNewRequest (IPP_RENEW_SUBSCRIPTION);
-      ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_URI,
-                   "printer-uri", NULL, "/");
-      ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_NAME,
-                   "requesting-user-name", NULL, cupsUser ());
-      ippAddInteger (request, IPP_TAG_OPERATION, IPP_TAG_INTEGER,
-                    "notify-subscription-id", id);
-      ippAddInteger (request, IPP_TAG_SUBSCRIPTION, IPP_TAG_INTEGER,
-                    "notify-lease-duration", lease_duration);
-      response = cupsDoRequest (http, request, "/");
-      if (response != NULL &&
-          ippGetStatusCode (response) <= IPP_OK_CONFLICT) {
-        if ((attr = ippFindAttribute (response, "notify-lease-duration",
-                                      IPP_TAG_INTEGER)) == NULL)
-          g_debug ("No notify-lease-duration in response!\n");
-        else
-          if (ippGetInteger (attr, 0) == lease_duration)
-            result = id;
-      }
-    }
-
-    if (result < 0) {
-      request = ippNewRequest (IPP_CREATE_PRINTER_SUBSCRIPTION);
-      ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_URI,
-                    "printer-uri", NULL, "/");
-      ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_NAME,
-                    "requesting-user-name", NULL, cupsUser ());
-      ippAddStrings (request, IPP_TAG_SUBSCRIPTION, IPP_TAG_KEYWORD,
-                     "notify-events", num_events, NULL, events);
-      ippAddString (request, IPP_TAG_SUBSCRIPTION, IPP_TAG_KEYWORD,
-                    "notify-pull-method", NULL, "ippget");
-      ippAddString (request, IPP_TAG_SUBSCRIPTION, IPP_TAG_URI,
-                    "notify-recipient-uri", NULL, "dbus://");
-      ippAddInteger (request, IPP_TAG_SUBSCRIPTION, IPP_TAG_INTEGER,
-                     "notify-lease-duration", lease_duration);
-      response = cupsDoRequest (http, request, "/");
-
-      if (response != NULL &&
-          ippGetStatusCode (response) <= IPP_OK_CONFLICT) {
-        if ((attr = ippFindAttribute (response, "notify-subscription-id",
-                                      IPP_TAG_INTEGER)) == NULL)
-          g_debug ("No notify-subscription-id in response!\n");
-        else
-          result = ippGetInteger (attr, 0);
-      }
-    }
-
-    if (response)
-      ippDelete (response);
-
-    httpClose (http);
-  }
-
-  return result;
-}
-
 /*  Set default destination in ~/.cups/lpoptions.
  *  Unset default destination if "dest" is NULL.
  */
@@ -1331,73 +1234,15 @@ printer_get_hostname (cups_ptype_t  printer_type,
   return result;
 }
 
-/* Returns default media size for current locale */
+/* Returns default page size for current locale */
 const gchar *
-get_paper_size_from_locale ()
+get_page_size_from_locale (void)
 {
   if (g_str_equal (gtk_paper_size_get_default (), GTK_PAPER_NAME_LETTER))
-    return "na-letter";
+    return "Letter";
   else
-    return "iso-a4";
+    return "A4";
 }
-
-/* Set default media size according to the locale */
-void
-printer_set_default_media_size (const gchar *printer_name)
-{
-  GVariantBuilder  array_builder;
-  GDBusConnection *bus;
-  GVariant        *output;
-  GError          *error = NULL;
-
-  bus = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
-  if (!bus)
-   {
-     g_warning ("Failed to get system bus: %s", error->message);
-     g_error_free (error);
-     return;
-   }
-
-  g_variant_builder_init (&array_builder, G_VARIANT_TYPE ("as"));
-  g_variant_builder_add (&array_builder, "s", get_paper_size_from_locale ());
-
-  output = g_dbus_connection_call_sync (bus,
-                                        MECHANISM_BUS,
-                                        "/",
-                                        MECHANISM_BUS,
-                                        "PrinterAddOption",
-                                        g_variant_new ("(ssas)",
-                                                       printer_name,
-                                                       "media",
-                                                       &array_builder),
-                                        G_VARIANT_TYPE ("(s)"),
-                                        G_DBUS_CALL_FLAGS_NONE,
-                                        -1,
-                                        NULL,
-                                        &error);
-
-  g_object_unref (bus);
-
-  if (output)
-    {
-      const gchar *ret_error;
-
-      g_variant_get (output, "(&s)", &ret_error);
-      if (ret_error[0] != '\0')
-        g_warning ("cups-pk-helper: setting of media size for printer %s failed: %s", printer_name, ret_error);
-
-      g_variant_unref (output);
-    }
-  else
-    {
-      if (!(error->domain == G_DBUS_ERROR &&
-            (error->code == G_DBUS_ERROR_SERVICE_UNKNOWN ||
-             error->code == G_DBUS_ERROR_UNKNOWN_METHOD)))
-        g_warning ("%s", error->message);
-      g_error_free (error);
-    }
-}
-
 
 typedef struct
 {
@@ -3289,7 +3134,7 @@ pp_devices_list_free (PpDevicesList *result)
 {
   if (result)
     {
-      g_list_free_full (result->devices, (GDestroyNotify) pp_print_device_free);
+      g_list_free_full (result->devices, (GDestroyNotify) g_object_unref);
       g_free (result);
     }
 }
@@ -3537,6 +3382,7 @@ get_cups_devices_async_dbus_cb (GObject      *source_object,
     {
       const gchar *ret_error;
       GVariant    *devices_variant = NULL;
+      gboolean     is_network_device;
 
       g_variant_get (output, "(&s@a{ss})",
                      &ret_error,
@@ -3583,25 +3429,30 @@ get_cups_devices_async_dbus_cb (GObject      *source_object,
                   if (index >= 0)
                     {
                       if (!devices[index])
-                        devices[index] = g_new0 (PpPrintDevice, 1);
+                        devices[index] = pp_print_device_new ();
 
                       if (g_str_has_prefix (key, "device-class"))
-                        devices[index]->device_class = g_strdup (value);
+                        {
+                          is_network_device = g_strcmp0 (value, "network") == 0;
+                          g_object_set (devices[index], "is-network-device", is_network_device, NULL);
+                        }
                       else if (g_str_has_prefix (key, "device-id"))
-                        devices[index]->device_id = g_strdup (value);
+                        g_object_set (devices[index], "device-id", value, NULL);
                       else if (g_str_has_prefix (key, "device-info"))
-                        devices[index]->device_info = g_strdup (value);
+                        g_object_set (devices[index], "device-info", value, NULL);
                       else if (g_str_has_prefix (key, "device-make-and-model"))
                         {
-                          devices[index]->device_make_and_model = g_strdup (value);
-                          devices[index]->device_name = g_strdup (value);
+                          g_object_set (devices[index],
+                                        "device-make-and-model", value,
+                                        "device-name", value,
+                                        NULL);
                         }
                       else if (g_str_has_prefix (key, "device-uri"))
-                        devices[index]->device_uri = g_strdup (value);
+                        g_object_set (devices[index], "device-uri", value, NULL);
                       else if (g_str_has_prefix (key, "device-location"))
-                        devices[index]->device_location = g_strdup (value);
+                        g_object_set (devices[index], "device-location", value, NULL);
 
-                      devices[index]->acquisition_method = ACQUISITION_METHOD_DEFAULT_CUPS_SERVER;
+                      g_object_set (devices[index], "acquisition-method", ACQUISITION_METHOD_DEFAULT_CUPS_SERVER, NULL);
                     }
 
                   g_free (key);
@@ -3773,56 +3624,6 @@ get_cups_devices_async (GCancellable *cancellable,
                           data);
 }
 
-void
-pp_print_device_free (PpPrintDevice *device)
-{
-  if (device)
-    {
-      g_free (device->device_class);
-      g_free (device->device_id);
-      g_free (device->device_info);
-      g_free (device->device_make_and_model);
-      g_free (device->device_uri);
-      g_free (device->device_location);
-      g_free (device->device_name);
-      g_free (device->device_ppd);
-      g_free (device->host_name);
-      g_free (device->display_name);
-      g_free (device->device_original_name);
-      g_free (device);
-    }
-}
-
-PpPrintDevice *
-pp_print_device_copy (PpPrintDevice *device)
-{
-  PpPrintDevice *result = NULL;
-
-  if (device)
-    {
-      result = g_new (PpPrintDevice, 1);
-
-      result->is_authenticated_server = device->is_authenticated_server;
-      result->device_class = g_strdup (device->device_class);
-      result->device_id = g_strdup (device->device_id);
-      result->device_info = g_strdup (device->device_info);
-      result->device_make_and_model = g_strdup (device->device_make_and_model);
-      result->device_uri = g_strdup (device->device_uri);
-      result->device_location = g_strdup (device->device_location);
-      result->device_name = g_strdup (device->device_name);
-      result->device_ppd = g_strdup (device->device_ppd);
-      result->host_name = g_strdup (device->host_name);
-      result->host_port = device->host_port;
-      result->acquisition_method = device->acquisition_method;
-      result->display_name = g_strdup (device->display_name);
-      result->device_original_name = g_strdup (device->device_original_name);
-      result->network_device = device->network_device;
-      result->show = device->show;
-    }
-
-  return result;
-}
-
 typedef struct
 {
   gchar        *printer_name;
@@ -3926,168 +3727,6 @@ cups_get_jobs_async (const gchar *printer_name,
     }
 }
 
-typedef struct
-{
-  GCancellable *cancellable;
-  JCPCallback   callback;
-  gpointer      user_data;
-} JCPData;
-
-static void
-job_cancel_purge_async_dbus_cb (GObject      *source_object,
-                                GAsyncResult *res,
-                                gpointer      user_data)
-{
-  GVariant *output;
-  JCPData  *data = (JCPData *) user_data;
-  GError   *error = NULL;
-
-  output = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source_object),
-                                          res,
-                                          &error);
-  g_object_unref (source_object);
-
-  if (output)
-    {
-      g_variant_unref (output);
-    }
-  else
-    {
-      if (!g_cancellable_is_cancelled (data->cancellable))
-        g_warning ("%s", error->message);
-      g_error_free (error);
-    }
-
-  data->callback (data->user_data);
-
-  if (data->cancellable)
-    g_object_unref (data->cancellable);
-  g_free (data);
-}
-
-void
-job_cancel_purge_async (gint          job_id,
-                        gboolean      job_purge,
-                        GCancellable *cancellable,
-                        JCPCallback   callback,
-                        gpointer      user_data)
-{
-  GDBusConnection *bus;
-  JCPData         *data;
-  GError          *error = NULL;
-
-  bus = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
-  if (!bus)
-    {
-      g_warning ("Failed to get session bus: %s", error->message);
-      g_error_free (error);
-      callback (user_data);
-      return;
-    }
-
-  data = g_new0 (JCPData, 1);
-  if (cancellable)
-    data->cancellable = g_object_ref (cancellable);
-  data->callback = callback;
-  data->user_data = user_data;
-
-  g_dbus_connection_call (bus,
-                          MECHANISM_BUS,
-                          "/",
-                          MECHANISM_BUS,
-                          "JobCancelPurge",
-                          g_variant_new ("(ib)",
-                                         job_id,
-                                         job_purge),
-                          G_VARIANT_TYPE ("(s)"),
-                          G_DBUS_CALL_FLAGS_NONE,
-                          -1,
-                          NULL,
-                          job_cancel_purge_async_dbus_cb,
-                          data);
-}
-
-typedef struct
-{
-  GCancellable *cancellable;
-  JSHUCallback  callback;
-  gpointer      user_data;
-} JSHUData;
-
-static void
-job_set_hold_until_async_dbus_cb (GObject      *source_object,
-                                  GAsyncResult *res,
-                                  gpointer      user_data)
-{
-  GVariant *output;
-  JSHUData *data = (JSHUData *) user_data;
-  GError   *error = NULL;
-
-  output = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source_object),
-                                          res,
-                                          &error);
-  g_object_unref (source_object);
-
-  if (output)
-    {
-      g_variant_unref (output);
-    }
-  else
-    {
-      if (!g_cancellable_is_cancelled (data->cancellable))
-        g_warning ("%s", error->message);
-      g_error_free (error);
-    }
-
-  data->callback (data->user_data);
-
-  if (data->cancellable)
-    g_object_unref (data->cancellable);
-  g_free (data);
-}
-
-void
-job_set_hold_until_async (gint          job_id,
-                          const gchar  *job_hold_until,
-                          GCancellable *cancellable,
-                          JSHUCallback  callback,
-                          gpointer      user_data)
-{
-  GDBusConnection *bus;
-  JSHUData        *data;
-  GError          *error = NULL;
-
-  bus = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
-  if (!bus)
-    {
-      g_warning ("Failed to get session bus: %s", error->message);
-      g_error_free (error);
-      callback (user_data);
-      return;
-    }
-
-  data = g_new0 (JSHUData, 1);
-  if (cancellable)
-    data->cancellable = g_object_ref (cancellable);
-  data->callback = callback;
-  data->user_data = user_data;
-
-  g_dbus_connection_call (bus,
-                          MECHANISM_BUS,
-                          "/",
-                          MECHANISM_BUS,
-                          "JobSetHoldUntil",
-                          g_variant_new ("(is)",
-                                         job_id,
-                                         job_hold_until),
-                          G_VARIANT_TYPE ("(s)"),
-                          G_DBUS_CALL_FLAGS_NONE,
-                          -1,
-                          NULL,
-                          job_set_hold_until_async_dbus_cb,
-                          data);
-}
-
 gchar *
 guess_device_hostname (PpPrintDevice *device)
 {
@@ -4101,15 +3740,15 @@ guess_device_hostname (PpPrintDevice *device)
   gchar             *hostname_begin;
   gchar             *hostname_end = NULL;
 
-  if (device != NULL && device->device_uri != NULL)
+  if (device != NULL && pp_print_device_get_device_uri (device) != NULL)
     {
-      if (g_str_has_prefix (device->device_uri, "socket") ||
-          g_str_has_prefix (device->device_uri, "lpd") ||
-          g_str_has_prefix (device->device_uri, "ipp") ||
-          g_str_has_prefix (device->device_uri, "smb"))
+      if (g_str_has_prefix (pp_print_device_get_device_uri (device), "socket") ||
+          g_str_has_prefix (pp_print_device_get_device_uri (device), "lpd") ||
+          g_str_has_prefix (pp_print_device_get_device_uri (device), "ipp") ||
+          g_str_has_prefix (pp_print_device_get_device_uri (device), "smb"))
         {
           status = httpSeparateURI (HTTP_URI_CODING_ALL,
-                                    device->device_uri,
+                                    pp_print_device_get_device_uri (device),
                                     scheme, HTTP_MAX_URI,
                                     username, HTTP_MAX_URI,
                                     hostname, HTTP_MAX_URI,
@@ -4120,27 +3759,27 @@ guess_device_hostname (PpPrintDevice *device)
               hostname[0] != '\0')
             result = g_strdup (hostname);
         }
-      else if ((g_str_has_prefix (device->device_uri, "dnssd") ||
-                g_str_has_prefix (device->device_uri, "mdns")) &&
-               device->device_info != NULL)
+      else if ((g_str_has_prefix (pp_print_device_get_device_uri (device), "dnssd") ||
+                g_str_has_prefix (pp_print_device_get_device_uri (device), "mdns")) &&
+               pp_print_device_get_device_info (device) != NULL)
         {
           /*
            * CUPS browses its printers as
            * "PrinterName @ ComputerName" or "PrinterInfo @ ComputerName"
            * through DNS-SD.
            */
-          hostname_begin = g_strrstr (device->device_info, " @ ");
+          hostname_begin = g_strrstr (pp_print_device_get_device_info (device), " @ ");
           if (hostname_begin != NULL)
             result = g_strdup (hostname_begin + 3);
         }
-      else if (g_str_has_prefix (device->device_uri, "hp:/net/") ||
-               g_str_has_prefix (device->device_uri, "hpfax:/net/"))
+      else if (g_str_has_prefix (pp_print_device_get_device_uri (device), "hp:/net/") ||
+               g_str_has_prefix (pp_print_device_get_device_uri (device), "hpfax:/net/"))
         {
           /*
            * HPLIP printers have URI of form hp:/net/%s?ip=%s&port=%d
            * or hp:/net/%s?ip=%s.
            */
-          hostname_begin = g_strrstr (device->device_uri, "ip=");
+          hostname_begin = g_strrstr (pp_print_device_get_device_uri (device), "ip=");
           if (hostname_begin != NULL)
             {
               hostname_begin += 3;
@@ -4158,8 +3797,8 @@ guess_device_hostname (PpPrintDevice *device)
 }
 
 gchar *
-canonicalize_device_name (GList         *devices,
-                          GList         *new_devices,
+canonicalize_device_name (GList         *device_names,
+                          GList         *local_cups_devices,
                           cups_dest_t   *dests,
                           gint           num_of_dests,
                           PpPrintDevice *device)
@@ -4191,33 +3830,36 @@ canonicalize_device_name (GList         *devices,
     "-zxs",
     "-pxl"};
 
-  if (device->device_id != NULL)
+  if (pp_print_device_get_device_id (device) != NULL)
     {
-      name = get_tag_value (device->device_id, "mdl");
+      name = get_tag_value (pp_print_device_get_device_id (device), "mdl");
       if (name == NULL)
-        name = get_tag_value (device->device_id, "model");
+        name = get_tag_value (pp_print_device_get_device_id (device), "model");
     }
 
   if (name == NULL &&
-      device->device_make_and_model != NULL &&
-      device->device_make_and_model[0] != '\0')
+      pp_print_device_get_device_make_and_model (device) != NULL &&
+      pp_print_device_get_device_make_and_model (device)[0] != '\0')
     {
-      name = g_strdup (device->device_make_and_model);
+      name = g_strdup (pp_print_device_get_device_make_and_model (device));
     }
 
   if (name == NULL &&
-      device->device_original_name != NULL &&
-      device->device_original_name[0] != '\0')
+      pp_print_device_get_device_original_name (device) != NULL &&
+      pp_print_device_get_device_original_name (device)[0] != '\0')
     {
-      name = g_strdup (device->device_original_name);
+      name = g_strdup (pp_print_device_get_device_original_name (device));
     }
 
   if (name == NULL &&
-      device->device_info != NULL &&
-      device->device_info[0] != '\0')
+      pp_print_device_get_device_info (device) != NULL &&
+      pp_print_device_get_device_info (device)[0] != '\0')
     {
-      name = g_strdup (device->device_info);
+      name = g_strdup (pp_print_device_get_device_info (device));
     }
+
+  if (name == NULL)
+    return NULL;
 
   g_strstrip (name);
   g_strcanon (name, ALLOWED_CHARACTERS, '-');
@@ -4273,17 +3915,17 @@ canonicalize_device_name (GList         *devices,
         if (g_strcmp0 (dests[j].name, new_name) == 0)
           already_present = TRUE;
 
-      for (iter = devices; iter; iter = iter->next)
+      for (iter = device_names; iter; iter = iter->next)
         {
-          item = (PpPrintDevice *) iter->data;
-          if (g_strcmp0 (item->device_original_name, new_name) == 0)
+          gchar *device_original_name = iter->data;
+          if (g_strcmp0 (device_original_name, new_name) == 0)
             already_present = TRUE;
         }
 
-      for (iter = new_devices; iter; iter = iter->next)
+      for (iter = local_cups_devices; iter; iter = iter->next)
         {
           item = (PpPrintDevice *) iter->data;
-          if (g_strcmp0 (item->device_original_name, new_name) == 0)
+          if (g_strcmp0 (pp_print_device_get_device_original_name (item), new_name) == 0)
             already_present = TRUE;
         }
 

@@ -44,12 +44,20 @@ GType g_desktop_visual_bell_type_get_type (void) G_GNUC_CONST;
 #define G_DESKTOP_TYPE_DESKTOP_VISUAL_BELL_TYPE (g_desktop_visual_bell_type_get_type())
 GType g_desktop_location_accuracy_level_get_type (void) G_GNUC_CONST;
 #define G_DESKTOP_TYPE_DESKTOP_LOCATION_ACCURACY_LEVEL (g_desktop_location_accuracy_level_get_type())
-GType g_desktop_touchpad_scroll_method_get_type (void) G_GNUC_CONST;
-#define G_DESKTOP_TYPE_DESKTOP_TOUCHPAD_SCROLL_METHOD (g_desktop_touchpad_scroll_method_get_type())
 GType g_desktop_touchpad_handedness_get_type (void) G_GNUC_CONST;
 #define G_DESKTOP_TYPE_DESKTOP_TOUCHPAD_HANDEDNESS (g_desktop_touchpad_handedness_get_type())
+GType g_desktop_touchpad_click_method_get_type (void) G_GNUC_CONST;
+#define G_DESKTOP_TYPE_DESKTOP_TOUCHPAD_CLICK_METHOD (g_desktop_touchpad_click_method_get_type())
 GType g_desktop_device_send_events_get_type (void) G_GNUC_CONST;
 #define G_DESKTOP_TYPE_DESKTOP_DEVICE_SEND_EVENTS (g_desktop_device_send_events_get_type())
+GType g_desktop_tablet_mapping_get_type (void) G_GNUC_CONST;
+#define G_DESKTOP_TYPE_DESKTOP_TABLET_MAPPING (g_desktop_tablet_mapping_get_type())
+GType g_desktop_pad_button_action_get_type (void) G_GNUC_CONST;
+#define G_DESKTOP_TYPE_DESKTOP_PAD_BUTTON_ACTION (g_desktop_pad_button_action_get_type())
+GType g_desktop_stylus_button_action_get_type (void) G_GNUC_CONST;
+#define G_DESKTOP_TYPE_DESKTOP_STYLUS_BUTTON_ACTION (g_desktop_stylus_button_action_get_type())
+GType g_desktop_pointer_accel_profile_get_type (void) G_GNUC_CONST;
+#define G_DESKTOP_TYPE_DESKTOP_POINTER_ACCEL_PROFILE (g_desktop_pointer_accel_profile_get_type())
 /* enumerations from "cc-background-item.h" */
 GType cc_background_item_flags_get_type (void) G_GNUC_CONST;
 #define G_DESKTOP_TYPE_BACKGROUND_ITEM_FLAGS (cc_background_item_flags_get_type())

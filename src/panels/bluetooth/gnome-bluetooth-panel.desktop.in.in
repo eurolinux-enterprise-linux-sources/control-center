@@ -1,15 +1,18 @@
 [Desktop Entry]
-_Name=Bluetooth
+# Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+_Name=Blue­tooth
 _Comment=Turn Bluetooth on and off and connect your devices
 Icon=bluetooth
 Exec=gnome-control-center bluetooth
 Terminal=false
 Type=Application
 NoDisplay=true
-Categories=GTK;GNOME;Settings;X-GNOME-NetworkSettings;HardwareSettings;X-GNOME-Settings-Panel;
+Categories=GTK;GNOME;Settings;X-GNOME-NetworkSettings;HardwareSettings;X-GNOME-Settings-Panel;X-GNOME-ConnectivitySettings;
 OnlyShowIn=GNOME;Unity;
 StartupNotify=true
 X-GNOME-Bugzilla-Bugzilla=GNOME
 X-GNOME-Bugzilla-Product=gnome-bluetooth
 X-GNOME-Bugzilla-Component=properties
 X-GNOME-Bugzilla-Version=@VERSION@
+# Translators: those are keywords for the bluetooth control-center panel
+_Keywords=share;sharing;bluetooth;obex;

@@ -8,25 +8,73 @@
       <column type="gchararray"/>
     </columns>
   </object>
-  <object class="GtkListStore" id="account-type-model">
-    <columns>
-      <!-- column-name gchararray -->
-      <column type="gchararray"/>
-      <!-- column-name gint -->
-      <column type="gint"/>
-    </columns>
-    <data>
-      <row>
-        <col id="0" translatable="yes" context="Account type">Standard</col>
-        <col id="1">0</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes" context="Account type">Administrator</col>
-        <col id="1">1</col>
-      </row>
-    </data>
-  </object>
-
+  <template class="UmAccountDialog" parent="GtkDialog">
+    <property name="can_focus">False</property>
+    <property name="border_width">5</property>
+    <property name="resizable">False</property>
+    <property name="modal">True</property>
+    <property name="destroy_with_parent">True</property>
+    <property name="type_hint">dialog</property>
+    <property name="title" translatable="yes">Add User</property>
+    <property name="icon_name">system-users</property>
+    <property name="use_header_bar">1</property>
+    <child internal-child="headerbar">
+      <object class="GtkHeaderBar" id="headerbar">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="show_close_button">False</property>
+        <child>
+          <object class="GtkButton" id="button1">
+            <property name="label" translatable="yes">_Cancel</property>
+            <property name="visible">True</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="can_default">True</property>
+            <property name="receives_default">True</property>
+            <property name="use_action_appearance">False</property>
+            <property name="use_underline">True</property>
+            <property name="valign">center</property>
+            <style>
+              <class name="text-button"/>
+            </style>
+          </object>
+          <packing>
+            <property name="pack_type">start</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="button2">
+            <property name="label" translatable="yes">_Add</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="can_default">True</property>
+            <property name="has_default">True</property>
+            <property name="receives_default">True</property>
+            <property name="use_action_appearance">False</property>
+            <property name="use_underline">True</property>
+            <property name="valign">center</property>
+            <style>
+              <class name="text-button"/>
+              <class name="suggested-action"/>
+            </style>
+          </object>
+          <packing>
+            <property name="pack_type">end</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSpinner" id="spinner">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="valign">center</property>
+          </object>
+          <packing>
+            <property name="pack_type">end</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <child internal-child="vbox">
       <object class="GtkBox" id="account-dialog">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
@@ -39,20 +87,21 @@
             <property name="border_width">6</property>
             <property name="margin_bottom">6</property>
             <child>
-              <object class="GtkGrid" id="local-area">
+              <object class="GtkGrid" id="local_area">
                 <property name="visible">True</property>
                 <property name="hexpand">True</property>
                 <property name="column_spacing">6</property>
                 <property name="row_spacing">6</property>
+                <property name="halign">center</property>
                 <child>
-                  <object class="GtkComboBoxText" id="local-username">
+                  <object class="GtkComboBoxText" id="local_username">
                     <property name="visible">True</property>
                     <property name="has_entry">True</property>
                     <property name="entry_text_column">0</property>
                     <property name="model">username-model</property>
                     <property name="hexpand">True</property>
                     <child internal-child="entry">
-                      <object class="GtkEntry" id="local-username-entry">
+                      <object class="GtkEntry" id="local_username_entry">
                         <property name="activates_default">True</property>
                       </object>
                     </child>
@@ -63,7 +112,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="local-username-hint">
+                  <object class="GtkLabel" id="local_username_hint">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="yalign">0</property>
@@ -92,7 +141,7 @@
                     <property name="xalign">1</property>
                     <property name="label" translatable="yes">_Username</property>
                     <property name="use_underline">True</property>
-                    <property name="mnemonic_widget">local-username</property>
+                    <property name="mnemonic_widget">local_username</property>
                     <property name="margin_start">12</property>
                     <style>
                       <class name="dim-label"/>
@@ -104,7 +153,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="local-name">
+                  <object class="GtkEntry" id="local_name">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="activates_default">True</property>
@@ -121,7 +170,7 @@
                     <property name="xalign">1</property>
                     <property name="label" translatable="yes">_Full Name</property>
                     <property name="use_underline">True</property>
-                    <property name="mnemonic_widget">local-name</property>
+                    <property name="mnemonic_widget">local_name</property>
                     <property name="margin_start">12</property>
                     <style>
                       <class name="dim-label"/>
@@ -133,15 +182,32 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox" id="local-account-type">
+                  <object class="GtkBox" id="local-account-type">
                     <property name="visible">True</property>
-                    <property name="model">account-type-model</property>
-                    <property name="hexpand">True</property>
+                    <property name="can_focus">False</property>
+                    <style>
+                      <class name="linked"/>
+                    </style>
                     <child>
-                      <object class="GtkCellRendererText" id="account-type-cell"/>
-                      <attributes>
-                        <attribute name="text">0</attribute>
-                      </attributes>
+                      <object class="GtkRadioButton" id="account_type_standard">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="hexpand">True</property>
+                        <property name="label" translatable="yes">Standard</property>
+                        <property name="draw_indicator">False</property>
+                        <property name="height_request">35</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkRadioButton" id="account-type-admin">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="hexpand">True</property>
+                        <property name="label" translatable="yes">Administrator</property>
+                        <property name="draw_indicator">False</property>
+                        <property name="height_request">35</property>
+                        <property name="group">account_type_standard</property>
+                      </object>
                     </child>
                   </object>
                   <packing>
@@ -170,7 +236,6 @@
                   <object class="GtkLabel" id="label1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="xalign">0</property>
                     <property name="label" translatable="yes">Password</property>
                     <property name="margin_top">12</property>
                     <attributes>
@@ -187,29 +252,31 @@
                     <property name="visible">True</property>
                     <property name="orientation">vertical</property>
                     <child>
-                      <object class="GtkRadioButton" id="local-password-login-radio">
-                        <property name="label" translatable="yes">Allow user to set a password when they next login</property>
+                      <object class="GtkRadioButton" id="local_password_login_radio">
+                        <property name="label" translatable="yes">Allow user to set a password when they next _login</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
-                        <property name="xalign">0</property>
                         <property name="active">True</property>
                         <property name="draw_indicator">True</property>
+                        <property name="use_underline">True</property>
+                        <property name="margin_start">12</property>
                       </object>
                       <packing>
                         <property name="position">0</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkRadioButton" id="local-password-now-radio">
-                        <property name="label" translatable="yes">Set a password now</property>
+                      <object class="GtkRadioButton" id="local_password_radio">
+                        <property name="label" translatable="yes">Set a password _now</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
-                        <property name="xalign">0</property>
                         <property name="active">True</property>
                         <property name="draw_indicator">True</property>
-                        <property name="group">local-password-login-radio</property>
+                        <property name="group">local_password_login_radio</property>
+                        <property name="use_underline">True</property>
+                        <property name="margin_start">12</property>
                       </object>
                       <packing>
                         <property name="position">1</property>
@@ -230,7 +297,7 @@
                     <property name="xalign">1</property>
                     <property name="label" translatable="yes">_Password</property>
                     <property name="use_underline">True</property>
-                    <property name="mnemonic_widget">local-password</property>
+                    <property name="mnemonic_widget">local_password</property>
                     <property name="margin_start">12</property>
                     <style>
                       <class name="dim-label"/>
@@ -244,7 +311,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="local-password">
+                  <object class="GtkEntry" id="local_password">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="has_tooltip">True</property>
@@ -253,6 +320,7 @@
                     <property name="invisible_char_set">True</property>
                     <property name="hexpand">True</property>
                     <property name="activates_default">True</property>
+                    <property name="input_purpose">password</property>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
@@ -262,7 +330,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLevelBar" id="local-strength-indicator">
+                  <object class="GtkLevelBar" id="local_strength_indicator">
                     <property name="visible">True</property>
                     <property name="mode">discrete</property>
                     <property name="max-value">4</property>
@@ -279,7 +347,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="local-hint">
+                  <object class="GtkLabel" id="local_hint">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="yalign">0</property>
@@ -309,9 +377,9 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="xalign">1</property>
-                    <property name="label" translatable="yes">_Verify</property>
+                    <property name="label" translatable="yes">_Confirm</property>
                     <property name="use_underline">True</property>
-                    <property name="mnemonic_widget">local-verify</property>
+                    <property name="mnemonic_widget">local_verify</property>
                     <property name="margin_start">12</property>
                     <style>
                       <class name="dim-label"/>
@@ -325,13 +393,14 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="local-verify">
+                  <object class="GtkEntry" id="local_verify">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="visibility">False</property>
                     <property name="invisible_char">●</property>
                     <property name="invisible_char_set">True</property>
                     <property name="hexpand">True</property>
+                    <property name="input_purpose">password</property>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
@@ -341,7 +410,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="local-verify-hint">
+                  <object class="GtkLabel" id="local_verify_hint">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="yalign">0</property>
@@ -381,7 +450,7 @@
                   <object class="GtkLabel" id="label10">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Enterprise login allows an existing centrally managed user account to be used on this device.</property>
+                    <property name="label" translatable="yes">Enterprise login allows an existing centrally managed user account to be used on this device. You can also use this account to access company resources on the internet.</property>
                     <property name="wrap">True</property>
                     <property name="wrap_mode">word-char</property>
                     <property name="margin_bottom">12</property>
@@ -404,7 +473,7 @@
                     <property name="xalign">1</property>
                     <property name="label" translatable="yes">_Domain</property>
                     <property name="use_underline">True</property>
-                    <property name="mnemonic_widget">enterprise-domain</property>
+                    <property name="mnemonic_widget">enterprise_domain</property>
                     <property name="margin_start">12</property>
                     <style>
                       <class name="dim-label"/>
@@ -424,7 +493,7 @@
                     <property name="xalign">1</property>
                     <property name="label" translatable="yes">_Username</property>
                     <property name="use_underline">True</property>
-                    <property name="mnemonic_widget">enterprise-login</property>
+                    <property name="mnemonic_widget">enterprise_login</property>
                     <property name="margin_start">12</property>
                     <style>
                       <class name="dim-label"/>
@@ -444,7 +513,7 @@
                     <property name="xalign">1</property>
                     <property name="label" translatable="yes">_Password</property>
                     <property name="use_underline">True</property>
-                    <property name="mnemonic_widget">enterprise-password</property>
+                    <property name="mnemonic_widget">enterprise_password</property>
                     <property name="margin_start">12</property>
                     <style>
                       <class name="dim-label"/>
@@ -484,14 +553,14 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox" id="enterprise-domain">
+                  <object class="GtkComboBox" id="enterprise_domain">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="hexpand">True</property>
                     <property name="has_entry">True</property>
                     <property name="entry_text_column">0</property>
                     <child internal-child="entry">
-                      <object class="GtkEntry" id="combobox-entry">
+                      <object class="GtkEntry" id="enterprise_domain_entry">
                         <property name="can_focus">True</property>
                       </object>
                     </child>
@@ -504,7 +573,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="enterprise-domain-hint">
+                  <object class="GtkLabel" id="enterprise_domain_hint">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="yalign">0</property>
@@ -531,13 +600,14 @@
                 </child>
 
                 <child>
-                  <object class="GtkEntry" id="enterprise-login">
+                  <object class="GtkEntry" id="enterprise_login">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="hexpand">True</property>
                     <property name="invisible_char">●</property>
                     <property name="activates_default">True</property>
                     <property name="invisible_char_set">True</property>
+                    <property name="input_purpose">password</property>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
@@ -547,7 +617,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="enterprise-password">
+                  <object class="GtkEntry" id="enterprise_password">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="hexpand">True</property>
@@ -555,6 +625,7 @@
                     <property name="invisible_char">●</property>
                     <property name="activates_default">True</property>
                     <property name="invisible_char_set">True</property>
+                    <property name="input_purpose">password</property>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
@@ -579,7 +650,7 @@
                   <object class="GtkLabel" id="label18">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Enterprise login allows an existing centrally managed user account to be used on this device.</property>
+                    <property name="label" translatable="yes">Enterprise login allows an existing centrally managed user account to be used on this device. You can also use this account to access company resources on the internet.</property>
                     <property name="wrap">True</property>
                     <property name="wrap_mode">word-char</property>
                     <property name="margin_bottom">12</property>
@@ -600,11 +671,11 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="icon_name">network-offline-symbolic</property>
-                    <property name="pixel_size">64</property>
-                    <property name="yalign">1</property>
+                    <property name="pixel_size">160</property>
                     <property name="vexpand">True</property>
                     <property name="hexpand">True</property>
                     <property name="margin_bottom">6</property>
+                    <property name="valign">end</property>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
@@ -614,11 +685,29 @@
                   </packing>
                 </child>
                 <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">You are Offline</property>
+                    <property name="yalign">0</property>
+                    <property name="justify">center</property>
+                    <property name="hexpand">True</property>
+                    <attributes>
+                      <attribute name="scale" value="1.6"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">2</property>
+                    <property name="width">2</property>
+                    <property name="height">1</property>
+                  </packing>
+                </child>
+                <child>
                   <object class="GtkLabel" id="label17">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Go online to add
-enterprise login accounts.</property>
+                    <property name="label" translatable="yes">You must be online in order to add enterprise users.</property>
                     <property name="yalign">0</property>
                     <property name="justify">center</property>
                     <property name="vexpand">True</property>
@@ -629,7 +718,7 @@ enterprise login accounts.</property>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">2</property>
+                    <property name="top_attach">3</property>
                     <property name="width">2</property>
                     <property name="height">1</property>
                   </packing>
@@ -651,7 +740,7 @@ enterprise login accounts.</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
-              <object class="GtkToggleButton" id="enterprise-button">
+              <object class="GtkToggleButton" id="enterprise_button">
                 <property name="label" translatable="yes">_Enterprise Login</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -665,248 +754,10 @@ enterprise login accounts.</property>
                 <property name="position">0</property>
               </packing>
             </child>
-            <child>
-              <object class="GtkSpinner" id="spinner">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">False</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-      </object>
-  <object class="GtkDialog" id="join-dialog">
-    <property name="can_focus">False</property>
-    <property name="border_width">10</property>
-    <property name="resizable">False</property>
-    <property name="modal">True</property>
-    <property name="destroy_with_parent">True</property>
-    <property name="type_hint">dialog</property>
-    <property name="title" translatable="yes">Add User</property>
-    <property name="use_header_bar">1</property>
-    <child internal-child="headerbar">
-      <object class="GtkHeaderBar" id="join-dialog-header-bar">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="show_close_button">False</property>
-        <child>
-          <object class="GtkButton" id="button1">
-            <property name="label" translatable="yes">_Cancel</property>
-            <property name="visible">True</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="can_default">True</property>
-            <property name="receives_default">True</property>
-            <property name="use_action_appearance">False</property>
-            <property name="use_underline">True</property>
-            <property name="valign">center</property>
-            <style>
-              <class name="text-button"/>
-            </style>
-          </object>
-          <packing>
-            <property name="pack_type">start</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkButton" id="button2">
-            <property name="label" translatable="yes" comments="Translators: This button enrolls the computer in the domain in order to use enterprise logins.">_Enroll</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="can_default">True</property>
-            <property name="has_default">True</property>
-            <property name="receives_default">True</property>
-            <property name="use_action_appearance">False</property>
-            <property name="use_underline">True</property>
-            <property name="valign">center</property>
-            <style>
-              <class name="text-button"/>
-              <class name="suggested-action"/>
-            </style>
-          </object>
-          <packing>
-            <property name="pack_type">end</property>
-          </packing>
-        </child>
-      </object>
-    </child>
-    <child internal-child="vbox">
-      <object class="GtkBox" id="dialog-vbox1">
-        <property name="can_focus">False</property>
-        <property name="orientation">vertical</property>
-        <property name="spacing">2</property>
-        <child>
-          <object class="GtkBox" id="box2">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="border_width">5</property>
-            <property name="orientation">vertical</property>
-            <property name="spacing">10</property>
-            <child>
-              <object class="GtkLabel" id="label71">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Domain Administrator Login</property>
-                <attributes>
-                  <attribute name="weight" value="bold"/>
-                  <attribute name="scale" value="1.2"/>
-                </attributes>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="label12">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="xalign">0</property>
-                <property name="yalign">0</property>
-                <property name="label" translatable="yes">In order to use enterprise logins, this computer needs to be
-enrolled in the domain. Please have your network administrator
-type their domain password here.</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkGrid" id="grid1">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="margin_start">12</property>
-                <property name="hexpand">True</property>
-                <property name="row_spacing">6</property>
-                <property name="column_spacing">12</property>
-                <child>
-                  <object class="GtkLabel" id="label13">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="xalign">1</property>
-                    <property name="label" translatable="yes">_Domain</property>
-                    <property name="use_underline">True</property>
-                    <property name="mnemonic_widget">join-domain</property>
-                    <style>
-                      <class name="dim-label"/>
-                    </style>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">0</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="join-domain">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="margin_top">5</property>
-                    <property name="margin_bottom">5</property>
-                    <property name="xalign">0</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">0</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="label14">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="xalign">1</property>
-                    <property name="label" translatable="yes">Administrator _Name</property>
-                    <property name="use_underline">True</property>
-                    <property name="mnemonic_widget">join-name</property>
-                    <style>
-                      <class name="dim-label"/>
-                    </style>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">1</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkEntry" id="join-name">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="hexpand">True</property>
-                    <property name="invisible_char">●</property>
-                    <property name="invisible_char_set">True</property>
-                    <property name="activates_default">True</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">1</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="label15">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="xalign">1</property>
-                    <property name="label" translatable="yes">Administrator Password</property>
-                    <property name="use_underline">True</property>
-                    <property name="mnemonic_widget">join-password</property>
-                    <style>
-                      <class name="dim-label"/>
-                    </style>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">2</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkEntry" id="join-password">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="hexpand">True</property>
-                    <property name="visibility">False</property>
-                    <property name="invisible_char">●</property>
-                    <property name="activates_default">True</property>
-                    <property name="invisible_char_set">True</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">2</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
             <property name="position">1</property>
           </packing>
         </child>
@@ -916,7 +767,7 @@ type their domain password here.</property>
       <action-widget response="-6">button1</action-widget>
       <action-widget response="-5">button2</action-widget>
     </action-widgets>
-  </object>
+  </template>
   <object class="GtkSizeGroup" id="labels_sizegroup">
     <widgets>
       <widget name="label6"/>
@@ -931,14 +782,28 @@ type their domain password here.</property>
   </object>
   <object class="GtkSizeGroup" id="controls_sizegroup">
     <widgets>
-      <widget name="local-username"/>
-      <widget name="local-name"/>
+      <widget name="local_username"/>
+      <widget name="local_name"/>
       <widget name="local-account-type"/>
-      <widget name="local-password"/>
-      <widget name="local-verify"/>
-      <widget name="enterprise-domain"/>
-      <widget name="enterprise-login"/>
-      <widget name="enterprise-password"/>
+      <widget name="local_password"/>
+      <widget name="local_verify"/>
+      <widget name="enterprise_domain"/>
+      <widget name="enterprise_login"/>
+      <widget name="enterprise_password"/>
+    </widgets>
+  </object>
+  <object class="GtkSizeGroup">
+    <property name="mode">horizontal</property>
+    <widgets>
+      <widget name="account_type_standard"/>
+      <widget name="account-type-admin"/>
+    </widgets>
+  </object>
+  <object class="GtkSizeGroup">
+    <property name="mode">horizontal</property>
+    <widgets>
+      <widget name="button1"/>
+      <widget name="button2"/>
     </widgets>
   </object>
 </interface>

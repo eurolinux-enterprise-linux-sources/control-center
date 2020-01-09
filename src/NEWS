@@ -1,33 +1,550 @@
 ==============
-Version 3.14.5
+Version 3.22.2
 ==============
 
-Display:
-- Close the dialog when the configuration changes
-- Fix memory leaks
+Details:
+- Get renderer from gnome-session under Wayland
+- Show both GPUs on dual-GPU machines
+- Remove trailing spaces in renderer strings
+- Trim AMD renderer strings and add registered trademark
+  symbol for AMD GPUs
+
+Keyboard:
+- Activate search-as-you-type in the scope of the panel
+- Untoggle Edit button on cancel
+- Ensure sensitive entries on creation mode
+- Fix headerbar state when adding shortcut
+
+Mouse:
+- Set min-content-height on the scrolled window
+- Handle trackpoint devices in GsdDeviceManagerX11
 
 Network:
-- Fix a crash in the IPv6 settings dialog
-- Stop "Bridge slaves" and "Gateway" entries from becoming too wide
+- Fix missing page title on wired panel
+- Set a new SSID each time the hotspot is launched
+- Fix initial state of Wi-Fi device
+
+Search:
+- Better debug output when ignoring search providers
+
+Sharing:
+- Hide Vino when using Wayland
+
+User Accounts:
+- Fix crash when name is changed and dialogue closed
+
+==============
+Version 3.22.1
+==============
+
+- Translation updates
+
+Display:
+- Ensure the preselected resolution matches the current mode
+
+Keyboard:
+- Fix capture of Alt+PrintScreen shortcuts
+
+==============
+Version 3.22.0
+==============
+
+Network:
+- Only show a gateway entry for the first IPv4 address, NetworkManager
+  ignored every subsequent ones, but we still had a UI for those
+- Fix application of the default gateway
+- Fix possible crashes when editing IPv4 gateways or routes
+
+Power:
+- Fix "automatic suspend" label not taking batteries into account
+- Fix initial state of the Wi-Fi switch
+
+===============
+Version 3.21.92
+===============
+Privacy:
+- Fix quoting of distro name and privacy URL
+
+Network:
+- Fix warning when enabling hotspot
+- Fix saving of IPv6 gateway
+- Fix warning if IPv6 gateway is empty
+- Fix IPv6 settings not being applicable when method changes
+- Return better error when 8021x security is invalid
+- Avoid warning when ad-hoc mode is invalid
+- Re-set the SSID when enabling the Hotspot
+- Fix crash when changing IPv4 DNS
+
+Keyboard:
+- Many UI changes following up from the panel redesign
+- Don't grab the mouse pointer when capturing shortcuts
+- Don't regrab the keyboard after an event if already grabbed
+- Fix grabs not working when initially showing the dialog
+- Don't apply "Backspace" straight away
+- Allow Tab and Super in accels
+- Normalise Shift and Tab in shortcuts
+- Fix shortcut label in RTL languages
+
+Region:
+- Avoid a crash on panel destruction
+
+===============
+Version 3.21.90
+===============
+
+- Fix truncated panel names for larger fonts
+- Port to libnm 1.2
+- Translation updates
+
+Display:
+- Add option to enable and disable overscan compensation when
+  supported by the driver
+- Ensure only one output is set as primary
+- Separate interlaced from normal modes
+
+Info:
+- Fetch renderer information from gnome-session
+- Show OS build-id
+
+Keyboard:
+- Update to a new design
+
+Mouse:
+- Show only relevant widgets for the hardware we're able to detect
+- Detect and warn if we're running on the synaptics driver
+- Make all listbox rows unactivatable
+- Remove superfluous GtkListBoxRow
+- Allow keyboard navigation/focus to the Touchpad section switches
+- Offer a separate option for edge scrolling
+- Don't allow two-finger and edge scrolling at the same time
+
+Network:
+- Use VPN plugin paths as specified in the .name files
+- Ensure the Wifi list is updated as networks appear/disapper
+- Hide firewall zone combo when firewalld is not running
+- Remove bridge, bond, team, VLAN and virtual devices support - these
+  are most useful on non-desktop systems for which a UI like Cockpit
+  is better suited
+- Remove the first page of the "Add Connection" wizard
+- Update wireless-security UI from network-manager-applet
+- Remember "Ignore CA certificate"
+- Fix removed connections not disappearing
+- Fix hotspot silently failing with long hostname
+- Fix several crashes
+
+Online Accounts:
+- Don't use deprecated GoaProviderGroup API
+- Add a Calendar group
+- Let goa_provider_show_account create the full UI
+
+Power:
+- Translate the "When the Power Button is pressed" drop-down
+- Show "Suspend & Power Off" section only when relevant
+
+Printers:
+- Add compatibility code for older cups
+- Use a panel wide page for empty state
+- Present spinner while populating the panel
+- Rename printers asynchronously
+- Added new async API to check availability of maintenance commands
+- Check all supported CUPS commands, not just the first one
+
+Privacy:
+- React to changes in permissions store
+- Various layout and cosmetic cleanups
+
+Region:
+- Reset the input chooser on escape
+- Improve widget spacing
+
+Search:
+- Work around applications not shipping icons at all sizes
+- Introduce the new Search Locations dialog
+
+Sharing:
+- Update to a new design
+
+Universal Access:
+- Specify a window when testing visual bell
+- Correct label for "Sound Keys"
+- Allow keyboard navigation/focus to the settings switches
+
+User Accounts:
+- Update to a new design
+- Fix missing records in the history dialog
+
+==============
+Version 3.20.0
+==============
+
+- Translation updates
+
+===============
+Version 3.19.92
+===============
+
+All:
+- Dialogues sizing fixes
+
+Color:
+- Fix dialogue title not being translated
+
+Display:
+- Add a frequency/refresh rate drop-down
+
+Privacy:
+- Fix margins around location dialogue widgets
+- Better description for 'Location Services'
+- Vertically center "Location Services" label
+- Only disable apps switches, not the whole row
+
+Printers:
+- Drop border of the "Add" new printer button
+- Fix manual PPD selection dialogue not having a parent
+
+===============
+Version 3.19.91
+===============
+
+Privacy:
+- Add Location Services permissions for sandboxed applications
+
+Printers:
+- Fix a lot (but not all) of possible hangs
+
+Universal Access:
+- Fix empty panel when using newer GTK+
+
+User accounts:
+- Don't link directly to GStreamer
+
+===============
+Version 3.19.90
+===============
+
+- Updated translations
+
+Network:
+- Prevent secrets from getting lost on each connection edit
+- Fix a crash when clicking to forget a VPN on the editor
+
+Printers:
+- Redesign the Printer Jobs Dialog
+
+Region & Language:
+- Prevent a potential crash when exiting the panel
+
+Wacom:
+- Workaround deadlocks in Clutter event handlers
+
+==============
+Version 3.19.5
+==============
+
+- Added plenty of missing widget mnemonics for better UI keyboard
+  navigation
+- Updated translations
+
+Bluetooth:
+- Avoid broken state when enabling Bluetooth
+- Don't change the switch status when transitioning
+- Bump required gnome-bluetooth version to 3.18.2
+
+Network:
+- Elipsize device metadata fields
+
+Region & Language:
+- Ensure that system and user formats are consistent
+
+Sharing:
+- Ensure Tracker rygel plugin is disabled
+
+Wacom:
+- Avoid crashing when opening the panel on wayland sessions
+
+==============
+Version 3.19.4
+==============
+
+- Port to newer Grilo 0.3.0 API
+
+==============
+Version 3.19.3
+==============
+
+- Fix syntax errors in gnome-sharing-panel.desktop
+- Fix a number of memory leaks
+- Require grilo 0.3
+- Better empty state in the printers panel
+- Redesign Mouse and Touchpad panel
+- Move double-click delay, repeat keys delay and cursor blinking
+  to the Universal access panel
+- Remove "General" tab in the Keyboard panel
+- Add configuration for the Power button
+- Use header bars for dialogues in the region panel
+- Add help overlay
+
+==============
+Version 3.18.1
+==============
+
+- Updated translations
+- Fix a crash when disabling Sharing
+- Make section headings accessible in Universal Access,
+  and Region & Language
+- Fix a warning about an unparented dialogue in the Printers panel
+
+==============
+Version 3.18.0
+==============
+
+- Updated translations
+
+===============
+Version 3.17.92
+===============
+
+- Build fixes
+- Updated translations
+
+Power:
+- Fix "automatically brightness" setting not showing up
+
+Printers:
+- Fix crash when certain characters were used, adding a
+  printer manually
+
+Region & Language:
+- Show the current locale instead of en_US as the language
+  if not already set. This happened for newly created users.
+- Fix keyboard navigation in the input chooser
+
+User Accounts:
+- Don't crash if GDM isn't installed
+
+===============
+Version 3.17.90
+===============
+
+Date & Time:
+- Support for new "Pyongyang Time"
+
+Network:
+- Rename hotspot security key to "Password"
+- Fix unintentionally centered checkbutton labels
+
+Notifications:
+- Don't crash because of zero-length string
+
+Power:
+- Improve labels for wifi and mobile broadband toggles
+- Replace WiMax reference with LTE
+
+Printers:
+- Fix a problem where the wrong printer driver would get installed
+
+Region and Language:
+- Don't ever show all input sources in the chooser
+
+Sharing:
+- Accessibility improvements
+- Remove "Bluetooth" (Obex) sharing, moved into the
+  Bluetooth panel
+- Better UI when Bluetooth is disabled
+
+==============
+Version 3.17.3
+==============
+
+Shell:
+- Plenty of command-line options handling fixes
+
+Date & Time:
+- Show date buttons in the order that the locale uses them
+- Further date button ordering fixes for Cechen and HK English
+- Fix incorrect sensitivity when permission is missing
+- Fix accessibility of the hour and minutes spinbuttons
+
+Display:
+- Don't show rotation for builtin display on tablets
+- Add support for tiled monitors (usually 4K monitors)
+
+Network:
+- Fix all Wi-Fi networks having gear buttons
+- Only share a new wifi connection if the user is allowed to
+- Fix possible crash when changing airplane mode
+- Fix possible crash when connections change after Network panel was closed
+
+Power:
+- Describe batteries properly when not called BAT0
+- Fix possible crash if up_client_get_devices() fails
+- Make the automatic suspend row accessible
+
+Printers:
+- Fix possible crash after closing the panel
+- Set focus of the 'New printer dialog' correctly
+- Fix focus chain of the 'New printer dialog'
+- Install selected printer when the row is activated
+- Fix setting of page size
+- Don't expand search entry
+- Show border around 'No printers detected' text
+- Don't show the same device multiple times
+
+Region & Language:
+- Fixes to the region and language lists
+
+Sharing:
+- Make it possible to override SSHD_SERVICE for Debian-based systems
+
+Sound:
+- Support more channels in speaker test
+
+User Accounts:
+- Fix enterprise user login never working
+
+Wacom:
+- Fix window decorations being visible in calibrator window
+
+==============
+Version 3.17.2
+==============
+
+Keyboard:
+- Honor immutable command/name in custom commands
+
+Network:
+- Make the gear buttons round
+- Prevent a use after free crash when removing virtual devices
+
+Power:
+- Add support for display dimming using an ambient light sensor
+- Hide Bluetooth power section when w/o BT
+- Remove "When battery power is critical" label which isn't configurable
+  by normal users since UPower 1.0
+
+==============
+Version 3.16.2
+==============
+
+==============
+Version 3.16.2
+==============
+
+- Updated translations
+- Fix a couple of minor memory leaks
+
+Network:
+- Prevent some dialogs from becoming too wide
+
+Notifications:
+- Make section headings accessible
+- Do not show nameless apps
+- Align icons
+
+Printers:
+- Update printer options correctly
+
+Wacom:
+- Stop using removed last-calibration-resolution gsetting
+
+==============
+Version 3.16.1
+==============
+
+- Updated translations
+- Add AppData file so it cannot be removed in GNOME Software
+
+Color:
+- Set the default profile quality at startup
+- Set the users profile title when generating a profile
+- Allow to change profile color by activating the list box row
+
+Display:
+- Fix some memory leaks
+- Close the dialog when the RR configuration changes
+
+Mouse and Touchpad:
+- Fix checking touchpad capabilities when multiple devices
+  are present
+- Fix sensitivity of two-finger scroll toggle with libinput X11 driver
+- Fix tap-to-click toggle sensitivity with libinput X11 driver
+
+Network:
+- Fix a crash on IPv6 settings dialog
+
+Online accounts:
+- Disable the remove button for locked accounts
+- Prevent the attention-needed icon from getting hidden and widen the list
 
 Power:
 - Make section headings accessible
 
 Printers:
 - Recognize more supply types
-- Update printer options correctly
 
 Sound:
 - Fix duplicated Bluetooth devices
 
 User Accounts:
-- Require newer AccountService
+- Show restart notification when account type changed
+
+Wacom:
+- Support tablets where the stylus doesn't have an eraser such as the
+  Huion and UC-Logic tablets
+- Require udev to be present to build Wayland support
+- Fix possible crashes
 
 ==============
-Version 3.14.4
+Version 3.16.0
 ==============
 
-- Translation updates
+- Updated translations
+
+Network:
+- Fix many reference leaks and potential crashers
+
+Online Accounts:
+- Remove scrollbars with single entry lists
+
+===============
+Version 3.15.92
+===============
+
+- Updated translations
+- Revert "Disable SSLv3 because of POODLE" - gnome-online-accounts now
+  uses WebKit2
+- Make HighContrast icons work
+
+Network:
+- Don't save hidden configuration options
+- Make "only for this network" work for IPv6 VPNs
+
+Power:
+- Fix alignment of "Screen brightness" label
+
+Region:
+- Fix leak in input chooser
+- Reuse the input chooser instance
+
+Sharing:
+- Update help URI
+
+Sound:
+- Prevent two alerts being played at the same time under certain
+  circumstances
+- Fix visibility of bar when orientation is the same as the default
+- Fix a crash when switching inputs or outputs
+
+User Accounts:
+- Fix fingerprint delete dialog formatting
+
+Wacom:
+- Allow button mapping if the stylus has one button too
+- test: add Huion H610 Pro panel
+
+===============
+Version 3.15.91
+===============
 
 Details:
 - Fix a possible crash with Firefox' nightly builds
@@ -35,92 +552,127 @@ Details:
 Display:
 - Fix clone mode leading to broken setups in some cases
 
-Network:
-- Multiple leak and potential crasher fixes
-- Don't save hidden configuration options
-- Make "only for this network" work for IPv6 VPNs
-
 Region:
-- Fix leak in input chooser
-- Reuse the input chooser instance
+- Add a way to sort input sources, so that the default source
+  can be chosen
 
-Sound:
-- Prevent two alerts being played at the same time under certain
-  circumstances
-- Fix a crash when switching inputs or outputs
+User Accounts:
+- Don't show fingerprint options if disabled
+- Fix possible crash handling Enterprise logins
 
-Wacom:
-- Allow button mapping if the stylus has one button too
+- Updated translations
 
-==============
-Version 3.14.3
-==============
+===============
+Version 3.15.90
+===============
 
-- Translation updates
+Common:
+- Fix build on non-Linux systems
+- Remove list box header when remove first item
 
-Background:
-- Fix crash to missing icon
+Details:
+- Fix spelling of VMware
+
+Display:
+- Replace display labeler with gnome-shell's one
+
+Keyboard:
+- Custom shortcut should require name and command
 
 Network:
-- Also work with NetworkManager 1.0
-- Allocate storage for zone name during D-Bus call
+- Fix possible crash when handling zone names
 
 Power:
 - Fix initial state of Bluetooth switch
+- Fix iDevice batteries appearing before they're ready
+- Fix ambiguous wifi and mobile broadband labels
 
-Printers:
-- Remove border around model name
+Privacy:
+- Add automatic problem reporting setting
 
 Sharing:
-- Prevent an endless loop and resulting stack overflow
 - Don't add the folder if the dialog isn't explicity accepted
-- Update help URI
-
-Shell:
-- Unset sort terms when search entry is programatically cleared
-
-Universal Access:
-- Fix typo
 
 User Accounts:
-- Change default size for avatar cropping to match Cheese
-- Don't crash when closing fingerprint dialog
-- Don't crash when network changes
-- Don't show empty row for remote users
+- Update padding on style-updated
+
+Wacom:
+- Fix final use-stock deprecated property
 
 ==============
-Version 3.14.2
+Version 3.15.4
 ==============
 
+Common:
+- Lots of clean ups and porting to non-deprecated GTK+ APIs
+- Reset language chooser to original state when used the 2nd time
+- Use 'UTF-8' instead of 'utf8' as locale codeset suffix improving
+  compatibility with non-GNU libc's
 - Disable SSLv3 because of POODLE
-- Translation updates
+- Unset sort terms when search entry is programatically cleared
+- Adapted to peripheral settings schemas move to
+  gsettings-desktop-schemas
+
+UI:
+- Marked several dialog suggested action buttons as such resulting in
+  the intended blue shade
+- Removed several superfluous frames
+- Fixed several spacing issues
 
 Background:
 - Fix possible crash when date isn't available
 - Fix crash when adding the second color
+- Fix crash when choosing background due to missing icon
+
+Network:
+- Also work with NM 1.0
+- Display an error instead of the panel on NM absence
+- Use a GtkStack to switch between button/spinner fixing the big
+  spinners
+
+Mouse:
+- Fixed to work on wayland sessions
+
+Notifications:
+- Force smaller icons
+- Scroll the view not just the list
+- Design improvements
 
 Power:
 - Disable hover on non-clickable rows
 
 Printers:
-- Automatically keep the selected row scrolled in view
+- Improve scrolling in new printers list
+- Make driver installation dialog modal
+
+Privacy:
+- Fix mnemonic widget for software switch
 
 Region:
-- Make Add/Done buttons blue as intended
-- Don't crash for locales with no country code
+- Don't crash for locales with no country_code
+- Fix a crash when iterating locales
 
 Search:
 - Use g_get_system_data_dirs() to discover providers
+
+Sharing:
+- Prevent an endless loop and resulting stack overflow
+- Put a real description string in the media dialog
 
 Sound:
 - Fix the main volume bars to correctly display changes in volume
 
 Universal Access:
-- Make Add/Done buttons blue as intended
+- Disable hover on non-clickable rows
 
 User Accounts:
 - Fix a crash when taking a photo in the avatar chooser
-- Reset language dialog to original state when used the 2nd time
+- Fix enterprise accounts deleting
+- Change default size for avatar cropping
+- Don't crash when closing fingerprint dialog
+- Don't show empty row for remote users
+- Do not show notification if not needed
+- HiDpi support for user's icons
 
 ==============
 Version 3.14.1

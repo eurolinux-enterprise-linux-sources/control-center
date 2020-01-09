@@ -30,13 +30,9 @@
 #include "cc-shell-log.h"
 #include "cc-window.h"
 
-#if defined(HAVE_CHEESE) || defined(HAVE_WACOM)
+#if defined(HAVE_WACOM)
 #include <clutter-gtk/clutter-gtk.h>
-#endif /* HAVE_CHEESE || HAVE_WACOM */
-
-#ifdef HAVE_CHEESE
-#include <cheese-gtk.h>
-#endif /* HAVE_CHEESE */
+#endif /* HAVE_WACOM */
 
 struct _CcApplicationPrivate
 {
@@ -45,35 +41,13 @@ struct _CcApplicationPrivate
 
 G_DEFINE_TYPE (CcApplication, cc_application, GTK_TYPE_APPLICATION)
 
-G_GNUC_NORETURN static gboolean
-option_version_cb (const gchar *option_name,
-                   const gchar *value,
-                   gpointer     data,
-                   GError     **error)
-{
-  g_print ("%s %s\n", PACKAGE, VERSION);
-  exit (0);
-}
-
-static char **start_panels = NULL;
-static char *search_str = NULL;
-static gboolean show_overview = FALSE;
-static gboolean verbose = FALSE;
-static gboolean show_help = FALSE;
-static gboolean show_help_gtk = FALSE;
-static gboolean show_help_all = FALSE;
-static gboolean list_panels = FALSE;
-
 const GOptionEntry all_options[] = {
-  { "version", 0, G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, option_version_cb, NULL, NULL },
-  { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, N_("Enable verbose mode"), NULL },
-  { "overview", 'o', 0, G_OPTION_ARG_NONE, &show_overview, N_("Show the overview"), NULL },
-  { "search", 's', 0, G_OPTION_ARG_STRING, &search_str, N_("Search for the string"), "SEARCH" },
-  { "list", 'l', 0, G_OPTION_ARG_NONE, &list_panels, N_("List possible panel names and exit"), NULL },
-  { "help", 'h', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE, &show_help, N_("Show help options"), NULL },
-  { "help-all", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE, &show_help_all, N_("Show help options"), NULL },
-  { "help-gtk", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE, &show_help_gtk, N_("Show help options"), NULL },
-  { G_OPTION_REMAINING, '\0', 0, G_OPTION_ARG_FILENAME_ARRAY, &start_panels, N_("Panel to display"), N_("[PANEL] [ARGUMENT…]") },
+  { "version", 0, 0, G_OPTION_ARG_NONE, NULL, N_("Display version number"), NULL },
+  { "verbose", 'v', 0, G_OPTION_ARG_NONE, NULL, N_("Enable verbose mode"), NULL },
+  { "overview", 'o', 0, G_OPTION_ARG_NONE, NULL, N_("Show the overview"), NULL },
+  { "search", 's', 0, G_OPTION_ARG_STRING, NULL, N_("Search for the string"), "SEARCH" },
+  { "list", 'l', 0, G_OPTION_ARG_NONE, NULL, N_("List possible panel names and exit"), NULL },
+  { G_OPTION_REMAINING, '\0', 0, G_OPTION_ARG_FILENAME_ARRAY, NULL, N_("Panel to display"), N_("[PANEL] [ARGUMENT…]") },
   { NULL, 0, 0, 0, NULL, NULL, NULL } /* end the list */
 };
 
@@ -121,70 +95,16 @@ launch_panel_activated (GSimpleAction *action,
   g_application_activate (G_APPLICATION (self));
 }
 
-static int
-cc_application_command_line (GApplication *application,
-                             GApplicationCommandLine *command_line)
+static gint
+cc_application_handle_local_options (GApplication *application, GVariantDict *options)
 {
-  CcApplication *self = CC_APPLICATION (application);
-  int argc;
-  char **argv;
-  int retval = 0;
-  GOptionContext *context;
-  GError *error = NULL;
-  GVariantBuilder *flags_builder;
-
-  verbose = FALSE;
-  show_overview = FALSE;
-  show_help = FALSE;
-  start_panels = NULL;
-
-  flags_builder = g_variant_builder_new (G_VARIANT_TYPE_VARDICT);
-
-  argv = g_application_command_line_get_arguments (command_line, &argc);
-
-  context = g_option_context_new (N_("- Settings"));
-  g_option_context_add_main_entries (context, all_options, GETTEXT_PACKAGE);
-  g_option_context_set_translation_domain(context, GETTEXT_PACKAGE);
-  g_option_context_add_group (context, gtk_get_option_group (TRUE));
-  cc_panel_loader_add_option_groups (context, flags_builder);
-  g_option_context_set_help_enabled (context, FALSE);
-
-  start_panels = NULL;
-  search_str = NULL;
-  show_overview = FALSE;
-  verbose = FALSE;
-  show_help = FALSE;
-  show_help_gtk = FALSE;
-  show_help_all = FALSE;
-  list_panels = FALSE;
-
-  if (g_option_context_parse (context, &argc, &argv, &error) == FALSE)
+  if (g_variant_dict_contains (options, "version"))
     {
-      g_print (_("%s\nRun '%s --help' to see a full list of available command line options.\n"),
-               error->message, argv[0]);
-      g_error_free (error);
-      g_option_context_free (context);
-      return 1;
-    }
-
-  if (show_help || show_help_all || show_help_gtk)
-    {
-      gchar *help;
-      GOptionGroup *group;
-
-      if (show_help || show_help_all)
-        group = NULL;
-      else
-        group = gtk_get_option_group (FALSE);
-
-      help = g_option_context_get_help (context, FALSE, group);
-      g_print ("%s", help);
-      g_free (help);
-      g_option_context_free (context);
+      g_print ("%s %s\n", PACKAGE, VERSION);
       return 0;
     }
 
-  if (list_panels)
+  if (g_variant_dict_contains (options, "list"))
     {
       GList *panels, *l;
 
@@ -199,30 +119,44 @@ cc_application_command_line (GApplication *application,
       return 0;
     }
 
-#ifdef HAVE_CHEESE
-  cheese_gtk_init (&argc, &argv);
-#endif /* HAVE_CHEESE */
+  return -1;
+}
 
-  cc_shell_log_set_debug (verbose);
+static int
+cc_application_command_line (GApplication *application,
+                             GApplicationCommandLine *command_line)
+{
+  CcApplication *self = CC_APPLICATION (application);
+  GVariantDict *options;
+  int retval = 0;
+  char *search_str;
+  GStrv start_panels = NULL;
+  gboolean debug;
+
+  options = g_application_command_line_get_options_dict (command_line);
+
+  debug = g_variant_dict_contains (options, "verbose");
+  cc_shell_log_set_debug (debug);
 
   cc_window_show (self->priv->window);
 
-  if (search_str)
+  if (g_variant_dict_lookup (options, "search", "&s", &search_str))
     {
       cc_window_set_search_item (self->priv->window, search_str);
     }
-  else if (show_overview)
+  else if (g_variant_dict_contains (options, "overview"))
     {
       cc_window_set_overview_page (self->priv->window);
     }
-  else if (start_panels != NULL && start_panels[0] != NULL)
+  else if (g_variant_dict_lookup (options, G_OPTION_REMAINING, "^a&ay", &start_panels))
     {
       const char *start_id;
       GError *err = NULL;
       GVariant *parameters;
-      GVariantBuilder *builder;
+      GVariantBuilder builder;
       int i;
 
+      g_return_val_if_fail (start_panels[0] != NULL, 1);
       start_id = start_panels[0];
 
       if (start_panels[1])
@@ -230,12 +164,11 @@ cc_application_command_line (GApplication *application,
       else
         g_debug ("No extra argument");
 
-      builder = g_variant_builder_new (G_VARIANT_TYPE ("av"));
-      g_variant_builder_add (builder, "v", g_variant_builder_end (flags_builder));
+      g_variant_builder_init (&builder, G_VARIANT_TYPE ("av"));
 
       for (i = 1; start_panels[i] != NULL; i++)
-        g_variant_builder_add (builder, "v", g_variant_new_string (start_panels[i]));
-      parameters = g_variant_builder_end (builder);
+        g_variant_builder_add (&builder, "v", g_variant_new_string (start_panels[i]));
+      parameters = g_variant_builder_end (&builder);
       if (!cc_shell_set_active_panel_from_id (CC_SHELL (self->priv->window), start_id, parameters, &err))
         {
           g_warning ("Could not load setting panel \"%s\": %s", start_id,
@@ -249,16 +182,8 @@ cc_application_command_line (GApplication *application,
         }
     }
 
-  if (start_panels != NULL)
-    {
-      g_strfreev (start_panels);
-      start_panels = NULL;
-    }
-
-  show_overview = FALSE;
-
-  g_option_context_free (context);
-  g_strfreev (argv);
+  g_free (start_panels);
+  start_panels = NULL;
 
   return retval;
 }
@@ -289,19 +214,17 @@ cc_application_startup (GApplication *application)
   GMenu *menu;
   GMenu *section;
   GSimpleAction *action;
+  const gchar *help_accels[] = { "F1", NULL };
 
   G_APPLICATION_CLASS (cc_application_parent_class)->startup (application);
 
-#if defined(HAVE_CHEESE) || defined(HAVE_WACOM)
+#if defined(HAVE_WACOM)
   if (gtk_clutter_init (NULL, NULL) != CLUTTER_INIT_SUCCESS)
     {
       g_critical ("Unable to initialize Clutter");
       return;
     }
-#endif /* HAVE_CHEESE || HAVE_WACOM */
-
-  /* register a symbolic icon size for use in sidebar lists */
-  gtk_icon_size_register ("cc-sidebar-list", 24, 24);
+#endif /* HAVE_WACOM */
 
   action = g_simple_action_new ("help", NULL);
   g_action_map_add_action (G_ACTION_MAP (application), G_ACTION (action));
@@ -325,6 +248,7 @@ cc_application_startup (GApplication *application)
   menu = g_menu_new ();
 
   section = g_menu_new ();
+  g_menu_append (section, _("Keyboard Shortcuts"), "win.show-help-overlay");
   g_menu_append (section, _("Help"), "app.help");
   g_menu_append (section, _("Quit"), "app.quit");
 
@@ -333,8 +257,8 @@ cc_application_startup (GApplication *application)
   gtk_application_set_app_menu (GTK_APPLICATION (application),
                                 G_MENU_MODEL (menu));
 
-  gtk_application_add_accelerator (GTK_APPLICATION (application),
-                                   "F1", "app.help", NULL);
+  gtk_application_set_accels_for_action (GTK_APPLICATION (application),
+                                         "app.help", help_accels);
 
   self->priv->window = cc_window_new (GTK_APPLICATION (application));
 }
@@ -369,6 +293,8 @@ cc_application_dispose (GObject *object)
 static void
 cc_application_init (CcApplication *self)
 {
+  g_application_add_main_option_entries (G_APPLICATION (self), all_options);
+
   self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self,
                                             CC_TYPE_APPLICATION,
                                             CcApplicationPrivate);
@@ -386,6 +312,7 @@ cc_application_class_init (CcApplicationClass *class)
   application_class->activate = cc_application_activate;
   application_class->startup = cc_application_startup;
   application_class->command_line = cc_application_command_line;
+  application_class->handle_local_options = cc_application_handle_local_options;
 
   g_type_class_add_private (class, sizeof (CcApplicationPrivate));
 }

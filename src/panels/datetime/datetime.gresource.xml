@@ -2,6 +2,11 @@
 <gresources>
   <gresource prefix="/org/gnome/control-center/datetime">
     <file preprocess="xml-stripblanks">datetime.ui</file>
+    <file preprocess="xml-stripblanks">little.ui</file>
+    <file preprocess="xml-stripblanks">big.ui</file>
+    <file preprocess="xml-stripblanks">middle.ui</file>
+    <file preprocess="xml-stripblanks">ydm.ui</file>
+    <file>backward</file>
     <file alias="bg.png">data/bg.png</file>
     <file alias="bg_dim.png">data/bg_dim.png</file>
     <file alias="cc.png">data/cc.png</file>
@@ -76,6 +81,8 @@
     <file alias="timezone_-8_dim.png">data/timezone_-8_dim.png</file>
     <file alias="timezone_8.png">data/timezone_8.png</file>
     <file alias="timezone_8_dim.png">data/timezone_8_dim.png</file>
+    <file alias="timezone_8.5.png">data/timezone_8.5.png</file>
+    <file alias="timezone_8.5_dim.png">data/timezone_8.5_dim.png</file>
     <file alias="timezone_8.75.png">data/timezone_8.75.png</file>
     <file alias="timezone_8.75_dim.png">data/timezone_8.75_dim.png</file>
     <file alias="timezone_-9.png">data/timezone_-9.png</file>

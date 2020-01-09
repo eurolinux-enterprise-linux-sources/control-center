@@ -20,6 +20,7 @@
 #include "config.h"
 
 #include <string.h>
+#include <glib/gi18n.h>
 
 
 #include "cc-util.h"
@@ -34,6 +35,8 @@
                         ((c) >= 0x1DC0 && (c) <= 0x1DFF)  || \
                         ((c) >= 0x20D0 && (c) <= 0x20FF)  || \
                         ((c) >= 0xFE20 && (c) <= 0xFE2F))
+
+#define IS_SOFT_HYPHEN(c) ((c) == 0x00AD)
 
 /* Copied from tracker/src/libtracker-fts/tracker-parser-glib.c under the GPL
  * And then from gnome-shell/src/shell-util.c
@@ -75,7 +78,7 @@ cc_util_normalize_casefold_and_unaccent (const char *str)
       next_utf8 = g_utf8_next_char (&tmp[i]);
       utf8_len = next_utf8 - &tmp[i];
 
-      if (IS_CDM_UCS4 ((guint32) unichar))
+      if (IS_CDM_UCS4 (unichar) || IS_SOFT_HYPHEN (unichar))
         {
           /* If the given unichar is a combining diacritical mark,
            * just update the original index, not the output one */
@@ -102,4 +105,47 @@ cc_util_normalize_casefold_and_unaccent (const char *str)
   tmp[j] = '\0';
 
   return tmp;
+}
+
+char *
+cc_util_get_smart_date (GDateTime *date)
+{
+        gchar *label;
+        GDateTime *today, *local;
+        GTimeSpan span;
+
+        /* Set today date */
+        local = g_date_time_new_now_local ();
+        today = g_date_time_new_local (g_date_time_get_year (local),
+                                       g_date_time_get_month (local),
+                                       g_date_time_get_day_of_month (local),
+                                       0, 0, 0);
+
+        span = g_date_time_difference (today, date);
+        if (span <= 0)
+          {
+            label = g_strdup (_("Today"));
+          }
+        else if (span <= G_TIME_SPAN_DAY)
+          {
+            label = g_strdup (_("Yesterday"));
+          }
+        else
+          {
+            if (g_date_time_get_year (date) == g_date_time_get_year (today))
+              {
+                /* Translators: This is a date format string in the style of "Feb 24". */
+                label = g_date_time_format (date, _("%b %e"));
+              }
+            else
+              {
+                /* Translators: This is a date format string in the style of "Feb 24, 2013". */
+                label = g_date_time_format (date, _("%b %e, %Y"));
+              }
+          }
+
+        g_date_time_unref (local);
+        g_date_time_unref (today);
+
+        return label;
 }

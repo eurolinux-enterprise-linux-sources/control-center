@@ -779,7 +779,7 @@ on_permission_changed (GPermission *permission,
   CcDateTimePanelPrivate *priv = CC_DATE_TIME_PANEL (data)->priv;
   gboolean allowed, auto_timezone, using_ntp;
 
-  allowed = (priv->permission == NULL || g_permission_get_allowed (priv->permission));
+  allowed = (priv->permission != NULL && g_permission_get_allowed (priv->permission));
   using_ntp = gtk_switch_get_active (GTK_SWITCH (W("network_time_switch")));
   auto_timezone = gtk_switch_get_active (GTK_SWITCH (W("auto_timezone_switch")));
 
@@ -896,7 +896,7 @@ switch_to_row_transform_func (GBinding        *binding,
   gboolean allowed;
 
   active = g_value_get_boolean (source_value);
-  allowed = (priv->permission == NULL || g_permission_get_allowed (priv->permission));
+  allowed = (priv->permission != NULL && g_permission_get_allowed (priv->permission));
 
   g_value_set_boolean (target_value, !active && allowed);
 
@@ -1208,6 +1208,8 @@ cc_date_time_panel_init (CcDateTimePanel *self)
   GtkTreeModelSort *city_modelsort;
   const char *ampm;
   int ret;
+  const char *date_grid_name;
+  char *tmp;
 
   priv = self->priv = DATE_TIME_PANEL_PRIVATE (self);
   g_resources_register (cc_datetime_get_resource ());
@@ -1238,6 +1240,29 @@ cc_date_time_panel_init (CcDateTimePanel *self)
         g_error_free (error);
       return;
     }
+
+  switch (date_endian_get_default (FALSE)) {
+  case DATE_ENDIANESS_BIG:
+    date_grid_name = "big";
+    break;
+  case DATE_ENDIANESS_LITTLE:
+    date_grid_name = "little";
+    break;
+  case DATE_ENDIANESS_MIDDLE:
+    date_grid_name = "middle";
+    break;
+  case DATE_ENDIANESS_YDM:
+    date_grid_name = "ydm";
+    break;
+  default:
+    g_assert_not_reached ();
+  }
+
+  tmp = g_strdup_printf ("/org/gnome/control-center/datetime/%s.ui", date_grid_name);
+  ret = gtk_builder_add_from_resource (priv->builder, tmp, NULL);
+  g_free (tmp);
+
+  gtk_box_pack_end (GTK_BOX (W ("time-box")), W ("date_grid"), FALSE, TRUE, 0);
 
   /* add the lock button */
   priv->permission = polkit_permission_new_sync (DATETIME_PERMISSION, NULL, NULL, NULL);

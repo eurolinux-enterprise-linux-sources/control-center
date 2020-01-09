@@ -291,21 +291,6 @@ g_desktop_location_accuracy_level_get_type (void)
   return etype;
 }
 GType
-g_desktop_touchpad_scroll_method_get_type (void)
-{
-  static GType etype = 0;
-  if (etype == 0) {
-    static const GEnumValue values[] = {
-      { G_DESKTOP_TOUCHPAD_SCROLL_METHOD_DISABLED, "G_DESKTOP_TOUCHPAD_SCROLL_METHOD_DISABLED", "disabled" },
-      { G_DESKTOP_TOUCHPAD_SCROLL_METHOD_EDGE_SCROLLING, "G_DESKTOP_TOUCHPAD_SCROLL_METHOD_EDGE_SCROLLING", "edge-scrolling" },
-      { G_DESKTOP_TOUCHPAD_SCROLL_METHOD_TWO_FINGER_SCROLLING, "G_DESKTOP_TOUCHPAD_SCROLL_METHOD_TWO_FINGER_SCROLLING", "two-finger-scrolling" },
-      { 0, NULL, NULL }
-    };
-    etype = g_enum_register_static ("GDesktopTouchpadScrollMethod", values);
-  }
-  return etype;
-}
-GType
 g_desktop_touchpad_handedness_get_type (void)
 {
   static GType etype = 0;
@@ -321,6 +306,22 @@ g_desktop_touchpad_handedness_get_type (void)
   return etype;
 }
 GType
+g_desktop_touchpad_click_method_get_type (void)
+{
+  static GType etype = 0;
+  if (etype == 0) {
+    static const GEnumValue values[] = {
+      { G_DESKTOP_TOUCHPAD_CLICK_METHOD_DEFAULT, "G_DESKTOP_TOUCHPAD_CLICK_METHOD_DEFAULT", "default" },
+      { G_DESKTOP_TOUCHPAD_CLICK_METHOD_NONE, "G_DESKTOP_TOUCHPAD_CLICK_METHOD_NONE", "none" },
+      { G_DESKTOP_TOUCHPAD_CLICK_METHOD_AREAS, "G_DESKTOP_TOUCHPAD_CLICK_METHOD_AREAS", "areas" },
+      { G_DESKTOP_TOUCHPAD_CLICK_METHOD_FINGERS, "G_DESKTOP_TOUCHPAD_CLICK_METHOD_FINGERS", "fingers" },
+      { 0, NULL, NULL }
+    };
+    etype = g_enum_register_static ("GDesktopTouchpadClickMethod", values);
+  }
+  return etype;
+}
+GType
 g_desktop_device_send_events_get_type (void)
 {
   static GType etype = 0;
@@ -332,6 +333,68 @@ g_desktop_device_send_events_get_type (void)
       { 0, NULL, NULL }
     };
     etype = g_enum_register_static ("GDesktopDeviceSendEvents", values);
+  }
+  return etype;
+}
+GType
+g_desktop_tablet_mapping_get_type (void)
+{
+  static GType etype = 0;
+  if (etype == 0) {
+    static const GEnumValue values[] = {
+      { G_DESKTOP_TABLET_MAPPING_ABSOLUTE, "G_DESKTOP_TABLET_MAPPING_ABSOLUTE", "absolute" },
+      { G_DESKTOP_TABLET_MAPPING_RELATIVE, "G_DESKTOP_TABLET_MAPPING_RELATIVE", "relative" },
+      { 0, NULL, NULL }
+    };
+    etype = g_enum_register_static ("GDesktopTabletMapping", values);
+  }
+  return etype;
+}
+GType
+g_desktop_pad_button_action_get_type (void)
+{
+  static GType etype = 0;
+  if (etype == 0) {
+    static const GEnumValue values[] = {
+      { G_DESKTOP_PAD_BUTTON_ACTION_NONE, "G_DESKTOP_PAD_BUTTON_ACTION_NONE", "none" },
+      { G_DESKTOP_PAD_BUTTON_ACTION_HELP, "G_DESKTOP_PAD_BUTTON_ACTION_HELP", "help" },
+      { G_DESKTOP_PAD_BUTTON_ACTION_SWITCH_MONITOR, "G_DESKTOP_PAD_BUTTON_ACTION_SWITCH_MONITOR", "switch-monitor" },
+      { G_DESKTOP_PAD_BUTTON_ACTION_KEYBINDING, "G_DESKTOP_PAD_BUTTON_ACTION_KEYBINDING", "keybinding" },
+      { 0, NULL, NULL }
+    };
+    etype = g_enum_register_static ("GDesktopPadButtonAction", values);
+  }
+  return etype;
+}
+GType
+g_desktop_stylus_button_action_get_type (void)
+{
+  static GType etype = 0;
+  if (etype == 0) {
+    static const GEnumValue values[] = {
+      { G_DESKTOP_STYLUS_BUTTON_ACTION_DEFAULT, "G_DESKTOP_STYLUS_BUTTON_ACTION_DEFAULT", "default" },
+      { G_DESKTOP_STYLUS_BUTTON_ACTION_MIDDLE, "G_DESKTOP_STYLUS_BUTTON_ACTION_MIDDLE", "middle" },
+      { G_DESKTOP_STYLUS_BUTTON_ACTION_RIGHT, "G_DESKTOP_STYLUS_BUTTON_ACTION_RIGHT", "right" },
+      { G_DESKTOP_STYLUS_BUTTON_ACTION_BACK, "G_DESKTOP_STYLUS_BUTTON_ACTION_BACK", "back" },
+      { G_DESKTOP_STYLUS_BUTTON_ACTION_FORWARD, "G_DESKTOP_STYLUS_BUTTON_ACTION_FORWARD", "forward" },
+      { 0, NULL, NULL }
+    };
+    etype = g_enum_register_static ("GDesktopStylusButtonAction", values);
+  }
+  return etype;
+}
+GType
+g_desktop_pointer_accel_profile_get_type (void)
+{
+  static GType etype = 0;
+  if (etype == 0) {
+    static const GEnumValue values[] = {
+      { G_DESKTOP_POINTER_ACCEL_PROFILE_DEFAULT, "G_DESKTOP_POINTER_ACCEL_PROFILE_DEFAULT", "default" },
+      { G_DESKTOP_POINTER_ACCEL_PROFILE_FLAT, "G_DESKTOP_POINTER_ACCEL_PROFILE_FLAT", "flat" },
+      { G_DESKTOP_POINTER_ACCEL_PROFILE_ADAPTIVE, "G_DESKTOP_POINTER_ACCEL_PROFILE_ADAPTIVE", "adaptive" },
+      { 0, NULL, NULL }
+    };
+    etype = g_enum_register_static ("GDesktopPointerAccelProfile", values);
   }
   return etype;
 }

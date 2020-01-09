@@ -1,3 +1,5 @@
+include $(top_srcdir)/Makefile.decl
+
 # This is used in PANEL_CFLAGS
 cappletname = datetime
 
@@ -16,9 +18,6 @@ dist_icons256_DATA = icons/256x256/preferences-system-time.png
 iconsscalabledir = $(datadir)/icons/hicolor/scalable/apps
 dist_iconsscalable_DATA = icons/scalable/preferences-system-time.svg
 
-tzdatadir = $(pkgdatadir)/datetime
-dist_tzdata_DATA = backward
-
 AM_CPPFLAGS =						\
 	$(PANEL_CFLAGS)					\
 	$(DATETIME_PANEL_CFLAGS)			\
@@ -26,29 +25,23 @@ AM_CPPFLAGS =						\
 	-DGNOMECC_DATA_DIR="\"$(pkgdatadir)\""		\
 	$(NULL)
 
-noinst_PROGRAMS = test-timezone-gfx test-endianess test-timezone
+# test-timezone is still too noisy
+noinst_PROGRAMS = $(TEST_PROGS) test-timezone
+TEST_PROGS += test-timezone-gfx test-endianess
 
-test_timezone_SOURCES = test-timezone.c cc-timezone-map.h cc-timezone-map.c tz.c tz.h
-test_timezone_LDADD = $(DATETIME_PANEL_LIBS)
+test_timezone_SOURCES = test-timezone.c cc-timezone-map.h cc-timezone-map.c tz.c tz.h cc-datetime-resources.c cc-datetime-resources.h
+test_timezone_LDADD = $(DATETIME_PANEL_LIBS) -lm
 test_timezone_CFLAGS = $(DATETIME_PANEL_CFLAGS)
 
-test_timezone_gfx_SOURCES = test-timezone-gfx.c tz.c tz.h
-test_timezone_gfx_LDADD = $(DATETIME_PANEL_LIBS)
-test_timezone_gfx_CFLAGS = $(DATETIME_PANEL_CFLAGS)
+test_timezone_gfx_SOURCES = test-timezone-gfx.c tz.c tz.h cc-datetime-resources.c cc-datetime-resources.h
+test_timezone_gfx_LDADD = $(DATETIME_PANEL_LIBS) -lm
+test_timezone_gfx_CFLAGS = $(DATETIME_PANEL_CFLAGS) -DSRCDIR="\"$(srcdir)\""
 
 test_endianess_SOURCES = test-endianess.c date-endian.c date-endian.h
 test_endianess_LDADD = $(DATETIME_PANEL_LIBS)
 test_endianess_CFLAGS = $(DATETIME_PANEL_CFLAGS)
 
-all-local: check-local
-
-check-local: test-timezone-gfx test-endianess test-timezone
-	$(builddir)/test-timezone-gfx $(srcdir)/data
-	$(builddir)/test-endianess
-#	$(builddir)/test-timezone
-
 noinst_LTLIBRARIES = libdate_time.la
-
 
 # This requires running d-bus session and accessible timedate1 daemon
 # FIXME: need to find a way how to filter out unnecessary d-bus stuff (introspectable, properties)

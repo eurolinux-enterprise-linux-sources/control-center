@@ -48,6 +48,8 @@
 #define KEY_TEXT_SCALING_FACTOR      "text-scaling-factor"
 #define KEY_GTK_THEME                "gtk-theme"
 #define KEY_ICON_THEME               "icon-theme"
+#define KEY_CURSOR_BLINKING          "cursor-blink"
+#define KEY_CURSOR_BLINKING_TIME     "cursor-blink-time"
 
 /* application settings */
 #define APPLICATION_SETTINGS         "org.gnome.desktop.a11y.applications"
@@ -78,6 +80,10 @@
 #define KEY_MOUSEKEYS_ENABLED        "mousekeys-enable"
 #define KEY_TOGGLEKEYS_ENABLED       "togglekeys-enable"
 
+/* keyboard desktop settings */
+#define KEYBOARD_DESKTOP_SETTINGS    "org.gnome.desktop.peripherals.keyboard"
+#define KEY_REPEAT_KEYS              "repeat"
+
 /* mouse settings */
 #define MOUSE_SETTINGS               "org.gnome.desktop.a11y.mouse"
 #define KEY_SECONDARY_CLICK_ENABLED  "secondary-click-enabled"
@@ -85,6 +91,10 @@
 #define KEY_DWELL_CLICK_ENABLED      "dwell-click-enabled"
 #define KEY_DWELL_TIME               "dwell-time"
 #define KEY_DWELL_THRESHOLD          "dwell-threshold"
+
+/* gnome-settings-daemon settings */
+#define GSD_MOUSE_SETTINGS           "org.gnome.settings-daemon.peripherals.mouse"
+#define KEY_DOUBLE_CLICK_DELAY       "double-click"
 
 #define SCROLL_HEIGHT 490
 
@@ -99,7 +109,9 @@ struct _CcUaPanelPrivate
   GSettings *interface_settings;
   GSettings *kb_settings;
   GSettings *mouse_settings;
+  GSettings *kb_desktop_settings;
   GSettings *application_settings;
+  GSettings *gsd_mouse_settings;
 
   ZoomOptions *zoom_options;
 
@@ -507,6 +519,14 @@ visual_bell_type_toggle_cb (GtkWidget *button,
 }
 
 static void
+test_flash (GtkButton *button,
+            gpointer   data)
+{
+  GtkWidget *toplevel = gtk_widget_get_toplevel (GTK_WIDGET (button));
+  gdk_window_beep (gtk_widget_get_window (toplevel));
+}
+
+static void
 cc_ua_panel_init_hearing (CcUaPanel *self)
 {
   CcUaPanelPrivate *priv = self->priv;
@@ -556,10 +576,33 @@ cc_ua_panel_init_hearing (CcUaPanel *self)
                     G_CALLBACK (gtk_widget_hide_on_delete), NULL);
 
   g_signal_connect (WID ("visual_alerts_test_button"),
-                    "clicked", G_CALLBACK (gdk_beep), NULL);
+                    "clicked", G_CALLBACK (test_flash), NULL);
 }
 
 /* typing/keyboard section */
+static void
+on_repeat_keys_toggled (GSettings *settings, const gchar *key, CcUaPanel *self)
+{
+  gboolean on;
+
+  on = g_settings_get_boolean (settings, KEY_REPEAT_KEYS);
+
+  gtk_label_set_text (GTK_LABEL (WID ("value_repeat_keys")), on ? _("On") : _("Off"));
+
+  gtk_widget_set_sensitive (WID ("repeat-keys-delay-grid"), on);
+  gtk_widget_set_sensitive (WID ("repeat-keys-speed-grid"), on);
+}
+
+static void
+on_cursor_blinking_toggled (GSettings *settings, const gchar *key, CcUaPanel *self)
+{
+  gboolean on;
+
+  on = g_settings_get_boolean (settings, KEY_CURSOR_BLINKING);
+
+  gtk_label_set_text (GTK_LABEL (WID ("value_row_cursor_blinking")), on ? _("On") : _("Off"));
+}
+
 static void
 update_accessx_label (GSettings *settings, const gchar *key, CcUaPanel *self)
 {
@@ -594,6 +637,54 @@ cc_ua_panel_init_keyboard (CcUaPanel *self)
   g_settings_bind (priv->application_settings, KEY_SCREEN_KEYBOARD_ENABLED,
                    sw, "active",
                    G_SETTINGS_BIND_DEFAULT);
+
+  /* Repeat keys */
+  g_signal_connect (priv->kb_desktop_settings, "changed",
+                   G_CALLBACK (on_repeat_keys_toggled), self);
+
+  dialog = WID ("repeat_keys_dialog");
+  priv->toplevels = g_slist_prepend (priv->toplevels, dialog);
+
+  g_object_set_data (G_OBJECT (WID ("row_repeat_keys")), "dialog", dialog);
+
+  g_signal_connect (dialog, "delete-event",
+                    G_CALLBACK (gtk_widget_hide_on_delete), NULL);
+
+  sw = WID ("repeat_keys_switch");
+  g_settings_bind (priv->kb_desktop_settings, KEY_REPEAT_KEYS,
+                   sw, "active",
+                   G_SETTINGS_BIND_DEFAULT);
+  on_repeat_keys_toggled (priv->kb_desktop_settings, NULL, self);
+
+  g_settings_bind (priv->kb_desktop_settings, "delay",
+                   gtk_range_get_adjustment (GTK_RANGE (WID ("repeat_keys_delay_scale"))), "value",
+                   G_SETTINGS_BIND_DEFAULT);
+  g_settings_bind (priv->kb_desktop_settings, "repeat-interval",
+                   gtk_range_get_adjustment (GTK_RANGE (WID ("repeat_keys_speed_scale"))), "value",
+                   G_SETTINGS_BIND_DEFAULT);
+
+  /* Cursor Blinking */
+  g_signal_connect (priv->interface_settings, "changed",
+                    G_CALLBACK (on_cursor_blinking_toggled), self);
+
+  dialog = WID ("cursor_blinking_dialog");
+  priv->toplevels = g_slist_prepend (priv->toplevels, dialog);
+
+  g_object_set_data (G_OBJECT (WID ("row_cursor_blinking")), "dialog", dialog);
+
+  g_signal_connect (dialog, "delete-event",
+                    G_CALLBACK (gtk_widget_hide_on_delete), NULL);
+
+  sw = WID ("cursor_blinking_switch");
+  g_settings_bind (priv->interface_settings, KEY_CURSOR_BLINKING,
+                   sw, "active",
+                   G_SETTINGS_BIND_DEFAULT);
+  on_cursor_blinking_toggled (priv->interface_settings, NULL, self);
+
+  g_settings_bind (priv->interface_settings, KEY_CURSOR_BLINKING_TIME,
+                   gtk_range_get_adjustment (GTK_RANGE (WID ("cursor_blinking_scale"))), "value",
+                   G_SETTINGS_BIND_DEFAULT);
+
 
   /* accessx */
   g_signal_connect (priv->kb_settings, "changed",
@@ -759,24 +850,14 @@ cc_ua_panel_init_mouse (CcUaPanel *self)
 
   g_object_set_data (G_OBJECT (WID ("row_click_assist")), "dialog", dialog);
 
+  g_settings_bind (priv->gsd_mouse_settings, "double-click",
+                   gtk_range_get_adjustment (GTK_RANGE (WID ("scale_double_click_delay"))), "value",
+                   G_SETTINGS_BIND_DEFAULT);
+
+  gtk_scale_add_mark (GTK_SCALE (WID ("scale_double_click_delay")), 400, GTK_POS_BOTTOM, NULL);
+
   g_signal_connect (dialog, "delete-event",
                     G_CALLBACK (gtk_widget_hide_on_delete), NULL);
-}
-
-static void
-on_content_size_changed (GtkWidget *content, GtkAllocation *allocation, GtkWidget *panel)
-{
-  if (allocation->height < SCROLL_HEIGHT)
-    {
-      gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (panel),
-                                      GTK_POLICY_NEVER, GTK_POLICY_NEVER);
-    }
-  else
-    {
-      gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (panel),
-                                      GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-      gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (panel), SCROLL_HEIGHT);
-    }
 }
 
 static void
@@ -796,7 +877,9 @@ cc_ua_panel_init (CcUaPanel *self)
   priv->a11y_settings = g_settings_new (A11Y_SETTINGS);
   priv->wm_settings = g_settings_new (WM_SETTINGS);
   priv->kb_settings = g_settings_new (KEYBOARD_SETTINGS);
+  priv->kb_desktop_settings = g_settings_new (KEYBOARD_DESKTOP_SETTINGS);
   priv->mouse_settings = g_settings_new (MOUSE_SETTINGS);
+  priv->gsd_mouse_settings = g_settings_new (GSD_MOUSE_SETTINGS);
   priv->application_settings = g_settings_new (APPLICATION_SETTINGS);
 
   priv->builder = gtk_builder_new ();
@@ -814,8 +897,7 @@ cc_ua_panel_init (CcUaPanel *self)
   panel = WID ("universal_access_panel");
   content = WID ("universal_access_content");
 
-  g_signal_connect (content, "size-allocate",
-                    G_CALLBACK (on_content_size_changed), panel);
+  gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (panel), SCROLL_HEIGHT);
 
   priv->focus_adjustment = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (panel));
   gtk_container_set_focus_vadjustment (GTK_CONTAINER (content), priv->focus_adjustment);

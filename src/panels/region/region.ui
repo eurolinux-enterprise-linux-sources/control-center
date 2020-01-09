@@ -15,7 +15,7 @@
             <property name="margin_start">134</property>
             <property name="margin_end">134</property>
             <property name="margin_top">24</property>
-            <property name="margin_bottom">24</property>
+            <property name="margin_bottom">32</property>
             <property name="shadow_type">in</property>
             <child>
               <object class="GtkListBox" id="language_list">
@@ -34,10 +34,11 @@
                             <property name="can_focus">False</property>
                             <property name="margin_start">20</property>
                             <property name="margin_end">20</property>
-                            <property name="margin_top">6</property>
-                            <property name="margin_bottom">6</property>
+                            <property name="margin_top">12</property>
+                            <property name="margin_bottom">12</property>
                             <property name="xalign">0</property>
-                            <property name="label" translatable="yes">Language</property>
+                            <property name="label" translatable="yes">_Language</property>
+                            <property name="use_underline">True</property>
                           </object>
                           <packing>
                             <property name="expand">True</property>
@@ -52,8 +53,8 @@
                             <property name="xalign">1</property>
                             <property name="margin_start">20</property>
                             <property name="margin_end">20</property>
-                            <property name="margin_top">6</property>
-                            <property name="margin_bottom">6</property>
+                            <property name="margin_top">12</property>
+                            <property name="margin_bottom">12</property>
                             <property name="label" translatable="yes">English (United Kingdom)</property>
                           </object>
                           <packing>
@@ -79,10 +80,11 @@
                             <property name="can_focus">False</property>
                             <property name="margin_start">20</property>
                             <property name="margin_end">20</property>
-                            <property name="margin_top">6</property>
-                            <property name="margin_bottom">6</property>
+                            <property name="margin_top">12</property>
+                            <property name="margin_bottom">12</property>
                             <property name="xalign">0</property>
-                            <property name="label" translatable="yes">Formats</property>
+                            <property name="label" translatable="yes">_Formats</property>
+                            <property name="use_underline">True</property>
                           </object>
                           <packing>
                             <property name="expand">True</property>
@@ -97,8 +99,8 @@
                             <property name="xalign">1</property>
                             <property name="margin_start">20</property>
                             <property name="margin_end">20</property>
-                            <property name="margin_top">6</property>
-                            <property name="margin_bottom">6</property>
+                            <property name="margin_top">12</property>
+                            <property name="margin_bottom">12</property>
                             <property name="label" translatable="yes">United Kingdom</property>
                           </object>
                           <packing>
@@ -135,18 +137,21 @@
               <object class="GtkBox" id="input_heading_row">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_bottom">6</property>
+                <property name="margin_bottom">12</property>
                 <child>
                   <object class="GtkLabel" id="input_heading">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_start">6</property>
-                    <property name="margin_end">6</property>
+                    <property name="margin_start">2</property>
+                    <property name="margin_end">2</property>
                     <property name="xalign">0</property>
                     <property name="label" translatable="yes">Input Sources</property>
                     <attributes>
                       <attribute name="weight" value="bold"/>
                     </attributes>
+                    <accessibility>
+                      <relation target="input_list" type="label-for"/>
+                    </accessibility>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -156,10 +161,11 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="input_options">
-                    <property name="label" translatable="yes">Options</property>
+                    <property name="label" translatable="yes">_Options</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="use_underline">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -184,6 +190,9 @@
                   <object class="GtkListBox" id="input_list">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <accessibility>
+                      <relation target="input_heading" type="labelled-by"/>
+                    </accessibility>
                   </object>
                 </child>
               </object>
@@ -216,6 +225,11 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
+                            <child internal-child="accessible">
+                              <object class="AtkObject">
+                                <property name="accessible-name" translatable="yes">Add input source</property>
+                              </object>
+                            </child>
                             <child>
                               <object class="GtkImage" id="i_s_a_image">
                                 <property name="visible">True</property>
@@ -236,6 +250,11 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
+                            <child internal-child="accessible">
+                              <object class="AtkObject">
+                                <property name="accessible-name" translatable="yes">Remove input source</property>
+                              </object>
+                            </child>
                             <child>
                               <object class="GtkImage" id="i_s_r_image">
                                 <property name="visible">True</property>
@@ -269,6 +288,81 @@
                   </packing>
                 </child>
                 <child>
+                  <object class="GtkToolItem" id="i_s_ud_item">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <child>
+                      <object class="GtkBox" id="i_s_ud_box">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <object class="GtkButton" id="input_source_up">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <child internal-child="accessible">
+                              <object class="AtkObject">
+                                <property name="accessible-name" translatable="yes">Move input source up</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkImage" id="i_s_up_image">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="icon_name">go-up-symbolic</property>
+                                <property name="icon-size">1</property>
+                              </object>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="input_source_down">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <child internal-child="accessible">
+                              <object class="AtkObject">
+                                <property name="accessible-name" translatable="yes">Move input source down</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkImage" id="i_s_down_image">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="icon_name">go-down-symbolic</property>
+                                <property name="icon-size">1</property>
+                              </object>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkSeparatorToolItem" id="sep2">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="draw">False</property>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                  </packing>
+                </child>
+                <child>
                   <object class="GtkToolItem" id="i_s_sc_item">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
@@ -281,6 +375,11 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
+                            <child internal-child="accessible">
+                              <object class="AtkObject">
+                                <property name="accessible-name" translatable="yes">Configure input source</property>
+                              </object>
+                            </child>
                             <child>
                               <object class="GtkImage" id="i_s_sc_image">
                                 <property name="visible">True</property>
@@ -296,26 +395,16 @@
                             <property name="position">0</property>
                           </packing>
                         </child>
-                      </object>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkToolItem" id="i_s_sl_item">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <child>
-                      <object class="GtkBox" id="i_s_sl_box">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
                         <child>
                           <object class="GtkButton" id="input_source_layout">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
+                            <child internal-child="accessible">
+                              <object class="AtkObject">
+                                <property name="accessible-name" translatable="yes">Show input source keyboard layout</property>
+                              </object>
+                            </child>
                             <child>
                               <object class="GtkImage" id="i_s_sl_image">
                                 <property name="visible">True</property>
@@ -328,7 +417,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">0</property>
+                            <property name="position">1</property>
                           </packing>
                         </child>
                       </object>

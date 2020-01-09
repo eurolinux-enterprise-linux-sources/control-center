@@ -32,7 +32,6 @@
 #include <math.h>
 
 #include "shell/list-box-helper.h"
-#include "cc-rr-labeler.h"
 #include <libupower-glib/upower.h>
 
 CC_PANEL_REGISTER (CcDisplayPanel, cc_display_panel)
@@ -46,7 +45,7 @@ CC_PANEL_REGISTER (CcDisplayPanel, cc_display_panel)
 
 /* The minimum supported size for the panel, see:
  * http://live.gnome.org/Design/SystemSettings */
-#define MINIMUM_WIDTH 675
+#define MINIMUM_WIDTH 740
 #define MINIMUM_HEIGHT 530
 
 
@@ -66,7 +65,6 @@ struct _CcDisplayPanelPrivate
 {
   GnomeRRScreen     *screen;
   GnomeRRConfig     *current_configuration;
-  CcRRLabeler       *labeler;
   GnomeRROutputInfo *current_output;
 
   GnomeBG *background;
@@ -78,15 +76,24 @@ struct _CcDisplayPanelPrivate
   GtkWidget *displays_listbox;
   GtkWidget *arrange_button;
   GtkWidget *res_combo;
+  GtkWidget *freq_combo;
+  GHashTable *res_freqs;
+  GtkWidget *scaling_switch;
   GtkWidget *rotate_left_button;
   GtkWidget *upside_down_button;
   GtkWidget *rotate_right_button;
-  GtkWidget *apply_button;
   GtkWidget *dialog;
   GtkWidget *config_grid;
 
   UpClient *up_client;
   gboolean lid_is_closed;
+
+  GDBusProxy *shell_proxy;
+  GCancellable *shell_cancellable;
+
+  guint       sensor_watch_id;
+  GDBusProxy *iio_sensor_proxy;
+  gboolean    has_accelerometer;
 };
 
 typedef struct
@@ -109,11 +116,93 @@ cc_display_panel_get_output_id (GnomeRROutputInfo *output)
 }
 
 static void
+monitor_labeler_show (CcDisplayPanel *self)
+{
+  CcDisplayPanelPrivate *priv = self->priv;
+  GnomeRROutputInfo **infos, **info;
+  GnomeRROutput *output;
+  GVariantBuilder builder;
+  gint number;
+
+  if (!priv->shell_proxy)
+    return;
+
+  g_variant_builder_init (&builder, G_VARIANT_TYPE_TUPLE);
+  g_variant_builder_open (&builder, G_VARIANT_TYPE_ARRAY);
+
+  infos = gnome_rr_config_get_outputs (priv->current_configuration);
+  for (info = infos; *info; info++)
+    {
+      number = cc_display_panel_get_output_id (*info);
+      if (number == 0)
+        continue;
+
+      output = gnome_rr_screen_get_output_by_name (priv->screen,
+                                                   gnome_rr_output_info_get_name (*info));
+      g_variant_builder_add (&builder, "{uv}",
+                             gnome_rr_output_get_id (output),
+                             g_variant_new_int32 (number));
+    }
+
+  g_variant_builder_close (&builder);
+
+  g_dbus_proxy_call (priv->shell_proxy,
+                     "ShowMonitorLabels",
+                     g_variant_builder_end (&builder),
+                     G_DBUS_CALL_FLAGS_NONE,
+                     -1, NULL, NULL, NULL);
+}
+
+static void
+monitor_labeler_hide (CcDisplayPanel *self)
+{
+  CcDisplayPanelPrivate *priv = self->priv;
+
+  if (!priv->shell_proxy)
+    return;
+
+  g_dbus_proxy_call (priv->shell_proxy,
+                     "HideMonitorLabels",
+                     NULL, G_DBUS_CALL_FLAGS_NONE,
+                     -1, NULL, NULL, NULL);
+}
+
+static void
+ensure_monitor_labels (CcDisplayPanel *self)
+{
+  GList *windows, *w;
+
+  windows = gtk_window_list_toplevels ();
+
+  for (w = windows; w; w = w->next)
+    {
+      if (gtk_window_has_toplevel_focus (GTK_WINDOW (w->data)))
+        {
+          monitor_labeler_show (self);
+          break;
+        }
+    }
+
+  if (!w)
+    monitor_labeler_hide (self);
+
+  g_list_free (windows);
+}
+
+static void
 cc_display_panel_dispose (GObject *object)
 {
   CcDisplayPanelPrivate *priv = CC_DISPLAY_PANEL (object)->priv;
   CcShell *shell;
   GtkWidget *toplevel;
+
+  if (priv->sensor_watch_id > 0)
+    {
+      g_bus_unwatch_name (priv->sensor_watch_id);
+      priv->sensor_watch_id = 0;
+    }
+
+  g_clear_object (&priv->iio_sensor_proxy);
 
   if (output_ids)
     {
@@ -128,10 +217,9 @@ cc_display_panel_dispose (GObject *object)
       if (toplevel != NULL)
         g_signal_handler_disconnect (G_OBJECT (toplevel),
                                      priv->focus_id);
-      cc_rr_labeler_hide (priv->labeler);
       priv->focus_id = 0;
+      monitor_labeler_hide (CC_DISPLAY_PANEL (object));
     }
-  g_clear_object (&priv->labeler);
 
   if (priv->screen_changed_handler_id)
     {
@@ -149,6 +237,10 @@ cc_display_panel_dispose (GObject *object)
       gtk_widget_destroy (priv->dialog);
       priv->dialog = NULL;
     }
+
+  g_cancellable_cancel (priv->shell_cancellable);
+  g_clear_object (&priv->shell_cancellable);
+  g_clear_object (&priv->shell_proxy);
 
   G_OBJECT_CLASS (cc_display_panel_parent_class)->dispose (object);
 }
@@ -186,6 +278,37 @@ should_show_resolution (gint output_width,
   return FALSE;
 }
 
+static void
+apply_rotation_to_geometry (GnomeRROutputInfo *output, int *w, int *h)
+{
+  GnomeRRRotation rotation;
+
+  rotation = gnome_rr_output_info_get_rotation (output);
+  if ((rotation & GNOME_RR_ROTATION_90) || (rotation & GNOME_RR_ROTATION_270))
+    {
+      int tmp;
+      tmp = *h;
+      *h = *w;
+      *w = tmp;
+    }
+}
+
+static void
+get_geometry (GnomeRROutputInfo *output, int *x, int *y, int *w, int *h)
+{
+  if (gnome_rr_output_info_is_active (output))
+    {
+      gnome_rr_output_info_get_geometry (output, x, y, w, h);
+    }
+  else
+    {
+      gnome_rr_output_info_get_geometry (output, x, y, NULL, NULL);
+      *h = gnome_rr_output_info_get_preferred_height (output);
+      *w = gnome_rr_output_info_get_preferred_width (output);
+    }
+
+  apply_rotation_to_geometry (output, w, h);
+}
 
 static void
 on_viewport_changed (FooScrollArea *scroll_area,
@@ -208,33 +331,12 @@ paint_output (CcDisplayPanel    *panel,
               gint               allocated_width,
               gint               allocated_height)
 {
-  GnomeRRRotation rotation;
   GdkPixbuf *pixbuf;
   gint x, y, width, height;
-  gboolean active;
 
-  active = gnome_rr_output_info_is_active (output);
-  if (active)
-    gnome_rr_output_info_get_geometry (output, NULL, NULL, &width, &height);
-  else
-    {
-      width = gnome_rr_output_info_get_preferred_width (output);
-      height = gnome_rr_output_info_get_preferred_height (output);
-    }
-
-  rotation = gnome_rr_output_info_get_rotation (output);
+  get_geometry (output, NULL, NULL, &width, &height);
 
   x = y = 0;
-
-  if ((rotation & GNOME_RR_ROTATION_90) || (rotation & GNOME_RR_ROTATION_270))
-    {
-      gint tmp;
-
-      /* swap width and height */
-      tmp = width;
-      width = height;
-      height = tmp;
-    }
 
   /* scale to fit allocation */
   if (width / (double) height < allocated_width / (double) allocated_height)
@@ -353,17 +455,9 @@ display_preview_new (CcDisplayPanel    *panel,
                      gint               base_height)
 {
   GtkWidget *area;
-  gint width, height, x, y;
-  gboolean active;
+  gint width, height;
 
-  active = gnome_rr_output_info_is_active (output);
-  if (active)
-    gnome_rr_output_info_get_geometry (output, &x, &y, &width, &height);
-  else
-    {
-      width = gnome_rr_output_info_get_preferred_width (output);
-      height = gnome_rr_output_info_get_preferred_height (output);
-    }
+  get_geometry (output, NULL, NULL, &width, &height);
 
   area = gtk_drawing_area_new ();
   g_signal_connect (area, "draw", G_CALLBACK (display_preview_draw), panel);
@@ -386,7 +480,7 @@ on_screen_changed (CcDisplayPanel *panel)
   GnomeRRConfig *current;
   CcDisplayPanelPrivate *priv = panel->priv;
   GnomeRROutputInfo **outputs;
-  gint i, num_active_outputs = 0, num_connected_outputs = 0, number = 0;
+  gint i, num_connected_outputs = 0, number = 0;
   gboolean clone, combined = FALSE;
   GtkSizeGroup *sizegroup;
   GList *sorted_outputs = NULL, *l;
@@ -418,6 +512,9 @@ on_screen_changed (CcDisplayPanel *panel)
     {
       GnomeRROutput *output;
 
+      if (!gnome_rr_output_info_is_primary_tile (outputs[i]))
+	continue;
+
       output = gnome_rr_screen_get_output_by_name (priv->screen,
                                                    gnome_rr_output_info_get_name (outputs[i]));
 
@@ -427,9 +524,6 @@ on_screen_changed (CcDisplayPanel *panel)
       else
         sorted_outputs = g_list_append (sorted_outputs, outputs[i]);
 
-
-      if (gnome_rr_output_info_is_active (outputs[i]))
-        num_active_outputs++;
       num_connected_outputs++;
     }
 
@@ -439,7 +533,6 @@ on_screen_changed (CcDisplayPanel *panel)
     {
       GtkWidget *row, *item, *preview, *label;
       gboolean primary, active;
-      gint x, y, width, height;
       const gchar *status;
       gboolean display_closed = FALSE;
       GnomeRROutput *output;
@@ -456,16 +549,6 @@ on_screen_changed (CcDisplayPanel *panel)
       row = gtk_list_box_row_new ();
       item = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 12);
       gtk_container_set_border_width (GTK_CONTAINER (item), 12);
-
-      active = gnome_rr_output_info_is_active (output_info);
-
-      gnome_rr_output_info_get_geometry (output_info, &x, &y, &width, &height);
-
-      if (!active)
-        {
-          width = gnome_rr_output_info_get_preferred_width (output_info);
-          height = gnome_rr_output_info_get_preferred_height (output_info);
-        }
 
       preview = display_preview_new (panel, output_info, current, ++number,
                                      DISPLAY_PREVIEW_LIST_HEIGHT);
@@ -520,24 +603,9 @@ on_screen_changed (CcDisplayPanel *panel)
   else
     gtk_widget_hide (priv->arrange_button);
 
-  g_clear_object (&priv->labeler);
-  priv->labeler = cc_rr_labeler_new (priv->current_configuration);
+  ensure_monitor_labels (panel);
 }
 
-static void
-apply_rotation_to_geometry (GnomeRROutputInfo *output, int *w, int *h)
-{
-  GnomeRRRotation rotation;
-
-  rotation = gnome_rr_output_info_get_rotation (output);
-  if ((rotation & GNOME_RR_ROTATION_90) || (rotation & GNOME_RR_ROTATION_270))
-    {
-      int tmp;
-      tmp = *h;
-      *h = *w;
-      *w = tmp;
-    }
-}
 
 static void
 realign_outputs_after_resolution_change (CcDisplayPanel *self, GnomeRROutputInfo *output_that_changed, int old_width, int old_height, GnomeRRRotation old_rotation)
@@ -594,6 +662,9 @@ realign_outputs_after_resolution_change (CcDisplayPanel *self, GnomeRROutputInfo
 
       if (outputs[i] == output_that_changed || !gnome_rr_output_info_is_connected (outputs[i]))
         continue;
+
+      if (!gnome_rr_output_info_is_primary_tile (outputs[i]))
+	continue;
 
       gnome_rr_output_info_get_geometry (outputs[i], &output_x, &output_y, &output_width, &output_height);
 
@@ -655,21 +726,7 @@ lay_out_outputs_horizontally (CcDisplayPanel *self)
 
 }
 
-static void
-get_geometry (GnomeRROutputInfo *output, int *w, int *h)
-{
-  if (gnome_rr_output_info_is_active (output))
-    {
-      gnome_rr_output_info_get_geometry (output, NULL, NULL, w, h);
-    }
-  else
-    {
-      *h = gnome_rr_output_info_get_preferred_height (output);
-      *w = gnome_rr_output_info_get_preferred_width (output);
-    }
 
-  apply_rotation_to_geometry (output, w, h);
-}
 
 #define SPACE 15
 #define MARGIN  15
@@ -692,13 +749,16 @@ list_connected_outputs (CcDisplayPanel *self, int *total_w, int *total_h)
   outputs = gnome_rr_config_get_outputs (self->priv->current_configuration);
   for (i = 0; outputs[i] != NULL; ++i)
     {
+      if (!gnome_rr_output_info_is_primary_tile (outputs[i]))
+	continue;
+
       if (gnome_rr_output_info_is_connected (outputs[i]))
 	{
 	  int w, h;
 
 	  result = g_list_prepend (result, outputs[i]);
 
-	  get_geometry (outputs[i], &w, &h);
+	  get_geometry (outputs[i], NULL, NULL, &w, &h);
 
           *total_w += w;
           *total_h += h;
@@ -775,15 +835,7 @@ list_edges_for_output (GnomeRROutputInfo *output, GArray *edges)
 {
   int x, y, w, h;
 
-  gnome_rr_output_info_get_geometry (output, &x, &y, &w, &h);
-
-  if (!gnome_rr_output_info_is_active (output))
-    {
-      h = gnome_rr_output_info_get_preferred_height (output);
-      w = gnome_rr_output_info_get_preferred_width (output);
-    }
-
-  apply_rotation_to_geometry (output, &w, &h);
+  get_geometry (output, &x, &y, &w, &h);
 
   /* Top, Bottom, Left, Right */
   add_edge (output, x, y, x + w, y, edges);
@@ -801,7 +853,11 @@ list_edges (GnomeRRConfig *config, GArray *edges)
   for (i = 0; outputs[i]; ++i)
     {
       if (gnome_rr_output_info_is_connected (outputs[i]))
-	list_edges_for_output (outputs[i], edges);
+	{
+	  if (!gnome_rr_output_info_is_primary_tile (outputs[i]))
+	    continue;
+	  list_edges_for_output (outputs[i], edges);
+	}
     }
 }
 
@@ -981,15 +1037,7 @@ output_is_aligned (GnomeRROutputInfo *output, GArray *edges)
 static void
 get_output_rect (GnomeRROutputInfo *output, GdkRectangle *rect)
 {
-  gnome_rr_output_info_get_geometry (output, &rect->x, &rect->y, &rect->width, &rect->height);
-
-  if (!gnome_rr_output_info_is_active (output))
-    {
-      rect->width = gnome_rr_output_info_get_preferred_width (output);
-      rect->height = gnome_rr_output_info_get_preferred_height (output);
-    }
-
-  apply_rotation_to_geometry (output, &rect->width, &rect->height);
+  get_geometry (output, &rect->x, &rect->y, &rect->width, &rect->height);
 }
 
 static gboolean
@@ -1006,6 +1054,8 @@ output_overlaps (GnomeRROutputInfo *output, GnomeRRConfig *config)
   outputs = gnome_rr_config_get_outputs (config);
   for (i = 0; outputs[i]; ++i)
     {
+      if (!gnome_rr_output_info_is_primary_tile (outputs[i]))
+	continue;
       if (outputs[i] != output && gnome_rr_output_info_is_connected (outputs[i]))
 	{
 	  GdkRectangle other_rect;
@@ -1029,6 +1079,8 @@ gnome_rr_config_is_aligned (GnomeRRConfig *config, GArray *edges)
   outputs = gnome_rr_config_get_outputs (config);
   for (i = 0; outputs[i]; ++i)
     {
+      if (!gnome_rr_output_info_is_primary_tile (outputs[i]))
+	continue;
       if (gnome_rr_output_info_is_connected (outputs[i]))
 	{
 	  if (!output_is_aligned (outputs[i], edges))
@@ -1140,7 +1192,7 @@ update_apply_button (CcDisplayPanel *panel)
   if (!gnome_rr_config_applicable (priv->current_configuration,
                                    priv->screen, NULL))
     {
-      gtk_widget_set_sensitive (priv->apply_button, FALSE);
+      gtk_dialog_set_response_sensitive (GTK_DIALOG (priv->dialog), GTK_RESPONSE_ACCEPT, FALSE);
       return;
     }
 
@@ -1192,7 +1244,7 @@ update_apply_button (CcDisplayPanel *panel)
 
   g_object_unref (current_configuration);
 
-  gtk_widget_set_sensitive (priv->apply_button, !config_equal);
+  gtk_dialog_set_response_sensitive (GTK_DIALOG (priv->dialog), GTK_RESPONSE_ACCEPT, !config_equal);
 }
 
 static void
@@ -1335,38 +1387,15 @@ paint_background (FooScrollArea *area,
                   cairo_t       *cr)
 {
   GdkRectangle viewport;
-  GtkWidget *widget;
-  GtkStyleContext *context;
-  GdkRGBA fg, bg;
-
-  widget = GTK_WIDGET (area);
 
   foo_scroll_area_get_viewport (area, &viewport);
-  context = gtk_widget_get_style_context (widget);
-  gtk_style_context_get_color (context, GTK_STATE_FLAG_NORMAL, &fg);
-  gtk_style_context_get_background_color (context, GTK_STATE_FLAG_NORMAL, &bg);
 
-  cairo_set_source_rgba (cr,
-                         (fg.red + bg.red) / 2,
-                         (fg.green + bg.green) / 2,
-                         (fg.blue + bg.blue) / 2,
-                         (fg.alpha + bg.alpha) / 2);
-
+  cairo_set_source_rgba (cr, 0, 0, 0, 0.4);
   cairo_rectangle (cr,
                    viewport.x, viewport.y,
                    viewport.width, viewport.height);
-
-  cairo_fill_preserve (cr);
-
   foo_scroll_area_add_input_from_fill (area, cr, on_canvas_event, NULL);
-
-  cairo_set_source_rgba (cr,
-                         0.7 * bg.red,
-                         0.7 * bg.green,
-                         0.7 * bg.blue,
-                         0.7 * bg.alpha);
-
-  cairo_stroke (cr);
+  cairo_fill (cr);
 }
 
 static void
@@ -1402,12 +1431,11 @@ on_area_paint (FooScrollArea  *area,
       g_list_free (connected_outputs);
 
       foo_scroll_area_get_viewport (area, &viewport);
-      get_geometry (output, &w, &h);
+      get_geometry (output, &output_x, &output_y, &w, &h);
 
       viewport.height -= 2 * MARGIN;
       viewport.width -= 2 * MARGIN;
 
-      gnome_rr_output_info_get_geometry (output, &output_x, &output_y, NULL, NULL);
       x = output_x * scale + MARGIN + (viewport.width - total_w * scale) / 2.0;
       y = output_y * scale + MARGIN + (viewport.height - total_h * scale) / 2.0;
 
@@ -1418,8 +1446,8 @@ on_area_paint (FooScrollArea  *area,
       cairo_fill (cr);
 
       cairo_translate (cr, x, y);
-      paint_output (self, cr, self->priv->current_configuration, list->data,
-                    cc_display_panel_get_output_id (list->data),
+      paint_output (self, cr, self->priv->current_configuration, output,
+                    cc_display_panel_get_output_id (output),
                     w * scale, h * scale);
 
       cairo_restore (cr);
@@ -1442,6 +1470,10 @@ compute_virtual_size_for_configuration (GnomeRRConfig *config, int *ret_width, i
   outputs = gnome_rr_config_get_outputs (config);
   for (i = 0; outputs[i] != NULL; i++)
     {
+
+      if (!gnome_rr_output_info_is_primary_tile (outputs[i]))
+	continue;
+
       if (gnome_rr_output_info_is_active (outputs[i]))
 	{
 	  gnome_rr_output_info_get_geometry (outputs[i], &output_x, &output_y, &output_width, &output_height);
@@ -1511,15 +1543,7 @@ dialog_toplevel_focus_changed (GtkWindow      *window,
                                GParamSpec     *pspec,
                                CcDisplayPanel *self)
 {
-  CcDisplayPanelPrivate *priv = self->priv;
-
-  if (priv->labeler == NULL)
-    return;
-
-  if (gtk_window_has_toplevel_focus (window))
-    cc_rr_labeler_show (priv->labeler);
-  else
-    cc_rr_labeler_hide (priv->labeler);
+  ensure_monitor_labels (self);
 }
 
 static void
@@ -1530,18 +1554,17 @@ show_arrange_displays_dialog (GtkButton      *button,
   GtkWidget *content_area, *area, *vbox, *label;
   gint response;
 
-  priv->dialog = g_object_new (GTK_TYPE_DIALOG, "use-header-bar", TRUE, NULL);
+  /* Title of displays dialog when multiple monitors are present. */
+  priv->dialog = gtk_dialog_new_with_buttons (_("Arrange Combined Displays"),
+                                              GTK_WINDOW (cc_shell_get_toplevel (cc_panel_get_shell (CC_PANEL (panel)))),
+                                              GTK_DIALOG_MODAL | GTK_DIALOG_USE_HEADER_BAR,
+                                              _("_Cancel"), GTK_RESPONSE_CANCEL,
+                                              _("_Apply"), GTK_RESPONSE_ACCEPT,
+                                              NULL);
   g_signal_connect (priv->dialog, "notify::has-toplevel-focus",
                     G_CALLBACK (dialog_toplevel_focus_changed), panel);
-  gtk_window_set_title (GTK_WINDOW (priv->dialog), _("Arrange Combined Displays"));
-  gtk_window_set_transient_for (GTK_WINDOW (priv->dialog),
-                                GTK_WINDOW (cc_shell_get_toplevel (cc_panel_get_shell (CC_PANEL (panel)))));
-  gtk_window_set_modal (GTK_WINDOW (priv->dialog), TRUE);
-  gtk_dialog_add_button (GTK_DIALOG (priv->dialog), _("_Cancel"),
-                         GTK_RESPONSE_CANCEL);
-  priv->apply_button = gtk_dialog_add_button (GTK_DIALOG (priv->dialog), _("_Apply"),
-                                              GTK_RESPONSE_ACCEPT);
-  gtk_widget_set_sensitive (priv->apply_button, FALSE);
+  gtk_dialog_set_default_response (GTK_DIALOG (priv->dialog), GTK_RESPONSE_ACCEPT);
+  gtk_dialog_set_response_sensitive (GTK_DIALOG (priv->dialog), GTK_RESPONSE_ACCEPT, FALSE);
 
   content_area = gtk_dialog_get_content_area (GTK_DIALOG (priv->dialog));
 
@@ -1578,7 +1601,6 @@ show_arrange_displays_dialog (GtkButton      *button,
       on_screen_changed (panel);
     }
 
-  priv->apply_button = NULL;
   gtk_widget_destroy (priv->dialog);
   priv->dialog = NULL;
 }
@@ -1634,15 +1656,17 @@ make_aspect_string (gint width,
 }
 
 static char *
-make_resolution_string (gint width,
-                        gint height)
+make_resolution_string (GnomeRRMode *mode)
 {
+  gint width = gnome_rr_mode_get_width (mode);
+  gint height = gnome_rr_mode_get_height (mode);
   const char *aspect = make_aspect_string (width, height);
+  const char *interlaced = gnome_rr_mode_get_is_interlaced (mode) ? "i" : "";
 
   if (aspect != NULL)
-    return g_strdup_printf ("%d × %d (%s)", width, height, aspect);
+    return g_strdup_printf ("%d × %d%s (%s)", width, height, interlaced, aspect);
   else
-    return g_strdup_printf ("%d × %d", width, height);
+    return g_strdup_printf ("%d × %d%s", width, height, interlaced);
 }
 
 static GtkWidget *
@@ -1658,20 +1682,165 @@ list_box_item (const gchar *title,
 
   label = gtk_label_new (title);
   gtk_container_add (GTK_CONTAINER (item), label);
-  gtk_misc_set_alignment (GTK_MISC (label), 0, 0);
-  gtk_widget_set_size_request (label, 230, -1);
+  gtk_widget_set_halign (label, GTK_ALIGN_START);
   gtk_label_set_line_wrap (GTK_LABEL (label), TRUE);
 
   label = gtk_label_new (subtitle);
   gtk_container_add (GTK_CONTAINER (item), label);
   gtk_style_context_add_class (gtk_widget_get_style_context (label), GTK_STYLE_CLASS_DIM_LABEL);
-  gtk_misc_set_alignment (GTK_MISC (label), 0, 0);
-  gtk_widget_set_size_request (label, 230, -1);
+  gtk_widget_set_halign (label, GTK_ALIGN_START);
   gtk_label_set_line_wrap (GTK_LABEL (label), TRUE);
 
   gtk_container_add (GTK_CONTAINER (row), item);
 
   return row;
+}
+
+static gboolean
+is_atsc_duplicate_freq (GnomeRRMode *mode,
+                        GnomeRRMode *next_mode)
+{
+  double freq, next_freq;
+  gboolean ret;
+
+  if (next_mode == NULL)
+    return FALSE;
+
+  freq = gnome_rr_mode_get_freq_f (mode);
+  next_freq = gnome_rr_mode_get_freq_f (next_mode);
+
+  ret = fabs (freq - (next_freq / 1000.0 * 1001.0)) < 0.01;
+
+  if (ret)
+    g_debug ("Next frequency %f is the NTSC variant of %f",
+             next_freq, freq);
+
+  return ret;
+}
+
+static int
+sort_frequencies (gconstpointer a, gconstpointer b)
+{
+  GnomeRRMode *mode_a = (GnomeRRMode *) a;
+  GnomeRRMode *mode_b = (GnomeRRMode *) b;
+
+  /* Highest to lowest */
+  if (gnome_rr_mode_get_freq_f (mode_a) > gnome_rr_mode_get_freq_f (mode_b))
+    return -1;
+  if (gnome_rr_mode_get_freq_f (mode_a) < gnome_rr_mode_get_freq_f (mode_b))
+    return 1;
+  return 0;
+}
+
+static void
+setup_frequency_combo_box (CcDisplayPanel *panel,
+                           GnomeRRMode    *resolution_mode)
+{
+  CcDisplayPanelPrivate *priv = panel->priv;
+  GnomeRROutput *current_output;
+  GnomeRRMode *current_mode;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  gchar *res;
+  GSList *l, *frequencies;
+  guint i;
+  gboolean prev_dup;
+
+  current_output = gnome_rr_screen_get_output_by_name (priv->screen,
+                                                       gnome_rr_output_info_get_name (priv->current_output));
+  current_mode = gnome_rr_output_get_current_mode (current_output);
+
+  model = gtk_combo_box_get_model (GTK_COMBO_BOX (priv->freq_combo));
+  gtk_list_store_clear (GTK_LIST_STORE (model));
+
+  i = 0;
+  res = make_resolution_string (resolution_mode);
+  frequencies = g_slist_copy (g_hash_table_lookup (priv->res_freqs, res));
+  g_free (res);
+  frequencies = g_slist_sort (frequencies, sort_frequencies);
+  prev_dup = FALSE;
+
+  /* Look for 59.94Hz, and if it exists, remove the 60Hz option
+   * in favour of this NTSC/ATSC frequency.
+   * 60Hz is a "PC" frequency, 59.94Hz is a holdover
+   * from NTSC:
+   * https://en.wikipedia.org/wiki/NTSC#Lines_and_refresh_rate
+   *
+   * We also want to handle this for ~30Hz and ~120Hz */
+  for (l = frequencies; l != NULL; l = l->next)
+    {
+      GnomeRRMode *mode = l->data;
+      GnomeRRMode *next_mode;
+      gchar *freq;
+      gboolean dup;
+
+      if (l->next != NULL)
+        next_mode = l->next->data;
+      else
+        next_mode = NULL;
+
+      dup = is_atsc_duplicate_freq (mode, next_mode);
+      if (dup && mode != current_mode)
+        {
+          prev_dup = TRUE;
+          continue;
+        }
+
+      if (prev_dup)
+        {
+          /* translators: example string is "60 Hz (NTSC)"
+           * NTSC is https://en.wikipedia.org/wiki/NTSC */
+          freq = g_strdup_printf (_("%d Hz (NTSC)"),
+                                  (int) (roundf (gnome_rr_mode_get_freq_f (mode))));
+        }
+      else
+        {
+          /* translators: example string is "60 Hz" */
+          freq = g_strdup_printf (_("%d Hz"), gnome_rr_mode_get_freq (mode));
+        }
+
+      gtk_list_store_insert_with_values (GTK_LIST_STORE (model), &iter,
+                                         -1, 0, freq, 1, mode, -1);
+      g_free (freq);
+
+      if (mode == current_mode)
+        gtk_combo_box_set_active_iter (GTK_COMBO_BOX (priv->freq_combo), &iter);
+
+      prev_dup = dup;
+      i++;
+    }
+
+  g_slist_free (frequencies);
+
+  if (i < 2)
+    {
+      gtk_widget_hide (priv->freq_combo);
+      return;
+    }
+
+  gtk_widget_show (priv->freq_combo);
+  if (gtk_combo_box_get_active (GTK_COMBO_BOX (priv->freq_combo)) == -1)
+    gtk_combo_box_set_active (GTK_COMBO_BOX (priv->freq_combo), 0);
+}
+
+static void
+free_mode_list (gpointer key,
+                gpointer value,
+                gpointer data)
+{
+  g_slist_free (value);
+}
+
+static void
+clear_res_freqs (CcDisplayPanel *panel)
+{
+  CcDisplayPanelPrivate *priv = panel->priv;
+  if (priv->res_freqs)
+    {
+      g_hash_table_foreach (priv->res_freqs, free_mode_list, NULL);
+      g_hash_table_destroy (priv->res_freqs);
+      priv->res_freqs = NULL;
+    }
 }
 
 static void
@@ -1681,18 +1850,18 @@ setup_resolution_combo_box (CcDisplayPanel  *panel,
 {
   CcDisplayPanelPrivate *priv = panel->priv;
   GtkTreeModel *res_model;
-  GHashTable *resolutions;
   gint i;
+
+  clear_res_freqs (panel);
+  priv->res_freqs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
   res_model = gtk_combo_box_get_model (GTK_COMBO_BOX (priv->res_combo));
   gtk_list_store_clear (GTK_LIST_STORE (res_model));
 
-  resolutions = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-
   for (i = 0; modes[i] != NULL; i++)
     {
+      GSList *l;
       gchar *res;
-      gboolean present;
       gint output_width, output_height, mode_width, mode_height;
 
       if (!current_mode)
@@ -1708,35 +1877,34 @@ setup_resolution_combo_box (CcDisplayPanel  *panel,
                                    mode_height))
         continue;
 
-      res = make_resolution_string (gnome_rr_mode_get_width (modes[i]),
-                                    gnome_rr_mode_get_height (modes[i]));
-      present = GPOINTER_TO_INT (g_hash_table_lookup (resolutions, res));
-      if (!present)
+      res = make_resolution_string (modes[i]);
+
+      if ((l = g_hash_table_lookup (priv->res_freqs, res)) == NULL)
         {
           GtkTreeIter iter;
-
-          g_hash_table_insert (resolutions, g_strdup (res),
-                               GINT_TO_POINTER (TRUE));
 
           gtk_list_store_insert_with_values (GTK_LIST_STORE (res_model), &iter,
                                              -1, 0, res, 1, modes[i], -1);
 
           /* select the current mode in the combo box */
           if (gnome_rr_mode_get_width (modes[i]) == gnome_rr_mode_get_width (current_mode)
-              && gnome_rr_mode_get_height (modes[i]) == gnome_rr_mode_get_height (current_mode))
+              && gnome_rr_mode_get_height (modes[i]) == gnome_rr_mode_get_height (current_mode)
+              && gnome_rr_mode_get_is_interlaced (modes[i]) == gnome_rr_mode_get_is_interlaced (current_mode))
             {
               gtk_combo_box_set_active_iter (GTK_COMBO_BOX (priv->res_combo),
                                              &iter);
             }
         }
-      g_free (res);
+
+      l = g_slist_append (l, modes[i]);
+      g_hash_table_replace (priv->res_freqs, res, l);
     }
 
   /* ensure a resolution is selected by default */
   if (gtk_combo_box_get_active (GTK_COMBO_BOX (priv->res_combo)) == -1)
     gtk_combo_box_set_active (GTK_COMBO_BOX (priv->res_combo), 0);
 
-  g_hash_table_destroy (resolutions);
+  setup_frequency_combo_box (panel, current_mode);
 }
 
 
@@ -1895,6 +2063,29 @@ make_display_size_string (int width_mm,
 }
 
 static void
+freq_combo_changed (GtkComboBox    *combo,
+                    CcDisplayPanel *panel)
+{
+  CcDisplayPanelPrivate *priv = panel->priv;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GnomeRRMode *mode;
+
+  model = gtk_combo_box_get_model (combo);
+
+  if (gtk_combo_box_get_active_iter (GTK_COMBO_BOX (combo), &iter))
+    {
+      gtk_tree_model_get (GTK_TREE_MODEL (model), &iter, 1, &mode, -1);
+      if (mode)
+        {
+          gnome_rr_output_info_set_refresh_rate (priv->current_output,
+                                                 gnome_rr_mode_get_freq (mode));
+          update_apply_button (panel);
+        }
+    }
+}
+
+static void
 res_combo_changed (GtkComboBox    *combo,
                    CcDisplayPanel *panel)
 {
@@ -1928,6 +2119,8 @@ res_combo_changed (GtkComboBox    *combo,
         }
 
       update_apply_button (panel);
+
+      setup_frequency_combo_box (panel, mode);
     }
 }
 
@@ -1946,17 +2139,52 @@ sanity_check_rotation (GnomeRROutputInfo *output)
   gnome_rr_output_info_set_rotation (output, rotation);
 }
 
+static gboolean
+should_show_rotation (CcDisplayPanel *panel,
+                      GnomeRROutput  *output)
+{
+  CcDisplayPanelPrivate *priv = panel->priv;
+  gboolean supports_rotation;
+
+  supports_rotation = gnome_rr_output_info_supports_rotation (priv->current_output,
+                                                              GNOME_RR_ROTATION_90 |
+                                                              GNOME_RR_ROTATION_180 |
+                                                              GNOME_RR_ROTATION_270);
+
+  /* Doesn't support rotation at all */
+  if (!supports_rotation)
+    return FALSE;
+
+  /* We can always rotate displays that aren't builtin */
+  if (!gnome_rr_output_is_builtin_display (output))
+    return TRUE;
+
+  /* Only offer rotation if there's no accelerometer */
+  return !priv->has_accelerometer;
+}
+
+static void
+underscan_switch_toggled (CcDisplayPanel *panel)
+{
+  CcDisplayPanelPrivate *priv = panel->priv;
+  gboolean value;
+
+  value = gtk_switch_get_active (GTK_SWITCH (priv->scaling_switch));
+  gnome_rr_output_info_set_underscanning (priv->current_output, value);
+  update_apply_button (panel);
+}
+
 static void
 show_setup_dialog (CcDisplayPanel *panel)
 {
   CcDisplayPanelPrivate *priv = panel->priv;
   GtkWidget *listbox = NULL, *content_area, *item, *box, *frame, *preview;
   GtkWidget *label, *rotate_box;
-  gint i, width_mm, height_mm, old_width, old_height;
+  gint i, width_mm, height_mm, old_width, old_height, grid_pos;
   GnomeRROutput *output;
   gchar *str;
   gboolean clone, was_clone, primary, was_primary, active;
-  GtkListStore *res_model;
+  GtkListStore *res_model, *freq_model;
   GtkCellRenderer *renderer;
   GnomeRRRotation rotation;
   gboolean show_rotation;
@@ -1973,20 +2201,16 @@ show_setup_dialog (CcDisplayPanel *panel)
   output = gnome_rr_screen_get_output_by_name (priv->screen,
                                                gnome_rr_output_info_get_name (priv->current_output));
 
-
-  priv->dialog = g_object_new (GTK_TYPE_DIALOG, "use-header-bar", TRUE, NULL);
+  priv->dialog = gtk_dialog_new_with_buttons (gnome_rr_output_info_get_display_name (priv->current_output),
+                                              GTK_WINDOW (cc_shell_get_toplevel (cc_panel_get_shell (CC_PANEL (panel)))),
+                                              GTK_DIALOG_MODAL | GTK_DIALOG_USE_HEADER_BAR,
+                                              _("_Cancel"), GTK_RESPONSE_CANCEL,
+                                              _("_Apply"), GTK_RESPONSE_ACCEPT,
+                                              NULL);
   g_signal_connect (priv->dialog, "notify::has-toplevel-focus",
                     G_CALLBACK (dialog_toplevel_focus_changed), panel);
-  gtk_window_set_title (GTK_WINDOW (priv->dialog),
-                        gnome_rr_output_info_get_display_name (priv->current_output));
-  gtk_window_set_transient_for (GTK_WINDOW (priv->dialog),
-                                GTK_WINDOW (cc_shell_get_toplevel (cc_panel_get_shell (CC_PANEL (panel)))));
-  gtk_window_set_modal (GTK_WINDOW (priv->dialog), TRUE);
-  gtk_dialog_add_button (GTK_DIALOG (priv->dialog), _("_Cancel"),
-                         GTK_RESPONSE_CANCEL);
-  priv->apply_button = gtk_dialog_add_button (GTK_DIALOG (priv->dialog),
-                                              _("_Apply"), GTK_RESPONSE_ACCEPT);
-  gtk_widget_set_sensitive (priv->apply_button, FALSE);
+  gtk_dialog_set_default_response (GTK_DIALOG (priv->dialog), GTK_RESPONSE_ACCEPT);
+  gtk_dialog_set_response_sensitive (GTK_DIALOG (priv->dialog), GTK_RESPONSE_ACCEPT, FALSE);
   gtk_window_set_resizable (GTK_WINDOW (priv->dialog), FALSE);
 
   content_area = gtk_dialog_get_content_area (GTK_DIALOG (priv->dialog));
@@ -1999,6 +2223,7 @@ show_setup_dialog (CcDisplayPanel *panel)
   gtk_container_add (GTK_CONTAINER (content_area), box);
 
   /* configuration grid */
+  grid_pos = 0;
   priv->config_grid = gtk_grid_new ();
   gtk_widget_set_margin_start (priv->config_grid, 36);
   gtk_widget_set_margin_end (priv->config_grid, 36);
@@ -2011,13 +2236,11 @@ show_setup_dialog (CcDisplayPanel *panel)
                                  priv->current_configuration,
                                  cc_display_panel_get_output_id (priv->current_output),
                                  DISPLAY_PREVIEW_SETUP_HEIGHT);
-  gtk_grid_attach (GTK_GRID (priv->config_grid), preview, 0, 0, 2, 1);
+  gtk_grid_attach (GTK_GRID (priv->config_grid), preview, 0, grid_pos, 2, 1);
+  grid_pos++;
 
   /* rotation */
-  show_rotation = gnome_rr_output_info_supports_rotation (priv->current_output,
-                                                          GNOME_RR_ROTATION_90 |
-                                                          GNOME_RR_ROTATION_180 |
-                                                          GNOME_RR_ROTATION_270);
+  show_rotation = should_show_rotation (panel, output);
   rotation = gnome_rr_output_info_get_rotation (priv->current_output);
 
   if (show_rotation)
@@ -2026,13 +2249,15 @@ show_setup_dialog (CcDisplayPanel *panel)
       gtk_widget_set_margin_bottom (rotate_box, 12);
       gtk_style_context_add_class (gtk_widget_get_style_context (rotate_box),
                                    GTK_STYLE_CLASS_LINKED);
-      gtk_grid_attach (GTK_GRID (priv->config_grid), rotate_box, 0, 1, 2, 1);
+      gtk_grid_attach (GTK_GRID (priv->config_grid), rotate_box, 0, grid_pos, 2, 1);
       gtk_widget_set_halign (rotate_box, GTK_ALIGN_CENTER);
+      grid_pos++;
 
       if (gnome_rr_output_info_supports_rotation (priv->current_output,
                                                   GNOME_RR_ROTATION_90))
         {
           priv->rotate_left_button = gtk_toggle_button_new ();
+          gtk_widget_set_tooltip_text (priv->rotate_left_button, _("Rotate counterclockwise by 90\xc2\xb0"));
           if (rotation == GNOME_RR_ROTATION_90)
             gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->rotate_left_button), TRUE);
           g_signal_connect (priv->rotate_left_button, "clicked",
@@ -2050,6 +2275,7 @@ show_setup_dialog (CcDisplayPanel *panel)
                                                   GNOME_RR_ROTATION_180))
         {
           priv->upside_down_button = gtk_toggle_button_new ();
+          gtk_widget_set_tooltip_text (priv->upside_down_button, _("Rotate by 180\xc2\xb0"));
           if (rotation == GNOME_RR_ROTATION_180)
             gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->upside_down_button), TRUE);
           g_signal_connect (priv->upside_down_button, "clicked",
@@ -2067,6 +2293,7 @@ show_setup_dialog (CcDisplayPanel *panel)
                                                   GNOME_RR_ROTATION_270))
         {
           priv->rotate_right_button = gtk_toggle_button_new ();
+          gtk_widget_set_tooltip_text (priv->rotate_right_button, _("Rotate clockwise by 90\xc2\xb0"));
           if (rotation == GNOME_RR_ROTATION_270)
             gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->rotate_right_button), TRUE);
           g_signal_connect (priv->rotate_right_button, "clicked",
@@ -2090,25 +2317,28 @@ show_setup_dialog (CcDisplayPanel *panel)
       label = gtk_label_new (_("Size"));
       gtk_style_context_add_class (gtk_widget_get_style_context (label),
                                    GTK_STYLE_CLASS_DIM_LABEL);
-      gtk_grid_attach (GTK_GRID (priv->config_grid), label, 0, 2, 1, 1);
+      gtk_grid_attach (GTK_GRID (priv->config_grid), label, 0, grid_pos, 1, 1);
       gtk_widget_set_halign (label, GTK_ALIGN_END);
 
       label = gtk_label_new (str);
-      gtk_grid_attach (GTK_GRID (priv->config_grid), label, 1, 2, 1, 1);
+      gtk_grid_attach (GTK_GRID (priv->config_grid), label, 1, grid_pos, 1, 1);
       gtk_widget_set_halign (label, GTK_ALIGN_START);
       g_free (str);
+
+      grid_pos++;
     }
 
   /* aspect ratio */
   label = gtk_label_new (_("Aspect Ratio"));
   gtk_style_context_add_class (gtk_widget_get_style_context (label),
                                GTK_STYLE_CLASS_DIM_LABEL);
-  gtk_grid_attach (GTK_GRID (priv->config_grid), label, 0, 3, 1, 1);
+  gtk_grid_attach (GTK_GRID (priv->config_grid), label, 0, grid_pos, 1, 1);
   gtk_widget_set_halign (label, GTK_ALIGN_END);
   label = gtk_label_new (make_aspect_string (gnome_rr_output_info_get_preferred_width (priv->current_output),
                                              gnome_rr_output_info_get_preferred_height (priv->current_output)));
-  gtk_grid_attach (GTK_GRID (priv->config_grid), label, 1, 3, 1, 1);
+  gtk_grid_attach (GTK_GRID (priv->config_grid), label, 1, grid_pos, 1, 1);
   gtk_widget_set_halign (label, GTK_ALIGN_START);
+  grid_pos++;
 
   /* resolution combo box */
   res_model = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_POINTER);
@@ -2125,11 +2355,56 @@ show_setup_dialog (CcDisplayPanel *panel)
   label = gtk_label_new (_("Resolution"));
   gtk_style_context_add_class (gtk_widget_get_style_context (label),
                                GTK_STYLE_CLASS_DIM_LABEL);
-  gtk_grid_attach (GTK_GRID (priv->config_grid), label, 0, 4, 1, 1);
-  gtk_grid_attach (GTK_GRID (priv->config_grid), priv->res_combo, 1, 4, 1, 1);
+  gtk_grid_attach (GTK_GRID (priv->config_grid), label, 0, grid_pos, 1, 1);
+  gtk_grid_attach (GTK_GRID (priv->config_grid), priv->res_combo, 1, grid_pos, 1, 1);
+  grid_pos++;
 
   gtk_widget_set_halign (label, GTK_ALIGN_END);
   gtk_widget_set_halign (priv->res_combo, GTK_ALIGN_START);
+
+  /* overscan */
+  if (!gnome_rr_output_is_builtin_display (output) &&
+      gnome_rr_output_supports_underscanning (output))
+    {
+      priv->scaling_switch = gtk_switch_new ();
+      gtk_switch_set_active (GTK_SWITCH (priv->scaling_switch),
+                             gnome_rr_output_info_get_underscanning (priv->current_output));
+      g_signal_connect_swapped (G_OBJECT (priv->scaling_switch), "notify::active",
+                                G_CALLBACK (underscan_switch_toggled), panel);
+
+      label = gtk_label_new (_("Adjust for TV"));
+      gtk_style_context_add_class (gtk_widget_get_style_context (label),
+                                   GTK_STYLE_CLASS_DIM_LABEL);
+      gtk_grid_attach (GTK_GRID (priv->config_grid), label, 0, grid_pos, 1, 1);
+      gtk_grid_attach (GTK_GRID (priv->config_grid), priv->scaling_switch, 1, grid_pos, 1, 1);
+      grid_pos++;
+
+      gtk_widget_set_halign (label, GTK_ALIGN_END);
+      gtk_widget_set_halign (priv->scaling_switch, GTK_ALIGN_START);
+    }
+
+  /* frequency combo box */
+  freq_model = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_POINTER);
+  priv->freq_combo = gtk_combo_box_new_with_model (GTK_TREE_MODEL (freq_model));
+  g_object_unref (freq_model);
+  renderer = gtk_cell_renderer_text_new ();
+  gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (priv->freq_combo), renderer, TRUE);
+  gtk_cell_layout_add_attribute (GTK_CELL_LAYOUT (priv->freq_combo), renderer, "text", 0);
+  g_signal_connect (priv->freq_combo, "changed", G_CALLBACK (freq_combo_changed),
+                    panel);
+  gtk_grid_attach (GTK_GRID (priv->config_grid), priv->freq_combo, 1, grid_pos, 1, 1);
+  gtk_widget_set_halign (priv->freq_combo, GTK_ALIGN_START);
+  gtk_widget_set_no_show_all (priv->freq_combo, TRUE);
+
+  label = gtk_label_new (_("Refresh Rate"));
+  gtk_style_context_add_class (gtk_widget_get_style_context (label),
+                               GTK_STYLE_CLASS_DIM_LABEL);
+  gtk_grid_attach (GTK_GRID (priv->config_grid), label, 0, grid_pos, 1, 1);
+  gtk_widget_set_halign (label, GTK_ALIGN_END);
+  gtk_widget_set_no_show_all (label, TRUE);
+  g_object_bind_property (priv->freq_combo, "visible",
+                          label, "visible", G_BINDING_BIDIRECTIONAL);
+  grid_pos++;
 
   was_clone = clone = gnome_rr_config_get_clone (priv->current_configuration);
   was_primary = primary = gnome_rr_output_info_get_primary (priv->current_output);
@@ -2213,6 +2488,7 @@ show_setup_dialog (CcDisplayPanel *panel)
       if (g_hash_table_size (output_ids) > 1)
         {
           gint new_width, new_height;
+          gboolean primary_chosen = FALSE;
 
           gnome_rr_output_info_get_geometry (priv->current_output, NULL, NULL,
                                              &new_width, &new_height);
@@ -2270,10 +2546,15 @@ show_setup_dialog (CcDisplayPanel *panel)
                   /* ensure no other outputs are primary if this output is now
                    * primary, or find another output to set as primary if this
                    * output is no longer primary */
-
-                  gnome_rr_output_info_set_primary (outputs[i], !primary);
-                  if (!was_primary)
-                    break;
+                  if (primary)
+                    {
+                      gnome_rr_output_info_set_primary (outputs[i], FALSE);
+                    }
+                  else if (!primary_chosen && gnome_rr_output_info_is_primary_tile (outputs[i]))
+                    {
+                      gnome_rr_output_info_set_primary (outputs[i], TRUE);
+                      primary_chosen = TRUE;
+                    }
                 }
             }
 
@@ -2306,7 +2587,8 @@ show_setup_dialog (CcDisplayPanel *panel)
   priv->rotate_left_button = NULL;
   priv->rotate_right_button = NULL;
   priv->res_combo = NULL;
-  priv->apply_button = NULL;
+  priv->freq_combo = NULL;
+  clear_res_freqs (panel);
   gtk_widget_destroy (priv->dialog);
   priv->dialog = NULL;
 }
@@ -2361,6 +2643,106 @@ cc_display_panel_up_client_changed (UpClient       *client,
 
       on_screen_changed (self);
     }
+}
+
+static void
+shell_proxy_ready (GObject        *source,
+                   GAsyncResult   *res,
+                   CcDisplayPanel *self)
+{
+  GDBusProxy *proxy;
+  GError *error = NULL;
+
+  proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
+  if (!proxy)
+    {
+      if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+        g_warning ("Failed to contact gnome-shell: %s", error->message);
+      g_error_free (error);
+      return;
+    }
+
+  self->priv->shell_proxy = proxy;
+
+  ensure_monitor_labels (self);
+}
+
+static void
+update_has_accel (CcDisplayPanel *self)
+{
+  GVariant *v;
+
+  if (self->priv->iio_sensor_proxy == NULL)
+    {
+      g_debug ("Has no accelerometer");
+      self->priv->has_accelerometer = FALSE;
+      return;
+    }
+
+  v = g_dbus_proxy_get_cached_property (self->priv->iio_sensor_proxy, "HasAccelerometer");
+  if (v)
+    {
+      self->priv->has_accelerometer = g_variant_get_boolean (v);
+      g_variant_unref (v);
+    }
+  else
+    {
+      self->priv->has_accelerometer = FALSE;
+    }
+
+  g_debug ("Has %saccelerometer", self->priv->has_accelerometer ? "" : "no ");
+}
+
+static void
+sensor_proxy_properties_changed_cb (GDBusProxy     *proxy,
+                                    GVariant       *changed_properties,
+                                    GStrv           invalidated_properties,
+                                    CcDisplayPanel *self)
+{
+  GVariantDict dict;
+
+  g_variant_dict_init (&dict, changed_properties);
+
+  if (g_variant_dict_contains (&dict, "HasAccelerometer"))
+    update_has_accel (self);
+}
+
+static void
+sensor_proxy_appeared_cb (GDBusConnection *connection,
+                          const gchar     *name,
+                          const gchar     *name_owner,
+                          gpointer         user_data)
+{
+  CcDisplayPanel *self = user_data;
+
+  g_debug ("SensorProxy appeared");
+
+  self->priv->iio_sensor_proxy = g_dbus_proxy_new_sync (connection,
+                                                        G_DBUS_PROXY_FLAGS_NONE,
+                                                        NULL,
+                                                        "net.hadess.SensorProxy",
+                                                        "/net/hadess/SensorProxy",
+                                                        "net.hadess.SensorProxy",
+                                                        NULL,
+                                                        NULL);
+  g_return_if_fail (self->priv->iio_sensor_proxy);
+
+  g_signal_connect (self->priv->iio_sensor_proxy, "g-properties-changed",
+                    G_CALLBACK (sensor_proxy_properties_changed_cb), self);
+  update_has_accel (self);
+}
+
+static void
+sensor_proxy_vanished_cb (GDBusConnection *connection,
+                          const gchar     *name,
+                          gpointer         user_data)
+{
+  CcDisplayPanel *self = user_data;
+
+  g_debug ("SensorProxy vanished");
+
+  g_clear_object (&self->priv->iio_sensor_proxy);
+  update_has_accel (self);
 }
 
 static void
@@ -2447,4 +2829,25 @@ cc_display_panel_init (CcDisplayPanel *self)
     g_clear_object (&self->priv->up_client);
 
   g_signal_connect (self, "map", G_CALLBACK (mapped_cb), NULL);
+
+  self->priv->shell_cancellable = g_cancellable_new ();
+  g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
+                            G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES |
+                            G_DBUS_PROXY_FLAGS_DO_NOT_CONNECT_SIGNALS |
+                            G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START,
+                            NULL,
+                            "org.gnome.Shell",
+                            "/org/gnome/Shell",
+                            "org.gnome.Shell",
+                            self->priv->shell_cancellable,
+                            (GAsyncReadyCallback) shell_proxy_ready,
+                            self);
+
+  priv->sensor_watch_id = g_bus_watch_name (G_BUS_TYPE_SYSTEM,
+                                            "net.hadess.SensorProxy",
+                                            G_BUS_NAME_WATCHER_FLAGS_NONE,
+                                            sensor_proxy_appeared_cb,
+                                            sensor_proxy_vanished_cb,
+                                            self,
+                                            NULL);
 }

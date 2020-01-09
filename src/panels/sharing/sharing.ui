@@ -2,124 +2,6 @@
 <!-- Generated with glade 3.18.1 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
-  <object class="GtkDialog" id="bluetooth-sharing-dialog">
-    <property name="can_focus">False</property>
-    <property name="border_width">5</property>
-    <property name="title" translatable="yes">Bluetooth Sharing</property>
-    <property name="resizable">False</property>
-    <property name="type_hint">dialog</property>
-    <property name="use_header_bar">1</property>
-    <child internal-child="vbox">
-      <object class="GtkBox" id="dialog-vbox6">
-        <property name="can_focus">False</property>
-        <property name="orientation">vertical</property>
-        <property name="spacing">2</property>
-        <child>
-          <object class="GtkGrid" id="grid1">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="margin_start">12</property>
-            <property name="margin_end">6</property>
-            <property name="margin_top">12</property>
-            <property name="margin_bottom">12</property>
-            <property name="row_spacing">12</property>
-            <property name="column_spacing">6</property>
-            <child>
-              <object class="GtkLabel" id="label1">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="margin_bottom">12</property>
-                <property name="xalign">0</property>
-                <property name="label" translatable="yes">Bluetooth Sharing allows you to share files with other Bluetooth enabled devices</property>
-                <property name="wrap">True</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
-                <property name="width">2</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkGrid" id="receive-files-grid">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <child>
-                  <object class="GtkLabel" id="label4">
-                    <property name="visible">True</property>
-                    <property name="halign">start</property>
-                    <property name="hexpand">True</property>
-                    <property name="label" translatable="yes">Only Receive From Trusted Devices</property>
-                    <property name="mnemonic_widget">only-receive-from-trusted-devices-switch</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">0</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkSwitch" id="only-receive-from-trusted-devices-switch">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">0</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">2</property>
-                <property name="width">2</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="label5">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="halign">start</property>
-                <property name="label" translatable="yes">Save Received Files to Downloads Folder</property>
-                <property name="mnemonic_widget">save-received-files-to-downloads-switch</property>
-                <attributes>
-                 <attribute name="weight" value="bold"/>
-                </attributes>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSwitch" id="save-received-files-to-downloads-switch">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="halign">end</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-      </object>
-    </child>
-  </object>
       <object class="GtkBox" id="sharing-panel">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
@@ -134,7 +16,12 @@
             <property name="can_focus">False</property>
             <property name="margin_bottom">6</property>
             <property name="xalign">0</property>
-            <property name="label" translatable="yes">Computer Name</property>
+            <property name="label" translatable="yes">_Computer Name</property>
+            <property name="use_underline">True</property>
+            <property name="mnemonic_widget">hostname-entry</property>
+            <accessibility>
+              <relation type="label-for" target="hostname-entry"/>
+            </accessibility>
             <attributes>
              <attribute name="weight" value="bold"/>
             </attributes>
@@ -151,6 +38,9 @@
             <property name="can_focus">True</property>
             <property name="margin_bottom">12</property>
             <property name="invisible_char">●</property>
+            <accessibility>
+              <relation type="labelled-by" target="label6"/>
+            </accessibility>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -168,44 +58,6 @@
               <object class="GtkListBox" id="main-list-box">
                 <property name="visible">True</property>
                 <child>
-                  <object class="GtkListBoxRow" id="bluetooth-sharing-button">
-                    <property name="visible">True</property>
-                    <child>
-                      <object class="GtkBox" id="box1">
-                        <property name="border-width">12</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <child>
-                          <object class="GtkLabel" id="label7">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="halign">start</property>
-                            <property name="hexpand">True</property>
-                            <property translatable="yes" name="label">Bluetooth Sharing</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkLabel" id="bluetooth-sharing-status-label">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="label">Off</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-                <child>
                   <object class="GtkListBoxRow" id="personal-file-sharing-button">
                     <property name="visible">True</property>
                     <child>
@@ -219,7 +71,9 @@
                             <property name="can_focus">False</property>
                             <property name="halign">start</property>
                             <property name="hexpand">True</property>
-                            <property translatable="yes" name="label">Personal File Sharing</property>
+                            <property translatable="yes" name="label">_File Sharing</property>
+                            <property name="use_underline">True</property>
+                            <property name="mnemonic_widget">personal-file-sharing-button</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -257,7 +111,9 @@
                             <property name="can_focus">False</property>
                             <property name="halign">start</property>
                             <property name="hexpand">True</property>
-                            <property translatable="yes" name="label">Screen Sharing</property>
+                            <property translatable="yes" name="label">_Screen Sharing</property>
+                            <property name="use_underline">True</property>
+                            <property name="mnemonic_widget">screen-sharing-button</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -295,7 +151,9 @@
                             <property name="can_focus">False</property>
                             <property name="halign">start</property>
                             <property name="hexpand">True</property>
-                            <property translatable="yes" name="label">Media Sharing</property>
+                            <property translatable="yes" name="label">_Media Sharing</property>
+                            <property name="use_underline">True</property>
+                            <property name="mnemonic_widget">media-sharing-button</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -333,8 +191,9 @@
                             <property name="can_focus">False</property>
                             <property name="halign">start</property>
                             <property name="hexpand">True</property>
-                            <property name="label" translatable="yes">Remote Login</property>
-                            <property name="mnemonic_widget">remote-login-switch</property>
+                            <property name="label" translatable="yes">_Remote Login</property>
+                            <property name="use_underline">True</property>
+                            <property name="mnemonic_widget">remote-login-button</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -383,7 +242,7 @@
   <object class="GtkDialog" id="personal-file-sharing-dialog">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
-    <property name="title" translatable="yes">Personal File Sharing</property>
+    <property name="title" translatable="yes">File Sharing</property>
     <property name="resizable">False</property>
     <property name="type_hint">dialog</property>
     <property name="use_header_bar">1</property>
@@ -407,7 +266,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">0</property>
-                <property name="label" translatable="yes">Personal File Sharing allows you to share your Public folder with others on your current network using: &lt;a href="dav://%s"&gt;dav://%s&lt;/a&gt;</property>
+                <property name="label">Personal File Sharing allows you to share your Public folder with others on your current network using: &lt;a href="dav://%s"&gt;dav://%s&lt;/a&gt;</property>
                 <property name="use_markup">True</property>
                 <property name="wrap">True</property>
                 <property name="max-width-chars">40</property>
@@ -430,8 +289,9 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>
-                    <property name="label" translatable="yes">Require Password</property>
+                    <property name="label" translatable="yes">_Require Password</property>
                     <property name="use_markup">True</property>
+                    <property name="use_underline">True</property>
                     <property name="mnemonic_widget">personal-file-sharing-require-password-switch</property>
                   </object>
                   <packing>
@@ -447,7 +307,8 @@
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>
                     <property name="hexpand">True</property>
-                    <property name="label" translatable="yes">Password</property>
+                    <property name="label" translatable="yes">_Password</property>
+                    <property name="use_underline">True</property>
                     <property name="mnemonic_widget">personal-file-sharing-password-entry</property>
                   </object>
                   <packing>
@@ -508,7 +369,7 @@
       <object class="GtkHeaderBar" id="personal-file-sharing-headerbar">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="title" translatable="yes">Personal File Sharing</property>
+        <property name="title" translatable="yes">File Sharing</property>
         <property name="show_close_button">True</property>
         <child>
           <placeholder/>
@@ -548,46 +409,16 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="xalign">0</property>
-                    <property name="label" translatable="yes">Allow remote users to connect using the Secure Shell command:
+                    <property name="label">When remote login is enabled, remote users can connect using the Secure Shell command:
 &lt;a href="ssh %s"&gt;ssh %s&lt;/a&gt;</property>
                     <property name="use_markup">True</property>
                     <property name="wrap">True</property>
+                    <property name="max-width-chars">52</property>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
                     <property name="top_attach">0</property>
                     <property name="width">2</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkSwitch" id="remote-login-switch">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="halign">end</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">1</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="label19">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="halign">start</property>
-                    <property name="hexpand">True</property>
-                    <property name="label" translatable="yes">Remote Login</property>
-                    <attributes>
-                     <attribute name="weight" value="bold"/>
-                    </attributes>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">1</property>
-                    <property name="width">1</property>
                     <property name="height">1</property>
                   </packing>
                 </child>
@@ -607,6 +438,22 @@
         </child>
       </object>
     </child>
+    <child type="titlebar">
+      <object class="GtkHeaderBar" id="remote-login-headerbar">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="title" translatable="yes">Remote Login</property>
+        <property name="show_close_button">True</property>
+        <child>
+          <object class="GtkSwitch" id="remote-login-switch">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="valign">center</property>
+          </object>
+        </child>
+      </object>
+    </child>
+
   </object>
   <object class="GtkDialog" id="screen-sharing-dialog">
     <property name="can_focus">False</property>
@@ -639,7 +486,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="xalign">0</property>
-                    <property name="label" translatable="yes">Allow remote users to view or control your screen by connecting to: &lt;a href="vnc://%s"&gt;vnc://%s&lt;/a&gt;</property>
+                    <property name="label">Screen sharing allows remote users to view or control your screen by connecting to: &lt;a href="vnc://%s"&gt;vnc://%s&lt;/a&gt;</property>
                     <property name="use_markup">True</property>
                     <property name="wrap">True</property>
                     <property name="max-width-chars">40</property>
@@ -662,31 +509,32 @@
                       <object class="GtkBox" id="box6">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="spacing">6</property>
                         <child>
                           <object class="GtkLabel" id="remote-control-label">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="halign">start</property>
                             <property name="hexpand">True</property>
-                            <property name="label" translatable="yes">Allow Remote Control</property>
-                            <property name="mnemonic_widget">remote-control-switch</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkSwitch" id="remote-control-switch">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="halign">end</property>
+                            <property name="label" translatable="yes">_Allow connections to control the screen</property>
+                            <property name="use_underline">True</property>
+                            <property name="mnemonic_widget">remote-control-checkbutton</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
                             <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="remote-control-checkbutton">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
                           </packing>
                         </child>
                       </object>
@@ -713,7 +561,8 @@
                                 <property name="can_focus">False</property>
                                 <property name="halign">start</property>
                                 <property name="margin_left">12</property>
-                                <property name="label" translatable="yes">Password:</property>
+                                <property name="label" translatable="yes">_Password:</property>
+                                <property name="use_underline">True</property>
                                 <property name="mnemonic_widget">remote-control-password-entry</property>
                               </object>
                               <packing>
@@ -742,12 +591,13 @@
                             </child>
                             <child>
                               <object class="GtkCheckButton" id="show-password-checkbutton">
-                                <property name="label" translatable="yes">Show Password</property>
+                                <property name="label" translatable="yes">_Show Password</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
                                 <property name="xalign">0</property>
                                 <property name="draw_indicator">True</property>
+                                <property name="use_underline">True</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -786,13 +636,14 @@
                         </child>
                         <child>
                           <object class="GtkRadioButton" id="approve-connections-radiobutton">
-                            <property name="label" translatable="yes">New connections must ask for access</property>
+                            <property name="label" translatable="yes">_New connections must ask for access</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">False</property>
                             <property name="xalign">0</property>
                             <property name="draw_indicator">True</property>
                             <property name="group">require-password-radiobutton</property>
+                            <property name="use_underline">True</property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -803,12 +654,13 @@
                         </child>
                         <child>
                           <object class="GtkRadioButton" id="require-password-radiobutton">
-                            <property name="label" translatable="yes">Require a password</property>
+                            <property name="label" translatable="yes">_Require a password</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">False</property>
                             <property name="xalign">0</property>
                             <property name="draw_indicator">True</property>
+                            <property name="use_underline">True</property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -897,6 +749,7 @@
                 <property name="can_focus">False</property>
                 <property name="xalign">0</property>
                 <property name="label" translatable="yes">Share music, photos and videos over the network.</property>
+                <property name="max-width-chars">40</property>
                 <property name="wrap">True</property>
               </object>
               <packing>

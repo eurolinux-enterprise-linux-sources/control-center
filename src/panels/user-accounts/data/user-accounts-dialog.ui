@@ -1,29 +1,38 @@
 <interface>
   <!-- interface-requires gtk+ 3.8 -->
   <!-- interface-naming-policy toplevel-contextual -->
+  <object class="GtkStack" id="headerbar-buttons">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkLockButton" id="lock-button">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+      </object>
+      <packing>
+        <property name="name">_lock</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="add-user-toolbutton">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="label" translatable="yes">_Add User…</property>
+        <property name="use_underline">True</property>
+        <style>
+          <class name="suggested-action"/>
+        </style>
+      </object>
+      <packing>
+        <property name="name">_adduser</property>
+      </packing>
+    </child>
+  </object>
   <object class="GtkListStore" id="shortname-model">
     <columns>
       <!-- column-name gchararray -->
       <column type="gchararray"/>
     </columns>
-  </object>
-  <object class="GtkListStore" id="account-type-model">
-    <columns>
-      <!-- column-name gchararray -->
-      <column type="gchararray"/>
-      <!-- column-name gint -->
-      <column type="gint"/>
-    </columns>
-    <data>
-      <row>
-        <col id="0" translatable="yes" context="Account type">Standard</col>
-        <col id="1">0</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes" context="Account type">Administrator</col>
-        <col id="1">1</col>
-      </row>
-    </data>
   </object>
   <object class="GtkListStore" id="language-model">
     <columns>
@@ -70,46 +79,6 @@
                         <property name="position">0</property>
                       </packing>
                     </child>
-                    <child>
-                      <object class="GtkToolbar" id="add-remove-toolbar">
-                        <property name="visible">True</property>
-                        <property name="icon_size">1</property>
-                        <property name="icon_size_set">True</property>
-                        <property name="toolbar_style">icons</property>
-                        <style>
-                          <class name="inline-toolbar"/>
-                        </style>
-                        <child>
-                          <object class="GtkToolButton" id="add-user-toolbutton">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="icon_name">list-add-symbolic</property>
-                            <property name="label" translatable="yes">Add User Account</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="homogeneous">True</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkToolButton" id="remove-user-toolbutton">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="icon_name">list-remove-symbolic</property>
-                            <property name="label" translatable="yes">Remove User Account</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="homogeneous">True</property>
-                          </packing>
-                        </child>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="position">1</property>
-                      </packing>
-                    </child>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -128,24 +97,46 @@
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="column_spacing">10</property>
+                        <property name="row_spacing">10</property>
                         <child>
-                          <object class="UmEditableButton" id="account-fingerprint-button">
+                          <object class="GtkButton" id="account-fingerprint-button">
                             <property name="visible">True</property>
                             <property name="hexpand">True</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
-                            <property name="top_attach">6</property>
+                            <property name="top_attach">5</property>
                             <property name="width">1</property>
                             <property name="height">1</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="UmEditableCombo" id="account-type-combo">
+                          <object class="GtkBox" id="account-type-box">
                             <property name="visible">True</property>
-                            <property name="model">account-type-model</property>
-                            <property name="text-column">0</property>
-                            <property name="hexpand">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="sensitive">False</property>
+                            <style>
+                              <class name="linked"/>
+                            </style>
+                            <child>
+                              <object class="GtkRadioButton" id="account-type-standard">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="label" translatable="yes">Standard</property>
+                                <property name="draw_indicator">False</property>
+                                <property name="hexpand">True</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkRadioButton" id="account-type-admin">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="label" translatable="yes">Administrator</property>
+                                <property name="draw_indicator">False</property>
+                                <property name="group">account-type-standard</property>
+                                <property name="hexpand">True</property>
+                              </object>
+                            </child>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -160,7 +151,7 @@
                             <property name="xalign">1</property>
                             <property name="label" translatable="yes">Account _Type</property>
                             <property name="use_underline">True</property>
-                            <property name="mnemonic_widget">account-type-combo</property>
+                            <property name="mnemonic_widget">account-type-box</property>
                             <style>
                               <class name="dim-label"/>
                             </style>
@@ -177,13 +168,11 @@
                             <property name="visible">True</property>
                             <property name="orientation">vertical</property>
                             <child>
-                              <object class="CcEditableEntry" id="full-name-entry">
+                              <object class="GtkEntry" id="full-name-entry">
                                 <property name="visible">True</property>
-                                <property name="scale">1.2</property>
-                                <property name="weight">700</property>
                                 <property name="width-chars">30</property>
                                 <property name="max-width-chars">30</property>
-                                <property name="ellipsize">PANGO_ELLIPSIZE_END</property>
+                                <property name="valign">GTK_ALIGN_CENTER</property>
                               </object>
                               <packing>
                                 <property name="fill">True</property>
@@ -194,23 +183,6 @@
                           <packing>
                             <property name="left_attach">1</property>
                             <property name="top_attach">0</property>
-                            <property name="width">1</property>
-                            <property name="height">1</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkLabel" id="login-options-label">
-                            <property name="visible">True</property>
-                            <property name="xalign">1</property>
-                            <property name="ypad">5</property>
-                            <property name="label" translatable="yes">Login Options</property>
-                            <attributes>
-                              <attribute name="weight" value="bold"/>
-                            </attributes>
-                          </object>
-                          <packing>
-                            <property name="left_attach">0</property>
-                            <property name="top_attach">3</property>
                             <property name="width">1</property>
                             <property name="height">1</property>
                           </packing>
@@ -228,19 +200,28 @@
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
-                            <property name="top_attach">4</property>
+                            <property name="top_attach">3</property>
                             <property name="width">1</property>
                             <property name="height">1</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="UmEditableButton" id="account-password-button">
+                          <object class="GtkButton" id="account-password-button">
                             <property name="visible">True</property>
                             <property name="hexpand">True</property>
+                            <style>
+                              <class name="text-button"/>
+                            </style>
+                            <child>
+                              <object class="GtkLabel" id="account-password-button-label">
+                                <property name="visible">True</property>
+                                <property name="halign">GTK_ALIGN_START</property>
+                              </object>
+                            </child>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
-                            <property name="top_attach">4</property>
+                            <property name="top_attach">3</property>
                             <property name="width">1</property>
                             <property name="height">1</property>
                           </packing>
@@ -258,7 +239,7 @@
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
-                            <property name="top_attach">5</property>
+                            <property name="top_attach">4</property>
                             <property name="width">1</property>
                             <property name="height">1</property>
                           </packing>
@@ -284,7 +265,7 @@
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
-                            <property name="top_attach">5</property>
+                            <property name="top_attach">4</property>
                             <property name="width">1</property>
                             <property name="height">1</property>
                           </packing>
@@ -302,7 +283,7 @@
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
-                            <property name="top_attach">6</property>
+                            <property name="top_attach">5</property>
                             <property name="width">1</property>
                             <property name="height">1</property>
                           </packing>
@@ -322,19 +303,14 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkAlignment" id="user-icon-nonbutton">
-                                <property name="xscale">0</property>
-                                <property name="yscale">0</property>
-                                <child>
-                                  <object class="GtkImage" id="user-icon-image">
-                                    <property name="visible">True</property>
-                                    <property name="icon_name">avatar-default</property>
-                                    <property name="icon-size">6</property>
-                                    <child internal-child="accessible">
-                                      <object class="AtkObject" id="user-icon-image-a11y">
-                                        <property name="accessible-name" translatable="yes">User Icon</property>
-                                      </object>
-                                    </child>
+                              <object class="UmUserImage" id="user-icon-image">
+                                <property name="visible">True</property>
+                                <property name="icon_name">avatar-default</property>
+                                <property name="icon-size">6</property>
+                                <property name="halign">end</property>
+                                <child internal-child="accessible">
+                                  <object class="AtkObject" id="user-icon-image-a11y">
+                                    <property name="accessible-name" translatable="yes">User Icon</property>
                                   </object>
                                 </child>
                               </object>
@@ -356,7 +332,7 @@
                                   </object>
                                 </child>
                                 <child>
-                                  <object class="GtkImage" id="user-icon-image2">
+                                  <object class="UmUserImage" id="user-icon-image2">
                                     <property name="visible">True</property>
                                     <property name="icon_name">avatar-default</property>
                                     <property name="icon-size">6</property>
@@ -383,7 +359,7 @@
                             <property name="xalign">1</property>
                             <property name="label" translatable="yes">_Language</property>
                             <property name="use_underline">True</property>
-                            <property name="mnemonic_widget">account-language-combo</property>
+                            <property name="mnemonic_widget">account-language-button</property>
                             <style>
                               <class name="dim-label"/>
                             </style>
@@ -396,11 +372,18 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="UmEditableCombo" id="account-language-combo">
+                          <object class="GtkButton" id="account-language-button">
                             <property name="visible">True</property>
-                            <property name="model">language-model</property>
-                            <property name="text-column">1</property>
                             <property name="hexpand">True</property>
+                            <style>
+                              <class name="text-button"/>
+                            </style>
+                            <child>
+                              <object class="GtkLabel" id="account-language-button-label">
+                                <property name="visible">True</property>
+                                <property name="halign">GTK_ALIGN_START</property>
+                              </object>
+                            </child>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -415,55 +398,36 @@
                             <property name="xalign">1</property>
                             <property name="label" translatable="yes">Last Login</property>
                             <property name="use_underline">True</property>
-                            <property name="mnemonic_widget">last-login-value-label</property>
+                            <property name="mnemonic_widget">last-login-button</property>
                             <style>
                               <class name="dim-label"/>
                             </style>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
-                            <property name="top_attach">7</property>
+                            <property name="top_attach">6</property>
                             <property name="width">1</property>
                             <property name="height">1</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkGrid" id="last-login-grid">
+                          <object class="GtkButton" id="last-login-button">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <style>
+                              <class name="text-button"/>
+                            </style>
                             <child>
-                              <object class="GtkLabel" id="last-login-value-label">
+                              <object class="GtkLabel" id="last-login-button-label">
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="hexpand">True</property>
-                                <property name="xalign">0</property>
+                                <property name="halign">GTK_ALIGN_START</property>
                               </object>
-                              <packing>
-                                <property name="left_attach">0</property>
-                                <property name="top_attach">0</property>
-                                <property name="width">1</property>
-                                <property name="height">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="last-login-history-button">
-                                <property name="label" translatable="yes">History</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                                <property name="xalign">1</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="top_attach">0</property>
-                                <property name="width">1</property>
-                                <property name="height">1</property>
-                              </packing>
                             </child>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
-                            <property name="top_attach">7</property>
+                            <property name="top_attach">6</property>
                             <property name="width">1</property>
                             <property name="height">1</property>
                           </packing>
@@ -482,6 +446,21 @@
                     <property name="position">1</property>
                   </packing>
                 </child>
+                <child>
+                  <object class="GtkButton" id="remove-user-toolbutton">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="halign">GTK_ALIGN_END</property>
+                    <property name="valign">GTK_ALIGN_END</property>
+                    <property name="label" translatable="yes">Remove Account</property>
+                    <style>
+                      <class name="destructive-action"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
               </object>
             </child>
           </object>
@@ -491,7 +470,7 @@
     <property name="mode">both</property>
     <widgets>
       <widget name="user-icon-button"/>
-      <widget name="user-icon-nonbutton"/>
+      <widget name="user-icon-image"/>
     </widgets>
   </object>
   <object class="GtkSizeGroup" id="label-sizegroup">
@@ -500,7 +479,6 @@
       <widget name="account-fingerprint-label"/>
       <widget name="language-label"/>
       <widget name="password-label"/>
-      <widget name="login-options-label"/>
       <widget name="account-type-label"/>
       <widget name="autologin-label"/>
       <widget name="last-login-label"/>
@@ -510,11 +488,18 @@
     <property name="mode">both</property>
     <widgets>
       <widget name="account-fingerprint-button"/>
-      <widget name="account-language-combo"/>
+      <widget name="account-language-button"/>
       <widget name="account-password-button"/>
-      <widget name="account-type-combo"/>
+      <widget name="account-type-box"/>
       <widget name="autologin-box"/>
-      <widget name="last-login-grid"/>
+      <widget name="last-login-button"/>
+    </widgets>
+  </object>
+  <object class="GtkSizeGroup">
+    <property name="mode">both</property>
+    <widgets>
+      <widget name="account-type-standard"/>
+      <widget name="account-type-admin"/>
     </widgets>
   </object>
 </interface>

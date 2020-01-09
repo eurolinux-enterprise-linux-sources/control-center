@@ -1,5 +1,6 @@
 [Desktop Entry]
-_Name=Background
+# Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+_Name=Back­ground
 _Comment=Change your background image to a wallpaper or photo
 Exec=gnome-control-center background
 Icon=preferences-desktop-wallpaper
@@ -7,7 +8,7 @@ Terminal=false
 Type=Application
 NoDisplay=true
 StartupNotify=true
-Categories=GNOME;GTK;Settings;DesktopSettings;X-GNOME-Settings-Panel;X-GNOME-PersonalSettings;
+Categories=GNOME;GTK;Settings;DesktopSettings;X-GNOME-Settings-Panel;X-GNOME-PersonalSettings;X-GNOME-PersonalizationSettings;
 OnlyShowIn=GNOME;
 # Translators: those are keywords for the background control-center panel
 _Keywords=Wallpaper;Screen;Desktop;

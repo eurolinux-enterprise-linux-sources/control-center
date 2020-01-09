@@ -23,48 +23,15 @@
 #define _CC_KEYBOARD_PANEL_H
 
 #include <shell/cc-panel.h>
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
-#define CC_TYPE_KEYBOARD_PANEL cc_keyboard_panel_get_type()
+#define CC_TYPE_KEYBOARD_PANEL (cc_keyboard_panel_get_type())
 
-#define CC_KEYBOARD_PANEL(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST ((obj), \
-  CC_TYPE_KEYBOARD_PANEL, CcKeyboardPanel))
+G_DECLARE_FINAL_TYPE (CcKeyboardPanel, cc_keyboard_panel, CC, KEYBOARD_PANEL, CcPanel)
 
-#define CC_KEYBOARD_PANEL_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST ((klass), \
-  CC_TYPE_KEYBOARD_PANEL, CcKeyboardPanelClass))
-
-#define CC_IS_KEYBOARD_PANEL(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE ((obj), \
-  CC_TYPE_KEYBOARD_PANEL))
-
-#define CC_IS_KEYBOARD_PANEL_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE ((klass), \
-  CC_TYPE_KEYBOARD_PANEL))
-
-#define CC_KEYBOARD_PANEL_GET_CLASS(obj) \
-  (G_TYPE_INSTANCE_GET_CLASS ((obj), \
-  CC_TYPE_KEYBOARD_PANEL, CcKeyboardPanelClass))
-
-typedef struct _CcKeyboardPanel CcKeyboardPanel;
-typedef struct _CcKeyboardPanelClass CcKeyboardPanelClass;
-typedef struct _CcKeyboardPanelPrivate CcKeyboardPanelPrivate;
-
-struct _CcKeyboardPanel
-{
-  CcPanel parent;
-
-  CcKeyboardPanelPrivate *priv;
-};
-
-struct _CcKeyboardPanelClass
-{
-  CcPanelClass parent_class;
-};
-
-GType cc_keyboard_panel_get_type (void) G_GNUC_CONST;
+CcKeyboardItem*      cc_keyboard_panel_create_custom_item        (CcKeyboardPanel    *self);
 
 G_END_DECLS
 

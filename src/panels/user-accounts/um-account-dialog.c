@@ -31,7 +31,7 @@
 #include "pw-utils.h"
 
 #define PASSWORD_CHECK_TIMEOUT 600
-#define DOMAIN_DEFAULT_HINT _("Should match the web address of your account provider.")
+#define DOMAIN_DEFAULT_HINT _("Should match the web address of your login provider.")
 
 typedef enum {
         UM_LOCAL,
@@ -70,7 +70,6 @@ static void   um_account_dialog_response  (GtkDialog *dialog,
 struct _UmAccountDialog {
         GtkDialog parent;
         GtkWidget *stack;
-        GtkWidget *container_widget;
         GSimpleAsyncResult *async;
         GCancellable *cancellable;
         GPermission *permission;
@@ -79,11 +78,12 @@ struct _UmAccountDialog {
 
         /* Local user account widgets */
         GtkWidget *local_username;
+        GtkWidget *local_username_entry;
         GtkWidget *local_name;
         gint       local_name_timeout_id;
         GtkWidget *local_username_hint;
         gint       local_username_timeout_id;
-        GtkWidget *local_account_type;
+        GtkWidget *account_type_standard;
         ActUserPasswordMode local_password_mode;
         GtkWidget *local_password_radio;
         GtkWidget *local_password;
@@ -246,16 +246,12 @@ local_create_user (UmAccountDialog *self)
         const gchar *username;
         const gchar *name;
         gint account_type;
-        GtkTreeModel *model;
-        GtkTreeIter iter;
 
         begin_action (self);
 
         name = gtk_entry_get_text (GTK_ENTRY (self->local_name));
         username = gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT (self->local_username));
-        model = gtk_combo_box_get_model (GTK_COMBO_BOX (self->local_account_type));
-        gtk_combo_box_get_active_iter (GTK_COMBO_BOX (self->local_account_type), &iter);
-        gtk_tree_model_get (model, &iter, 1, &account_type, -1);
+        account_type = (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->account_type_standard)) ? ACT_USER_ACCOUNT_TYPE_STANDARD : ACT_USER_ACCOUNT_TYPE_ADMINISTRATOR);
 
         g_debug ("Creating local user: %s", username);
 
@@ -388,7 +384,7 @@ on_username_changed (GtkComboBoxText *combo,
 static gboolean
 local_name_timeout (UmAccountDialog *self)
 {
-        self->local_username_timeout_id = 0;
+        self->local_name_timeout_id = 0;
 
         dialog_validate (self);
 
@@ -433,10 +429,15 @@ on_name_changed (GtkEditable *editable,
                 gtk_combo_box_set_active (GTK_COMBO_BOX (self->local_username), 0);
         }
 
+        if (self->local_name_timeout_id != 0) {
+                g_source_remove (self->local_name_timeout_id);
+                self->local_name_timeout_id = 0;
+        }
+
         clear_entry_validation_error (GTK_ENTRY (editable));
         gtk_dialog_set_response_sensitive (GTK_DIALOG (self), GTK_RESPONSE_OK, FALSE);
 
-        self->local_username_timeout_id = g_timeout_add (PASSWORD_CHECK_TIMEOUT, (GSourceFunc) local_name_timeout, self);
+        self->local_name_timeout_id = g_timeout_add (PASSWORD_CHECK_TIMEOUT, (GSourceFunc) local_name_timeout, self);
 }
 
 static void
@@ -546,63 +547,36 @@ on_password_radio_changed (GtkRadioButton *radio,
 }
 
 static void
-local_init (UmAccountDialog *self,
-            GtkBuilder *builder)
+local_init (UmAccountDialog *self)
 {
-        GtkWidget *widget;
-
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "local-username");
-        g_signal_connect (widget, "changed",
+        g_signal_connect (self->local_username, "changed",
                           G_CALLBACK (on_username_changed), self);
-        g_signal_connect_after (widget, "focus-out-event", G_CALLBACK (on_username_focus_out), self);
-        self->local_username = widget;
+        g_signal_connect_after (self->local_username, "focus-out-event", G_CALLBACK (on_username_focus_out), self);
 
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "local-username-entry");
-        g_signal_connect_swapped (widget, "activate", G_CALLBACK (dialog_validate), self);
+        g_signal_connect_swapped (self->local_username_entry, "activate", G_CALLBACK (dialog_validate), self);
 
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "local-name");
-        g_signal_connect (widget, "changed", G_CALLBACK (on_name_changed), self);
-        g_signal_connect_after (widget, "focus-out-event", G_CALLBACK (on_name_focus_out), self);
-        g_signal_connect_swapped (widget, "activate", G_CALLBACK (dialog_validate), self);
-        self->local_name = widget;
+        g_signal_connect (self->local_name, "changed", G_CALLBACK (on_name_changed), self);
+        g_signal_connect_after (self->local_name, "focus-out-event", G_CALLBACK (on_name_focus_out), self);
+        g_signal_connect_swapped (self->local_name, "activate", G_CALLBACK (dialog_validate), self);
 
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "local-username-hint");
-        self->local_username_hint = widget;
-
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "local-account-type");
-        self->local_account_type = widget;
-
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "local-password-now-radio");
-        g_signal_connect (widget, "toggled", G_CALLBACK (on_password_radio_changed), self);
-        self->local_password_radio = widget;
+        g_signal_connect (self->local_password_radio, "toggled", G_CALLBACK (on_password_radio_changed), self);
 
         self->local_password_mode = ACT_USER_PASSWORD_MODE_SET_AT_LOGIN;
 
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "local-password");
-        gtk_widget_set_sensitive (widget, FALSE);
-        g_signal_connect (widget, "notify::text", G_CALLBACK (on_password_changed), self);
-        g_signal_connect_after (widget, "focus-out-event", G_CALLBACK (on_password_focus_out), self);
-        g_signal_connect_swapped (widget, "activate", G_CALLBACK (dialog_validate), self);
-        self->local_password = widget;
-        g_signal_connect (widget, "icon-press", G_CALLBACK (on_generate), self);
+        gtk_widget_set_sensitive (self->local_password, FALSE);
+        g_signal_connect (self->local_password, "notify::text", G_CALLBACK (on_password_changed), self);
+        g_signal_connect_after (self->local_password, "focus-out-event", G_CALLBACK (on_password_focus_out), self);
+        g_signal_connect_swapped (self->local_password, "activate", G_CALLBACK (dialog_validate), self);
+        g_signal_connect (self->local_password, "icon-press", G_CALLBACK (on_generate), self);
 
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "local-verify");
-        gtk_widget_set_sensitive (widget, FALSE);
-        g_signal_connect (widget, "notify::text", G_CALLBACK (on_password_changed), self);
-        g_signal_connect_after (widget, "focus-out-event", G_CALLBACK (on_password_focus_out), self);
-        g_signal_connect_swapped (widget, "activate", G_CALLBACK (dialog_validate), self);
-        self->local_verify = widget;
+        gtk_widget_set_sensitive (self->local_verify, FALSE);
+        g_signal_connect (self->local_verify, "notify::text", G_CALLBACK (on_password_changed), self);
+        g_signal_connect_after (self->local_verify, "focus-out-event", G_CALLBACK (on_password_focus_out), self);
+        g_signal_connect_swapped (self->local_verify, "activate", G_CALLBACK (dialog_validate), self);
 
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "local-strength-indicator");
-        gtk_widget_set_sensitive (widget, FALSE);
-        self->local_strength_indicator = widget;
+        gtk_widget_set_sensitive (self->local_strength_indicator, FALSE);
 
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "local-hint");
-        gtk_widget_set_sensitive (widget, FALSE);
-        self->local_hint = widget;
-
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "local-verify-hint");
-        self->local_verify_hint = widget;
+        gtk_widget_set_sensitive (self->local_hint, FALSE);
 
         dialog_validate (self);
         update_password_strength (self);
@@ -617,7 +591,7 @@ local_prepare (UmAccountDialog *self)
         gtk_entry_set_text (GTK_ENTRY (gtk_bin_get_child (GTK_BIN (self->local_username))), "");
         model = gtk_combo_box_get_model (GTK_COMBO_BOX (self->local_username));
         gtk_list_store_clear (GTK_LIST_STORE (model));
-        gtk_combo_box_set_active (GTK_COMBO_BOX (self->local_account_type), 0);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->account_type_standard), TRUE);
 }
 
 static gboolean
@@ -655,6 +629,8 @@ enterprise_add_realm (UmAccountDialog *self,
         gchar *name;
 
         common = um_realm_object_get_common (realm);
+        g_return_if_fail (common != NULL);
+
         realm_name = um_realm_common_get_name (common);
 
         /*
@@ -793,6 +769,12 @@ enterprise_permit_user_login (UmAccountDialog *self)
         GVariant *options;
 
         common = um_realm_object_get_common (self->selected_realm);
+        if (common == NULL) {
+                g_debug ("Failed to register account: failed to get d-bus interface");
+                show_error_dialog (self, _("Failed to register account"), NULL);
+                finish_action (self);
+                return;
+        }
 
         login = um_realm_calculate_login (common, gtk_entry_get_text (self->enterprise_login));
         g_return_if_fail (login != NULL);
@@ -930,9 +912,21 @@ on_join_login (GObject *source,
 }
 
 static void
-join_init (UmAccountDialog *self,
-           GtkBuilder *builder)
+join_init (UmAccountDialog *self)
 {
+        GtkBuilder *builder;
+        GError *error = NULL;
+
+        builder = gtk_builder_new ();
+
+        if (!gtk_builder_add_from_resource (builder,
+                                            "/org/gnome/control-center/user-accounts/join-dialog.ui",
+                                            &error)) {
+                g_error ("%s", error->message);
+                g_error_free (error);
+                return;
+        }
+
         self->join_dialog = GTK_DIALOG (gtk_builder_get_object (builder, "join-dialog"));
         self->join_domain = GTK_LABEL (gtk_builder_get_object (builder, "join-domain"));
         self->join_name = GTK_ENTRY (gtk_builder_get_object (builder, "join-name"));
@@ -940,6 +934,8 @@ join_init (UmAccountDialog *self,
 
         g_signal_connect (self->join_dialog, "response",
                           G_CALLBACK (on_join_response), self);
+
+        g_object_unref (builder);
 }
 
 static void
@@ -1318,38 +1314,26 @@ on_entry_changed (GtkEditable *editable,
 }
 
 static void
-enterprise_init (UmAccountDialog *self,
-                 GtkBuilder *builder)
+enterprise_init (UmAccountDialog *self)
 {
-        GtkWidget *widget;
         GNetworkMonitor *monitor;
 
         self->enterprise_realms = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_OBJECT);
         self->enterprise_check_credentials = FALSE;
 
-        self->enterprise_hint = (GtkWidget *) gtk_builder_get_object (builder, "enterprise-hint");
-        self->enterprise_domain_hint = (GtkWidget *) gtk_builder_get_object (builder, "enterprise-domain-hint");
-
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "enterprise-domain");
-        g_signal_connect (widget, "changed", G_CALLBACK (on_domain_changed), self);
-        g_signal_connect_after (widget, "focus-out-event", G_CALLBACK (on_enterprise_domain_focus_out), self);
-        self->enterprise_domain = GTK_COMBO_BOX (widget);
-        gtk_combo_box_set_model (self->enterprise_domain,
+        g_signal_connect (self->enterprise_domain, "changed", G_CALLBACK (on_domain_changed), self);
+        g_signal_connect_after (self->enterprise_domain, "focus-out-event", G_CALLBACK (on_enterprise_domain_focus_out), self);
+        gtk_combo_box_set_model (GTK_COMBO_BOX (self->enterprise_domain),
                                  GTK_TREE_MODEL (self->enterprise_realms));
-        self->enterprise_domain_entry = GTK_ENTRY (gtk_bin_get_child (GTK_BIN (widget)));
+        self->enterprise_domain_entry = GTK_ENTRY (gtk_bin_get_child (GTK_BIN (self->enterprise_domain)));
         enterprise_check_domain (self);
 
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "enterprise-login");
-        g_signal_connect (widget, "changed", G_CALLBACK (on_entry_changed), self);
-        self->enterprise_login = GTK_ENTRY (widget);
+        g_signal_connect (self->enterprise_login, "changed", G_CALLBACK (on_entry_changed), self);
 
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "enterprise-password");
-        g_signal_connect (widget, "changed", G_CALLBACK (on_entry_changed), self);
-        self->enterprise_password = GTK_ENTRY (widget);
+        g_signal_connect (self->enterprise_password, "changed", G_CALLBACK (on_entry_changed), self);
 
         /* Initially we hide the 'Enterprise Login' stuff */
-        widget = self->enterprise_button;
-        gtk_widget_hide (widget);
+        gtk_widget_hide (self->enterprise_button);
 
         self->realmd_watch = g_bus_watch_name (G_BUS_TYPE_SYSTEM, "org.freedesktop.realmd",
                                                G_BUS_NAME_WATCHER_FLAGS_AUTO_START,
@@ -1423,66 +1407,20 @@ on_enterprise_toggle (GtkToggleButton *toggle,
 }
 
 static void
-mode_init (UmAccountDialog *self,
-           GtkBuilder *builder)
+mode_init (UmAccountDialog *self)
 {
-        GtkWidget *widget;
-
-        widget = self->enterprise_button;
-        g_signal_connect (widget, "toggled", G_CALLBACK (on_enterprise_toggle), self);
+        g_signal_connect (self->enterprise_button, "toggled", G_CALLBACK (on_enterprise_toggle), self);
 }
 
 static void
 um_account_dialog_init (UmAccountDialog *self)
 {
-        GtkBuilder *builder;
-        GtkWidget *widget;
-        GError *error = NULL;
-        GtkDialog *dialog;
-        GtkWidget *content;
+        gtk_widget_init_template (GTK_WIDGET (self));
 
-        builder = gtk_builder_new ();
-
-        if (!gtk_builder_add_from_resource (builder,
-                                            "/org/gnome/control-center/user-accounts/account-dialog.ui",
-                                            &error)) {
-                g_error ("%s", error->message);
-                g_error_free (error);
-                return;
-        }
-
-        dialog = GTK_DIALOG (self);
-        content = gtk_dialog_get_content_area (dialog);
-        gtk_container_set_border_width (GTK_CONTAINER (dialog), 5);
-        gtk_window_set_resizable (GTK_WINDOW (dialog), FALSE);
-        gtk_window_set_title (GTK_WINDOW (dialog), _("Add User"));
-        gtk_window_set_icon_name (GTK_WINDOW (dialog), "system-users");
-
-        widget = GTK_WIDGET (gtk_builder_get_object (builder, "enterprise-button"));
-        self->enterprise_button = widget;
-
-        widget = GTK_WIDGET (gtk_builder_get_object (builder, "spinner"));
-        gtk_widget_hide (widget);
-        self->spinner = GTK_SPINNER (widget);
-
-        gtk_dialog_add_button (dialog, _("Cancel"), GTK_RESPONSE_CANCEL);
-        widget = gtk_dialog_add_button (dialog, _("_Add"), GTK_RESPONSE_OK);
-        gtk_dialog_set_default_response (dialog, GTK_RESPONSE_OK);
-        gtk_widget_grab_default (widget);
-
-        widget = (GtkWidget *) gtk_builder_get_object (builder, "account-dialog");
-        gtk_container_add (GTK_CONTAINER (content), widget);
-        self->container_widget = widget;
-
-        widget = GTK_WIDGET (gtk_builder_get_object (builder, "stack"));
-        self->stack = widget;
-
-        local_init (self, builder);
-        enterprise_init (self, builder);
-        join_init (self, builder);
-        mode_init (self, builder);
-
-        g_object_unref (builder);
+        local_init (self);
+        enterprise_init (self);
+        join_init (self);
+        mode_init (self);
 }
 
 static void
@@ -1605,11 +1543,34 @@ um_account_dialog_class_init (UmAccountDialogClass *klass)
 {
         GObjectClass *object_class = G_OBJECT_CLASS (klass);
         GtkDialogClass *dialog_class = GTK_DIALOG_CLASS (klass);
+        GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 
         object_class->dispose = um_account_dialog_dispose;
         object_class->finalize = um_account_dialog_finalize;
 
         dialog_class->response = um_account_dialog_response;
+
+        gtk_widget_class_set_template_from_resource (GTK_WIDGET_CLASS (dialog_class),
+                                                     "/org/gnome/control-center/user-accounts/account-dialog.ui");
+
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, stack);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, local_username);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, local_username_entry);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, local_name);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, local_username_hint);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, account_type_standard);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, local_password_radio);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, local_password);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, local_verify);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, local_strength_indicator);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, local_hint);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, local_verify_hint);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, enterprise_button);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, spinner);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, enterprise_domain);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, enterprise_login);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, enterprise_password);
+        gtk_widget_class_bind_template_child (widget_class, UmAccountDialog, enterprise_domain_hint);
 }
 
 UmAccountDialog *

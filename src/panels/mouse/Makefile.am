@@ -4,6 +4,7 @@ cappletname = mouse
 AM_CPPFLAGS = 						\
 	$(PANEL_CFLAGS)					\
 	$(MOUSE_PANEL_CFLAGS)				\
+	-I$(top_srcdir)/panels/common			\
 	-DGNOMELOCALEDIR="\"$(datadir)/locale\""	\
 	$(NULL)
 
@@ -15,16 +16,16 @@ BUILT_SOURCES =			\
 
 libmouse_properties_la_SOURCES =	\
 	$(BUILT_SOURCES)		\
+	cc-mouse-caps-helper.c		\
+	cc-mouse-caps-helper.h		\
 	cc-mouse-panel.c		\
 	cc-mouse-panel.h		\
 	gnome-mouse-properties.c	\
 	gnome-mouse-properties.h	\
-	gsd-input-helper.c		\
-	gsd-input-helper.h		\
 	gnome-mouse-test.c		\
 	gnome-mouse-test.h
 
-libmouse_properties_la_LIBADD = $(PANEL_LIBS) $(MOUSE_PANEL_LIBS)
+libmouse_properties_la_LIBADD = $(PANEL_LIBS) $(MOUSE_PANEL_LIBS) $(top_builddir)/panels/common/libdevice.la
 
 test_gnome_mouse_test_SOURCES =		\
 	$(BUILT_SOURCES)		\
@@ -49,13 +50,7 @@ desktopdir = $(datadir)/applications
 Desktop_in_files = gnome-mouse-panel.desktop.in
 desktop_DATA = $(Desktop_in_files:.desktop.in=.desktop)
 
-INPUTDIR=$(top_srcdir)/../gnome-settings-daemon/plugins/common/
-INPUTFILES=gsd-input-helper.h gsd-input-helper.c
-update-from-gsd:
-	FILES="$(INPUTFILES)" DIR="$(INPUTDIR)" $(top_srcdir)/update-from-gsd.sh && changed=true ; \
-	git commit -m "mouse: Update from gnome-settings-daemon" $(INPUTFILES)
-
-CLEANFILES = $(Desktop_in_files) $(desktop_DATA)
+CLEANFILES = $(Desktop_in_files) $(desktop_DATA) $(BUILT_SOURCES)
 EXTRA_DIST = $(resource_files) mouse.gresource.xml
 
 -include $(top_srcdir)/git.mk

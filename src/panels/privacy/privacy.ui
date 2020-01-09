@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.1 -->
 <interface>
-  <!-- interface-requires gtk+ 3.0 -->
+  <requires lib="gtk+" version="3.14"/>
   <object class="GtkListStore" id="lock_after_model">
     <columns>
       <!-- column-name name -->
@@ -131,6 +132,10 @@
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">2</property>
+        <property name="margin_start">12</property>
+        <property name="margin_end">12</property>
+        <property name="margin_top">12</property>
+        <property name="margin_bottom">12</property>
         <child>
           <object class="GtkLabel" id="label6">
             <property name="visible">True</property>
@@ -143,6 +148,9 @@
             <property name="label" translatable="yes">Remembering your history makes things easier to find again. These items are never shared over the network.</property>
             <property name="wrap">True</property>
             <property name="max_width_chars">50</property>
+            <style>
+              <class name="dim-label"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -158,7 +166,7 @@
             <property name="margin_end">6</property>
             <property name="margin_top">12</property>
             <property name="margin_bottom">12</property>
-            <property name="row_spacing">12</property>
+            <property name="row_spacing">18</property>
             <property name="column_spacing">6</property>
             <child>
               <object class="GtkLabel" id="recently_used_label">
@@ -274,7 +282,11 @@
       <object class="GtkBox" id="dialog-vbox1">
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
-        <property name="spacing">2</property>
+        <property name="spacing">6</property>
+        <property name="margin_start">12</property>
+        <property name="margin_end">12</property>
+        <property name="margin_top">12</property>
+        <property name="margin_bottom">12</property>
         <child>
           <object class="GtkLabel" id="label1">
             <property name="visible">True</property>
@@ -284,6 +296,9 @@
             <property name="margin_top">6</property>
             <property name="margin_bottom">12</property>
             <property name="label" translatable="yes">The Screen Lock protects your privacy when you are away.</property>
+            <style>
+              <class name="dim-label"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -299,7 +314,7 @@
             <property name="margin_end">2</property>
             <property name="margin_top">6</property>
             <property name="margin_bottom">12</property>
-            <property name="row_spacing">12</property>
+            <property name="row_spacing">18</property>
             <property name="column_spacing">6</property>
             <child>
               <object class="GtkLabel" id="label2">
@@ -420,6 +435,10 @@
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">2</property>
+        <property name="margin_start">12</property>
+        <property name="margin_end">12</property>
+        <property name="margin_top">12</property>
+        <property name="margin_bottom">12</property>
         <child>
           <object class="GtkLabel" id="label5">
             <property name="visible">True</property>
@@ -432,6 +451,9 @@
             <property name="label" translatable="yes">Automatically purge the Trash and temporary files to help keep your computer free of unnecessary sensitive information.</property>
             <property name="wrap">True</property>
             <property name="max_width_chars">50</property>
+            <style>
+              <class name="dim-label"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -447,7 +469,7 @@
             <property name="margin_end">6</property>
             <property name="margin_top">12</property>
             <property name="margin_bottom">12</property>
-            <property name="row_spacing">12</property>
+            <property name="row_spacing">18</property>
             <property name="column_spacing">6</property>
             <child>
               <object class="GtkLabel" id="purge_trash_label">
@@ -555,9 +577,10 @@
             <property name="can_focus">False</property>
             <property name="orientation">horizontal</property>
             <property name="visible">True</property>
-            <property name="spacing">6</property>
+            <property name="spacing">12</property>
             <property name="margin_start">12</property>
             <property name="margin_end">6</property>
+            <property name="margin_top">12</property>
             <property name="margin_bottom">12</property>
             <child>
               <object class="GtkButton" id="empty_trash_button">
@@ -621,7 +644,6 @@
           <object class="GtkLabel" id="label3">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="margin_left">12</property>
             <property name="margin_start">12</property>
             <property name="margin_top">6</property>
             <property name="margin_bottom">12</property>
@@ -642,8 +664,7 @@ All the information we collect is made anonymous, and we will never share your d
           <object class="GtkGrid" id="grid1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="margin_left">12</property>
-            <property name="margin_start">6</property>
+            <property name="margin_start">12</property>
             <property name="margin_top">12</property>
             <property name="margin_bottom">12</property>
             <property name="row_spacing">12</property>
@@ -656,7 +677,7 @@ All the information we collect is made anonymous, and we will never share your d
                 <property name="xalign">0</property>
                 <property name="label" translatable="yes">_Send software usage statistics</property>
                 <property name="use_underline">True</property>
-                <property name="mnemonic_widget">recently_used_switch</property>
+                <property name="mnemonic_widget">software_usage_switch</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -715,6 +736,156 @@ All the information we collect is made anonymous, and we will never share your d
       </object>
     </child>
   </object>
+  <object class="GtkDialog" id="location_dialog">
+    <property name="can_focus">False</property>
+    <property name="border_width">5</property>
+    <property name="title" translatable="yes">Location Services</property>
+    <property name="resizable">False</property>
+    <property name="type_hint">dialog</property>
+    <property name="use_header_bar">1</property>
+    <child internal-child="vbox">
+      <object class="GtkBox" id="location-vbox">
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="margin">12</property>
+        <property name="spacing">2</property>
+        <child>
+          <object class="GtkLabel" id="location_description_label">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_bottom">12</property>
+            <property name="label" translatable="yes">Location services allow applications to know your location. Using Wi-Fi and mobile broadband increases accuracy.</property>
+            <property name="wrap">True</property>
+            <property name="max_width_chars">50</property>
+            <property name="xalign">0</property>
+            <style>
+              <class name="dim-label"/>
+            </style>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+
+        <child>
+          <object class="GtkFrame" id="location_frame">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="shadow_type">in</property>
+
+            <child>
+              <object class="GtkListBox" id="location_listbox">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="selection_mode">none</property>
+                <child>
+                  <object class="GtkListBoxRow" id="location_services_row">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+
+                    <child>
+                      <object class="GtkGrid" id="location_services_grid">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="row_spacing">0</property>
+                        <property name="column_spacing">32</property>
+                        <property name="margin_start">12</property>
+                        <property name="margin_end">12</property>
+                        <property name="margin_top">12</property>
+                        <property name="margin_bottom">12</property>
+                        <child>
+                          <object class="GtkLabel" id="location_services_label">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="hexpand">True</property>
+                            <property name="xalign">0</property>
+                            <property name="label" translatable="yes">_Location Services</property>
+                            <property name="use_underline">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">0</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+
+                        <child>
+                          <object class="GtkSwitch" id="location_services_switch">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="halign">end</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">0</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+
+        <child>
+          <object class="GtkLabel" id="location_apps_label">
+            <property name="visible">False</property>
+            <property name="can_focus">False</property>
+            <property name="margin_top">24</property>
+            <property name="margin_bottom">12</property>
+            <property name="halign">start</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">Applications</property>
+            <attributes>
+              <attribute name="weight" value="bold"/>
+            </attributes>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+
+        <child>
+          <object class="GtkFrame" id="location_apps_frame">
+            <property name="visible">False</property>
+            <property name="can_focus">False</property>
+            <property name="shadow_type">in</property>
+            <property name="margin_bottom">12</property>
+
+            <child>
+              <object class="GtkListBox" id="location_apps_list_box">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="selection_mode">none</property>
+              </object>
+            </child>
+
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+
+      </object>
+    </child>
+  </object>
       <object class="GtkBox" id="privacy_vbox">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
@@ -735,90 +906,102 @@ All the information we collect is made anonymous, and we will never share your d
             <property name="position">0</property>
           </packing>
         </child>
+      </object>
 
+  <object class="GtkDialog" id="abrt_dialog">
+    <property name="can_focus">False</property>
+    <property name="border_width">5</property>
+    <property name="title" translatable="yes">Problem Reporting</property>
+    <property name="resizable">False</property>
+    <property name="type_hint">dialog</property>
+    <property name="use_header_bar">1</property>
+    <child internal-child="vbox">
+      <object class="GtkBox" id="dialog-vbox10">
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <property name="margin_start">12</property>
+        <property name="margin_end">12</property>
+        <property name="margin_top">12</property>
+        <property name="margin_bottom">12</property>
         <child>
-          <object class="GtkFrame" id="location_frame">
+          <object class="GtkLabel" id="abrt_explanation_label">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="shadow_type">in</property>
+            <property name="margin_start">12</property>
+            <property name="margin_end">12</property>
+            <property name="margin_top">6</property>
+            <property name="margin_bottom">12</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="no">Sending reports of technical problems helps us improve Fedora. Reports are sent anonymously and are scrubbed of personal data.</property>
+            <property name="wrap">True</property>
+            <property name="max_width_chars">50</property>
+            <style>
+              <class name="dim-label"/>
+            </style>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="abrt_policy_linklabel">
+            <property name="label" translatable="no">&lt;a href="http://www.gnome.org/privacy"&gt;Privacy Policy&lt;/a&gt;</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="use_markup">True</property>
+            <property name="receives_default">True</property>
+            <property name="halign">start</property>
+            <property name="margin_start">12</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkGrid" id="grid4">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_start">12</property>
+            <property name="margin_end">12</property>
             <property name="margin_top">12</property>
             <property name="margin_bottom">12</property>
-
+            <property name="row_spacing">12</property>
+            <property name="column_spacing">6</property>
             <child>
-              <object class="GtkListBox" id="location_listbox">
+              <object class="GtkLabel" id="abrt_label">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="hexpand">True</property>
+                <property name="xalign">0</property>
+                <property name="label" translatable="yes">_Automatic Problem Reporting</property>
+                <property name="use_underline">True</property>
+                <property name="mnemonic_widget">abrt_switch</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">1</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSwitch" id="abrt_switch">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="selection_mode">none</property>
-                <child>
-                  <object class="GtkListBoxRow" id="location_services_row">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-
-                    <child>
-                      <object class="GtkGrid" id="location_services_grid">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="row_spacing">0</property>
-                        <property name="column_spacing">32</property>
-                        <property name="margin_start">12</property>
-                        <property name="margin_end">6</property>
-                        <property name="margin_top">12</property>
-                        <property name="margin_bottom">12</property>
-                        <child>
-                          <object class="GtkLabel" id="location_services_label">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="hexpand">True</property>
-                            <property name="xalign">0</property>
-                            <property name="label" translatable="yes">_Location Services</property>
-                            <property name="use_underline">True</property>
-                            <property name="mnemonic_widget">location_services_switch</property>
-                          </object>
-                          <packing>
-                            <property name="left_attach">0</property>
-                            <property name="top_attach">0</property>
-                            <property name="width">1</property>
-                            <property name="height">1</property>
-                          </packing>
-                        </child>
-
-                        <child>
-                          <object class="GtkLabel" id="location_description_label">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="xalign">0</property>
-                            <property name="label" translatable="yes">Used to determine your geographical location</property>
-                            <style>
-                              <class name="dim-label"/>
-                            </style>
-                          </object>
-                          <packing>
-                            <property name="left_attach">0</property>
-                            <property name="top_attach">1</property>
-                            <property name="width">1</property>
-                            <property name="height">1</property>
-                          </packing>
-                        </child>
-
-                        <child>
-                          <object class="GtkSwitch" id="location_services_switch">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="halign">end</property>
-                            <property name="valign">center</property>
-                          </object>
-                          <packing>
-                            <property name="left_attach">1</property>
-                            <property name="top_attach">0</property>
-                            <property name="width">1</property>
-                            <property name="height">2</property>
-                          </packing>
-                        </child>
-                      </object>
-                    </child>
-                  </object>
-                </child>
+                <property name="halign">end</property>
+                <property name="valign">center</property>
               </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">1</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
             </child>
           </object>
           <packing>
@@ -828,4 +1011,7 @@ All the information we collect is made anonymous, and we will never share your d
           </packing>
         </child>
       </object>
+    </child>
+  </object>
+
 </interface>

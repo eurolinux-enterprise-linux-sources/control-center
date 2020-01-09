@@ -1,11 +1,14 @@
+include $(top_srcdir)/Makefile.decl
+
 cappletname = info
 
-AM_CPPFLAGS = 						\
-	$(PANEL_CFLAGS)					\
-	$(INFO_PANEL_CFLAGS)				\
-	-DGNOMELOCALEDIR="\"$(datadir)/locale\""	\
-	-DDATADIR="\"$(datadir)\""			\
-	-DBINDIR="\"$(bindir)\""			\
+AM_CPPFLAGS =							\
+	$(PANEL_CFLAGS)						\
+	$(INFO_PANEL_CFLAGS)					\
+	-DGNOMELOCALEDIR="\"$(datadir)/locale\""		\
+	-DDATADIR="\"$(datadir)\""				\
+	-DGNOME_SESSION_DIR="\"$(gnome_session_libexecdir)\""	\
+	-DBINDIR="\"$(bindir)\""				\
 	$(NULL)
 
 noinst_LTLIBRARIES = libinfo.la
@@ -19,9 +22,20 @@ libinfo_la_SOURCES =		\
 	cc-info-panel.c		\
 	cc-info-panel.h		\
 	gsd-disk-space-helper.h	\
-	gsd-disk-space-helper.c
+	gsd-disk-space-helper.c	\
+	info-cleanup.h		\
+	info-cleanup.c
 
 libinfo_la_LIBADD = $(PANEL_LIBS) $(INFO_PANEL_LIBS)
+
+noinst_PROGRAMS = test-info-cleanup
+TEST_PROGS += $(noinst_PROGRAMS)
+test_info_cleanup_SOURCES =		\
+	test-info-cleanup.c		\
+	info-cleanup.h			\
+	info-cleanup.c
+test_info_cleanup_LDADD = $(libinfo_la_LIBADD)
+test_info_cleanup_CFLAGS = $(AM_CPPFLAGS) -DTEST_SRCDIR="\"$(srcdir)\""
 
 resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/info.gresource.xml)
 cc-info-resources.c: info.gresource.xml $(resource_files)
@@ -42,6 +56,6 @@ update-from-gsd:
 	git commit -m "info: Update from gnome-settings-daemon" $(SPACEFILES)
 
 CLEANFILES = $(desktop_in_files) $(desktop_DATA) $(BUILT_SOURCES)
-EXTRA_DIST = $(resource_files) info.gresource.xml
+EXTRA_DIST = $(resource_files) info.gresource.xml info-cleanup-test.txt
 
 -include $(top_srcdir)/git.mk

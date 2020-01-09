@@ -1,85 +1,89 @@
 %define gettext_package gnome-control-center-2.0
 
-%define glib2_version 2.39.91
-%define gtk3_version 3.13.0
-%define gsd_version 3.7.3
-%define gnome_desktop_version 3.11.3
-%define gsettings_desktop_schemas_version 3.13.91
-%define desktop_file_utils_version 0.9
+%define glib2_version 2.44.0
+%define gtk3_version 3.22.0
+%define gsd_version 3.19.1
+%define gnome_desktop_version 3.21.2
+%define gsettings_desktop_schemas_version 3.21.4
+%define gnome_bluetooth_version 3.18.2
 
-Summary: Utilities to configure the GNOME desktop
 Name: control-center
-Version: 3.14.5
-Release: 19%{?dist}
 Epoch: 1
+Version: 3.22.2
+Release: 5%{?dist}
+Summary: Utilities to configure the GNOME desktop
+
 License: GPLv2+ and GFDL
-#VCS: git:git://git.gnome.org/gnome-control-center
-Source: http://download.gnome.org/sources/gnome-control-center/3.14/gnome-control-center-%{version}.tar.xz
 URL: http://www.gnome.org
+Source0: https://download.gnome.org/sources/gnome-control-center/3.22/gnome-control-center-%{version}.tar.xz
 
 # https://bugzilla.gnome.org/show_bug.cgi?id=695691
 Patch0: distro-logo.patch
+Patch1: wacom-ekr.patch
+Patch2: handle-synaptics-touchpads.patch
+# https://bugzilla.redhat.com/show_bug.cgi?id=1298881
+Patch3: cursor-size-selection.patch
+# https://bugzilla.gnome.org/show_bug.cgi?id=774324
+Patch4: 0001-info-Fix-build-when-Wayland-is-disabled.patch
+# https://bugzilla.redhat.com/show_bug.cgi?id=1440816
+Patch5: 0001-printers-actualize-printers-list.patch
+# https://bugzilla.redhat.com/show_bug.cgi?id=1309331
+Patch6: 0001-hostname-helper-don-t-read-past-0.patch
+Patch7: 0002-hostname-helper-fall-back-to-kernel-hostname-when-th.patch
+Patch8: 0003-hostname-helper-use-SSID_MAX_LEN.patch
+Patch9: 0001-wacom-Fix-eraser-pressure-sensitivity.patch
+# https://bugzilla.redhat.com/show_bug.cgi?id=1457691
+Patch10: 0001-network-Simplify-the-ignored-Network-interface-types.patch
 
-Patch1: control-center-translations-3.14.patch
+BuildRequires: autoconf automake libtool intltool gnome-common
 
-# https://bugzilla.gnome.org/show_bug.cgi?id=749972
-Patch2: 0001-network-Prevent-a-use-after-free-crash-when-removing.patch
-
-# https://bugzilla.gnome.org/show_bug.cgi?id=727871
-Patch3: 0001-user-accounts-use-common-function-for-error-messages.patch
-Patch4: 0001-user-accounts-fix-enterprise-accounts-deleting.patch
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1232758
-Patch5: 0001-printers-Show-border-around-No-printers-detected-tex.patch
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1232751
-Patch6: 0001-printers-Remove-unused-function.patch
-Patch7: 0002-printers-Fix-setting-of-page-size.patch
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1256633
-Patch8: 0001-region-If-language-isn-t-set-in-AccountsService-show.patch
-
-Patch9: 0001-datetime-update-timezones-for-new-Pyongyang-Time.patch
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1298952
-Patch10: 0001-printers-avoid-crashes-when-searching-with-special-chars.patch
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1298943
-Patch11: control-center-3.14.5-do-not-show-nameless-apps.patch
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1298951
-Patch12: control-center-3.14.5-check-for-zero-length-string.patch
-Patch13: control-center-3.14.5-check-for-invalid-pointer.patch
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1273273
-Patch14: gnome-control-center-3.14.5-EL7.3_translations.patch
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1089037
-Patch15: 0001-wacom-Ensure-calibration-runs-on-the-builtin-display.patch
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1293068
-Patch16: 0001-region-Avoid-overly-long-labels-causing-horizontal-s.patch
-Patch17: 0002-region-Be-more-thorough-in-cc_input_chooser_reset.patch
-Patch18: 0003-region-Avoid-duplicates-when-filtering-input-sources.patch
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1306253
-# https://bugzilla.gnome.org/show_bug.cgi?id=709641
-Patch19: 0001-network-Fix-empty-Wifi-list.patch
-
-# https://bugzilla.gnome.org/show_bug.cgi?id=761004
-# https://bugzilla.redhat.com/show_bug.cgi?id=1319744
-Patch20: 0001-network-read-secrets-for-the-VPN-connections.patch
-Patch21: 0002-network-Don-t-try-to-get-secrets-for-new-connections.patch
-Patch22: 0003-network-Avoid-warnings-while-closing-connection-edit.patch
-Patch23: 0004-network-Fix-a-crash-when-clicking-to-forget-a-VPN-on.patch
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1273273 again
-Patch24: gnome-control-center-3.14.5-EL7.3_translations_for_it_ko.patch
-
-Source1: timezone_8.5_dim.png
-Source2: timezone_8.5.png
-Source3: timezone_9_dim.png
-Source4: timezone_9.png
+BuildRequires: pkgconfig(accountsservice)
+BuildRequires: pkgconfig(cheese-gtk) >= 3.5.91
+BuildRequires: pkgconfig(clutter-gtk-1.0)
+BuildRequires: pkgconfig(colord)
+BuildRequires: pkgconfig(colord-gtk)
+BuildRequires: pkgconfig(gdk-pixbuf-2.0) >= 2.23.0
+%if 0%{?fedora}
+BuildRequires: pkgconfig(gdk-wayland-3.0)
+%endif
+BuildRequires: pkgconfig(gio-2.0) >= %{glib2_version}
+BuildRequires: pkgconfig(gnome-desktop-3.0) >= %{gnome_desktop_version}
+BuildRequires: pkgconfig(gnome-settings-daemon) >= %{gsd_version}
+BuildRequires: pkgconfig(goa-1.0)
+BuildRequires: pkgconfig(goa-backend-1.0)
+BuildRequires: pkgconfig(grilo-0.3)
+BuildRequires: pkgconfig(gsettings-desktop-schemas) >= %{gsettings_desktop_schemas_version}
+BuildRequires: pkgconfig(gtk+-3.0) >= %{gtk3_version}
+BuildRequires: pkgconfig(gudev-1.0)
+BuildRequires: pkgconfig(ibus-1.0)
+BuildRequires: pkgconfig(libcanberra-gtk3)
+BuildRequires: pkgconfig(libgtop-2.0)
+BuildRequires: pkgconfig(libnm)
+BuildRequires: pkgconfig(libnma)
+BuildRequires: pkgconfig(libpulse)
+BuildRequires: pkgconfig(libpulse-mainloop-glib)
+BuildRequires: pkgconfig(libsoup-2.4)
+BuildRequires: pkgconfig(libxml-2.0)
+BuildRequires: pkgconfig(mm-glib)
+BuildRequires: pkgconfig(NetworkManager)
+BuildRequires: pkgconfig(polkit-gobject-1)
+BuildRequires: pkgconfig(pwquality)
+BuildRequires: pkgconfig(smbclient)
+BuildRequires: pkgconfig(upower-glib)
+BuildRequires: pkgconfig(x11)
+BuildRequires: pkgconfig(xi)
+BuildRequires: desktop-file-utils
+BuildRequires: gettext
+BuildRequires: intltool >= 0.37.1
+BuildRequires: libXxf86misc-devel
+BuildRequires: chrpath
+BuildRequires: gnome-common
+BuildRequires: cups-devel
+BuildRequires: docbook-style-xsl
+%ifnarch s390 s390x
+BuildRequires: pkgconfig(gnome-bluetooth-1.0) >= %{gnome_bluetooth_version}
+BuildRequires: pkgconfig(libwacom)
+%endif
 
 Requires: gnome-settings-daemon >= %{gsd_version}
 Requires: alsa-lib
@@ -89,6 +93,9 @@ Requires: control-center-filesystem = %{epoch}:%{version}-%{release}
 Requires: glib2%{?_isa} >= %{glib2_version}
 Requires: gsettings-desktop-schemas%{?_isa} >= %{gsettings_desktop_schemas_version}
 Requires: gtk3%{?_isa} >= %{gtk3_version}
+%ifnarch s390 s390x
+Requires: gnome-bluetooth%{?_isa} >= 1:%{gnome_bluetooth_version}
+%endif
 # for user accounts
 Requires: accountsservice
 # For the user languages
@@ -108,51 +115,8 @@ Requires: glx-utils
 Requires: /usr/bin/gkbd-keyboard-display
 # For the color panel
 Requires: colord
-
-BuildRequires: glib2-devel >= %{glib2_version}
-BuildRequires: gtk3-devel >= %{gtk3_version}
-BuildRequires: gdk-pixbuf2-devel >= 2.23.0
-BuildRequires: librsvg2-devel
-BuildRequires: gnome-desktop3-devel >= %{gnome_desktop_version}
-BuildRequires: desktop-file-utils >= %{desktop_file_utils_version}
-BuildRequires: libXcursor-devel
-BuildRequires: gettext
-BuildRequires: gnome-settings-daemon-devel >= %{gsd_version}
-BuildRequires: intltool >= 0.37.1
-BuildRequires: libsmbclient-devel
-BuildRequires: libsoup-devel
-BuildRequires: libXxf86misc-devel
-BuildRequires: libxkbfile-devel
-BuildRequires: libXScrnSaver-devel
-BuildRequires: libxml2-devel
-BuildRequires: libcanberra-devel
-BuildRequires: chrpath
-BuildRequires: gsettings-desktop-schemas-devel >= %{gsettings_desktop_schemas_version}
-BuildRequires: pulseaudio-libs-devel libcanberra-devel
-BuildRequires: upower-devel
-BuildRequires: accountsservice-devel
-BuildRequires: ModemManager-glib-devel
-BuildRequires: NetworkManager-glib-devel >= 0.9.8
-BuildRequires: libnm-gtk-devel >= 0.9.8
-BuildRequires: polkit-devel
-BuildRequires: gnome-common
-BuildRequires: cups-devel
-BuildRequires: libgtop2-devel
-BuildRequires: iso-codes-devel
-BuildRequires: cheese-libs-devel >= 1:3.0.1
-BuildRequires: clutter-gtk-devel
-BuildRequires: gnome-online-accounts-devel
-BuildRequires: colord-devel
-BuildRequires: colord-gtk-devel
-BuildRequires: libnotify-devel
-BuildRequires: docbook-style-xsl
-BuildRequires: systemd-devel
-BuildRequires: libpwquality-devel
-BuildRequires: ibus-devel
-BuildRequires: grilo-devel
-%ifnarch s390 s390x
-BuildRequires: gnome-bluetooth-devel >= 3.9.3
-BuildRequires: libwacom-devel
+%if 0%{?fedora}
+Recommends: gnome-color-manager
 %endif
 
 Provides: control-center-extra = %{epoch}:%{version}-%{release}
@@ -183,34 +147,9 @@ utilities.
 
 
 %prep
-%setup -q -n gnome-control-center-%{version}
-%patch0 -p1 -b .distro-logo
-%patch1 -p1 -b .translations
-%patch2 -p1 -b .network-virt-dev-crash
-%patch3 -p1 -b .common-function-for-errors
-%patch4 -p1 -b .enterprise-accounts-deleting
-%patch5 -p1 -b .no-printers-detected-border
-%patch6 -p1 -b .unused-function
-%patch7 -p1 -b .page-size-setting
-%patch8 -p1 -b .ensure-correct-language
-%patch9 -p1 -b .pyongyang-time
-%patch10 -p1 -b .printers-avoid-crashes-when-searching-with-special-chars
-%patch11 -p1 -b .do-not-show-nameless-apps
-%patch12 -p1 -b .check-for-zero-length-string
-%patch13 -p1 -b .check-for-invalid-pointer
-%patch14 -p1 -b .translation-updates
-%patch15 -p1 -b .wacom-calibrate-isd-on-builtin
-%patch16 -p1 -b .input-chooser-avoid-long-labels
-%patch17 -p1 -b .input-chooser-thorough-reset
-%patch18 -p1 -b .input-chooser-avoid-dupes
-%patch19 -p1 -b .network-fix-empty-wifi-list
-%patch20 -p1
-%patch21 -p1
-%patch22 -p1
-%patch23 -p1
-%patch24 -p1
+%autosetup -S git -n gnome-control-center-%{version}
 
-cp %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} panels/datetime/data/
+autoreconf -f -i
 
 %build
 %configure \
@@ -225,7 +164,7 @@ sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0 /g' -e 's/    if test "$export_dyn
 make %{?_smp_mflags} V=1
 
 %install
-make install DESTDIR=$RPM_BUILD_ROOT
+%make_install
 
 desktop-file-install --delete-original			\
   --dir $RPM_BUILD_ROOT%{_datadir}/applications		\
@@ -264,11 +203,12 @@ fi
 gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
 %files -f %{gettext_package}.lang
-%doc AUTHORS COPYING NEWS README
+%license COPYING
+%doc AUTHORS NEWS README
 %{_datadir}/gnome-control-center/keybindings/*.xml
 %{_datadir}/gnome-control-center/pixmaps
-%{_datadir}/gnome-control-center/datetime/
 %{_datadir}/gnome-control-center/sounds/gnome-sounds-default.xml
+%{_datadir}/appdata/gnome-control-center.appdata.xml
 %{_datadir}/applications/*.desktop
 %{_datadir}/icons/hicolor/*/*/*
 %{_datadir}/gnome-control-center/icons/
@@ -282,6 +222,7 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 %{_datadir}/man/man1/gnome-control-center.1.*
 %{_datadir}/dbus-1/services/org.gnome.ControlCenter.SearchProvider.service
 %{_datadir}/dbus-1/services/org.gnome.ControlCenter.service
+%{_datadir}/gettext/
 %{_datadir}/gnome-shell/search-providers/gnome-control-center-search-provider.ini
 %{_datadir}/polkit-1/rules.d/gnome-control-center.rules
 %{_datadir}/bash-completion/completions/gnome-control-center
@@ -294,6 +235,45 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
 
 %changelog
+* Tue Jun 20 2017 Bastien Nocera <bnocera@redhat.com> - 3.22.2-5
++ control-center-3.22.2-5
+- Don't show veth interfaces, we don't have code to set them up
+Resolves: #1457691
+
+* Tue Jun 13 2017 Carlos Garnacho <cgarnach@redhat.com> - 3.22.2-4
+- Fix eraser pressure mimicking tip pressure
+Resolves: #1458352
+
+* Fri May 05 2017 Bastien Nocera <bnocera@redhat.com> - 3.22.2-3
+- Fix Hotspot not working when PrettyHostname is unset
+Resolves: #1309331
+
+* Tue Apr 18 2017 Felipe Borges <feborges@redhat.com> - 3.22.2-2
+- Make actualize_printers_list cancellable
+- Resolves: #1440816
+
+* Tue Mar 14 2017 Bastien Nocera <bnocera@redhat.com> - 3.22.2-1
++ control-center-3.22.2-1
+- Update to 3.22.2
+- Add cursor size selection patch
+Resolves: #1386839, #1298881
+
+* Mon Mar 13 2017 Carlos Garnacho <cgarnach@redhat.com> - 1:3.22.1-4
+- Handle synaptics touchpads, in sync with mutter
+- Resolves: #1386839
+
+* Fri Mar 10 2017 Carlos Garnacho <cgarnach@redhat.com> - 1:3.22.1-3
+- Support Wacom EKR devices
+- Resolves: #1342998
+
+* Thu Feb 23 2017 Kalev Lember <klember@redhat.com> - 1:3.22.1-2
+- Remove a workaround for older accountsservice
+- Resolves: #1386839
+
+* Wed Oct 12 2016 Kalev Lember <klember@redhat.com> - 1:3.22.1-1
+- Update to 3.22.1
+- Resolves: #1386839
+
 * Thu Jun 30 2016 Bastien Nocera <bnocera@redhat.com> - 3.14.5-19
 - Update translations again
 Resolves: #1273273

@@ -25,8 +25,8 @@
 
 #include "date-endian.h"
 
-/* We default to returning DATE_ENDIANESS_MIDDLE because that's
- * what 3.2 billion people use */
+/* We default to returning DATE_ENDIANESS_LITTLE because that's
+ * what 3.4 billion people use */
 #define DEFAULT_ENDIANESS DATE_ENDIANESS_LITTLE
 
 typedef enum {
@@ -94,6 +94,7 @@ date_endian_get_default (gboolean verbose)
 			return DEFAULT_ENDIANESS;
 		}
 		switch (c) {
+		case 'A':
 		case 'd':
 		case 'e':
 			if (has_item (items, ITEM_DAY) == FALSE) {
@@ -116,7 +117,6 @@ date_endian_get_default (gboolean verbose)
 				i++;
 			}
 			break;
-		case 'A':
 		case 'a':
 			/* Ignore */
 			;
@@ -135,6 +135,10 @@ date_endian_get_default (gboolean verbose)
 	    items[1] == ITEM_DAY &&
 	    items[2] == ITEM_YEAR)
 		return DATE_ENDIANESS_MIDDLE;
+	if (items[0] == ITEM_YEAR &&
+	    items[1] == ITEM_DAY &&
+	    items[2] == ITEM_MONTH)
+		return DATE_ENDIANESS_YDM;
 
 	g_warning ("Could not parse format '%s'", fmt);
 
@@ -165,6 +169,8 @@ date_endian_to_string (DateEndianess endianess)
 		return "Big (YYYY-MM-DD)";
 	case DATE_ENDIANESS_MIDDLE:
 		return "Middle (MM-DD-YYYY)";
+        case DATE_ENDIANESS_YDM:
+		return "YDM (YYYY-DD-MM)";
 	default:
 		g_assert_not_reached ();
 	}

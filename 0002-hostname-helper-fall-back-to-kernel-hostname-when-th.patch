@@ -1,0 +1,32 @@
+From a80bb954e0f4809be57c95041051bb359bc98085 Mon Sep 17 00:00:00 2001
+From: Lubomir Rintel <lkundrak@v3.sk>
+Date: Wed, 2 Nov 2016 17:15:20 +0100
+Subject: [PATCH 2/3] hostname-helper: fall back to kernel hostname when the
+ pretty one is an empty string
+
+The empty string is not too useful as an SSID, an attempt to create a
+hotspot fails:
+
+  (gnome-control-center:19371): network-cc-panel-WARNING **:
+    Failed to add new connection: (2)
+    A 'wireless' setting with a valid SSID is required if no AP path was given.
+---
+ shell/hostname-helper.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/shell/hostname-helper.c b/shell/hostname-helper.c
+index ab889b96b..1a063b5cd 100644
+--- a/shell/hostname-helper.c
++++ b/shell/hostname-helper.c
+@@ -178,7 +178,7 @@ pretty_hostname_to_ssid (const char *pretty)
+ 	const char *p, *prev;
+ 	char *ret = NULL;
+ 
+-	if (pretty == NULL) {
++	if (pretty == NULL || *pretty == '\0') {
+ 		pretty = g_get_host_name ();
+ 		if (g_strcmp0 (pretty, "localhost") == 0)
+ 			pretty = NULL;
+-- 
+2.12.2
+

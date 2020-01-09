@@ -21,6 +21,7 @@
 #define __CC_KEYBOARD_ITEM_H
 
 #include <glib-object.h>
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
@@ -59,12 +60,10 @@ typedef struct
   /* FIXME move to priv? */
   guint keyval;
   guint keycode;
-  GdkModifierType mask;
   BindingGroupType group;
+  GdkModifierType mask;
   GtkTreeModel *model;
   char *description;
-  char *gettext_package;
-  char *binding;
   gboolean editable;
 
   /* GSettings path */
@@ -96,7 +95,6 @@ gboolean cc_keyboard_item_load_from_gsettings (CcKeyboardItem *item,
 					       const char *key);
 
 const char * cc_keyboard_item_get_description (CcKeyboardItem *item);
-const char * cc_keyboard_item_get_binding     (CcKeyboardItem *item);
 const char * cc_keyboard_item_get_command     (CcKeyboardItem *item);
 
 gboolean     cc_keyboard_item_equal           (CcKeyboardItem *a,
@@ -110,6 +108,10 @@ CcKeyboardItem * cc_keyboard_item_get_reverse_item (CcKeyboardItem *item);
 void             cc_keyboard_item_set_hidden       (CcKeyboardItem *item,
 						    gboolean hidden);
 gboolean         cc_keyboard_item_is_hidden        (CcKeyboardItem *item);
+
+gboolean         cc_keyboard_item_is_value_default (CcKeyboardItem *self);
+
+void             cc_keyboard_item_reset            (CcKeyboardItem *self);
 
 G_END_DECLS
 

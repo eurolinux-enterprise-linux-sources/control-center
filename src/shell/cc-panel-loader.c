@@ -122,22 +122,37 @@ parse_categories (GDesktopAppInfo *app)
   const char *categories;
   char **split;
   int retval;
-  int i;
 
   categories = g_desktop_app_info_get_categories (app);
   split = g_strsplit (categories, ";", -1);
 
   retval = -1;
 
-  for (i = 0; split[i]; i++)
-    {
-      if (strcmp (split[i], "HardwareSettings") == 0)
-        retval = CC_CATEGORY_HARDWARE;
-      else if (strcmp (split[i], "X-GNOME-PersonalSettings") == 0)
-        retval = CC_CATEGORY_PERSONAL;
-      else if (strcmp (split[i], "X-GNOME-SystemSettings") == 0)
-        retval = CC_CATEGORY_SYSTEM;
-    }
+#define const_strv(s) ((const gchar* const*) s)
+
+#ifdef CC_ENABLE_ALT_CATEGORIES
+  if (g_strv_contains (const_strv (split), "X-GNOME-ConnectivitySettings"))
+    retval = CC_CATEGORY_CONNECTIVITY;
+  else if (g_strv_contains (const_strv (split), "X-GNOME-PersonalizationSettings"))
+    retval = CC_CATEGORY_PERSONALIZATION;
+  else if (g_strv_contains (const_strv (split), "X-GNOME-AccountSettings"))
+    retval = CC_CATEGORY_ACCOUNT;
+  else if (g_strv_contains (const_strv (split), "X-GNOME-DevicesSettings"))
+    retval = CC_CATEGORY_DEVICES;
+  else if (g_strv_contains (const_strv (split), "X-GNOME-DetailsSettings"))
+    retval = CC_CATEGORY_DETAILS;
+  else if (g_strv_contains (const_strv (split), "HardwareSettings"))
+    retval = CC_CATEGORY_HARDWARE;
+#else
+  if (g_strv_contains (const_strv (split), "HardwareSettings"))
+    retval = CC_CATEGORY_HARDWARE;
+  else if (g_strv_contains (const_strv (split), "X-GNOME-PersonalSettings"))
+    retval = CC_CATEGORY_PERSONAL;
+  else if (g_strv_contains (const_strv (split), "X-GNOME-SystemSettings"))
+    retval = CC_CATEGORY_SYSTEM;
+#endif
+
+#undef const_strv
 
   if (retval < 0)
     {
@@ -214,23 +229,6 @@ cc_panel_loader_load_by_name (CcShell     *shell,
                        "shell", shell,
                        "parameters", parameters,
                        NULL);
-}
-
-void
-cc_panel_loader_add_option_groups (GOptionContext  *context,
-                                   GVariantBuilder *builder)
-{
-  int i;
-
-  for (i = 0; i < G_N_ELEMENTS (all_panels); i++)
-    {
-      GType (*get_type) (void);
-      get_type = all_panels[i].get_type;
-      GOptionGroup *group = cc_panel_get_option_group (get_type(), builder);
-      if (group == NULL)
-        continue;
-      g_option_context_add_group (context, group);
-    }
 }
 
 #endif /* CC_PANEL_LOADER_NO_GTYPES */

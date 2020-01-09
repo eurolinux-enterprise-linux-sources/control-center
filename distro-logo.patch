@@ -8,125 +8,89 @@ information in the small print.
 
 https://bugzilla.gnome.org/show_bug.cgi?id=695691
 ---
- panels/info/cc-info-panel.c | 90 +++++++++++++++++++++++++++++++++------------
- panels/info/info.ui         | 77 +++++++++++++++++++++++++++-----------
- 2 files changed, 121 insertions(+), 46 deletions(-)
+ panels/info/cc-info-panel.c | 55 +++++++++++++++++---------------
+ panels/info/info.ui         | 77 ++++++++++++++++++++++++++++++++-------------
+ 2 files changed, 84 insertions(+), 48 deletions(-)
 
 diff --git a/panels/info/cc-info-panel.c b/panels/info/cc-info-panel.c
-index 9fba215..bc52c61 100644
+index 79729dd..bc3789f 100644
 --- a/panels/info/cc-info-panel.c
 +++ b/panels/info/cc-info-panel.c
-@@ -432,48 +432,85 @@ cc_info_panel_class_init (CcInfoPanelClass *klass)
- }
- 
- static char *
-+get_item (const char *buffer, const char *name)
-+{
-+  char *label, *start, *end, *result;
-+  char end_char;
-+
-+  result = NULL;
-+  start = NULL;
-+  end = NULL;
-+  label = g_strconcat (name, "=", NULL);
-+  if ((start = strstr (buffer, label)) != NULL)
-+    {
-+      start += strlen (label);
-+      end_char = '\n';
-+      if (*start == '"')
-+        {
-+          start++;
-+          end_char = '"';
-+        }
-+
-+      end = strchr (start, end_char);
-+    }
-+
-+    if (start != NULL && end != NULL)
-+      {
-+        result = g_strndup (start, end - start);
-+      }
-+
-+  g_free (label);
-+
-+  return result;
-+}
-+
-+static char *
+@@ -455,42 +455,23 @@ static char *
  get_os_type (void)
  {
+   GHashTable *os_info;
+-  gchar *name, *result, *build_id;
 -  int bits;
-   char *buffer;
-   char *name;
-   char *result;
-+  char *version;
++  gchar *name, *result, *version;
  
-+  result = NULL;
-   name = NULL;
+   os_info = get_os_info ();
+ 
+   if (!os_info)
+     return NULL;
+ 
+-  name = g_hash_table_lookup (os_info, "PRETTY_NAME");
+-  build_id = g_hash_table_lookup (os_info, "BUILD_ID");
++  name = g_hash_table_lookup (os_info, "NAME");
++  version = g_hash_table_lookup (os_info, "VERSION_ID");
+ 
+-  if (GLIB_SIZEOF_VOID_P == 8)
+-    bits = 64;
+-  else
+-    bits = 32;
 -
-+  version = NULL;
-   if (g_file_get_contents ("/etc/os-release", &buffer, NULL, NULL))
-     {
--       char *start, *end;
-+      name = get_item (buffer, "NAME");
-+      version = get_item (buffer, "VERSION_ID");
- 
--       start = end = NULL;
--       if ((start = strstr (buffer, "PRETTY_NAME=\"")) != NULL)
--         {
--           start += strlen ("PRETTY_NAME=\"");
--           end = strchr (start, '"');
--         }
--
--       if (start != NULL && end != NULL)
--         {
--           name = g_strndup (start, end - start);
--         }
-+      g_free (buffer);
-+    }
- 
--       g_free (buffer);
+-  if (build_id)
 +  if (name && version)
-+    {
+     {
+-      /* translators: This is the name of the OS, followed by the type
+-       * of architecture and the build id, for example:
+-       * "Fedora 18 (Spherical Cow) 64-bit (Build ID: xyz)" or
+-       * "Ubuntu (Oneric Ocelot) 32-bit (Build ID: jki)" */
+-      if (name)
+-        result = g_strdup_printf (_("%s %d-bit (Build ID: %s)"), name, bits, build_id);
+-      else
+-        result = g_strdup_printf (_("%d-bit (Build ID: %s)"), bits, build_id);
 +      result = g_strconcat (name, " ", version, NULL);
-+    }
+     }
+-  else
 +  else if (name)
-+    {
+     {
+-      /* translators: This is the name of the OS, followed by the type
+-       * of architecture, for example:
+-       * "Fedora 18 (Spherical Cow) 64-bit" or "Ubuntu (Oneric Ocelot) 32-bit" */
+-      if (name)
+-        result = g_strdup_printf (_("%s %d-bit"), name, bits);
+-      else
+-        result = g_strdup_printf (_("%d-bit"), bits);
 +      result = g_strdup (name);
      }
  
-+  g_free (name);
-+  g_free (version);
-+
-+  return result;
-+}
-+
+   g_clear_pointer (&os_info, g_hash_table_destroy);
+@@ -498,6 +479,23 @@ get_os_type (void)
+   return result;
+ }
+ 
 +static char *
 +get_os_description (void)
 +{
 +  int bits;
 +  gchar *result;
 +
-   if (GLIB_SIZEOF_VOID_P == 8)
-     bits = 64;
-   else
-     bits = 32;
- 
--  /* translators: This is the name of the OS, followed by the type
--   * of architecture, for example:
--   * "Fedora 18 (Spherical Cow) 64-bit" or "Ubuntu (Oneric Ocelot) 32-bit" */
--  if (name)
--    result = g_strdup_printf (_("%s %d-bit"), name, bits);
--  else
--    result = g_strdup_printf (_("%d-bit"), bits);
--
--  g_free (name);
++  if (GLIB_SIZEOF_VOID_P == 8)
++    bits = 64;
++  else
++    bits = 32;
++
 +  /* translators: This is the the type of OS architecture, eg: "64-bit" or "32-bit" */
 +  result = g_strdup_printf (_("%d-bit"), bits);
- 
-   return result;
- }
-@@ -1499,6 +1536,11 @@ info_panel_setup_overview (CcInfoPanel  *self)
++
++  return result;
++}
++
+ static void
+ query_done (GFile        *file,
+             GAsyncResult *res,
+@@ -1519,6 +1517,11 @@ info_panel_setup_overview (CcInfoPanel  *self)
    gtk_label_set_text (GTK_LABEL (widget), text ? text : "");
    g_free (text);
  
@@ -315,5 +279,5 @@ index 1967fdf..0bdfc1a 100644
                                  </child>
                                </object>
 -- 
-2.0.1
+2.9.3
 
