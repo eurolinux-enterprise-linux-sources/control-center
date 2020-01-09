@@ -1,0 +1,62 @@
+SUBDIRS = po libwindow-settings capplets font-viewer help
+DIST_SUBDIRS = po libwindow-settings capplets font-viewer help libslab shell typing-break
+
+if HAVE_LIBSLAB_DEPS
+SUBDIRS += libslab shell
+endif
+
+if HAVE_TYPING_BREAK
+SUBDIRS += typing-break
+endif
+
+schemasdir   = @GCONF_SCHEMA_FILE_DIR@
+schemas_in_files = gnome-control-center.schemas.in
+schemas_DATA = $(schemas_in_files:.schemas.in=.schemas)
+@INTLTOOL_SCHEMAS_RULE@
+
+ACLOCAL_AMFLAGS = -I m4
+
+CLEANFILES = \
+	$(schemas_DATA)
+
+DISTCLEANFILES = \
+	gnome-doc-utils.make
+
+MAINTAINERCLEANFILES = \
+	$(srcdir)/INSTALL \
+	$(srcdir)/aclocal.m4 \
+	$(srcdir)/autoscan.log \
+	$(srcdir)/compile \
+	$(srcdir)/config.guess \
+	$(srcdir)/config.h.in \
+	$(srcdir)/config.sub \
+	$(srcdir)/configure.scan \
+	$(srcdir)/depcomp \
+	$(srcdir)/install-sh \
+	$(srcdir)/ltmain.sh \
+	$(srcdir)/missing \
+	$(srcdir)/mkinstalldirs \
+	$(srcdir)/omf.make \
+	$(srcdir)/xmldocs.make \
+	$(srcdir)/gtk-doc.make \
+	`find "$(srcdir)" -type f -name Makefile.in -print`
+
+EXTRA_DIST = \
+	$(schemas_in_files) \
+	MAINTAINERS \
+	gnome-doc-utils.make
+
+DISTCHECK_CONFIGURE_FLAGS = --disable-scrollkeeper --disable-update-mimedb
+
+GITIGNOREFILES=m4
+
+-include $(top_srcdir)/git.mk
+
+install-data-local:
+if GCONF_SCHEMAS_INSTALL
+	if test -z "$(DESTDIR)" ; then \
+	for p in $(schemas_DATA) ; do \
+	GCONF_CONFIG_SOURCE=$(GCONF_SCHEMA_CONFIG_SOURCE) $(GCONFTOOL) --makefile-install-rule $(top_builddir)/$$p >&1 > /dev/null; \
+	done \
+	fi
+endif

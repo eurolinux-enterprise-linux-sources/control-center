@@ -1,0 +1,25 @@
+commit 3dfe2d05d002e591ad908afee401a1ee30df7166
+Author: Peter Hutterer <peter.hutterer@who-t.net>
+Date:   Tue Mar 6 12:13:13 2012 +1000
+
+    wacom: fix wrong area gconf values
+    
+    G_N_ELEMENT() does not work for arrays on the heap (it's just
+    sizeof(a)/sizeof(a[0])). This caused the area property to be written
+    with 2 values only, crashing g-s-d.
+    
+    Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+
+diff --git a/panels/wacom/cc-wacom-page.c b/panels/wacom/cc-wacom-page.c
+index b663e14..0472406 100644
+--- a/panels/wacom/cc-wacom-page.c
++++ b/panels/wacom/cc-wacom-page.c
+@@ -131,7 +131,7 @@ set_calibration (gint      *cal,
+ 	for (i = 0; i < ncal; i++)
+ 		array[i] = (cal[i]);
+ 
+-	gsd_gconf_value_set_int_array (value, array, G_N_ELEMENTS (array));
++	gsd_gconf_value_set_int_array (value, array, nvalues);
+ 	gsd_gconf_set (settings_path, "area", value);
+ 
+ 	g_free (array);

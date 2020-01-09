@@ -1,0 +1,61 @@
+commit 03b22d50bdb43c34a39eb881fe7ade85969d471c
+Author: Olivier Fourdan <ofourdan@redhat.com>
+Date:   Fri Apr 27 10:08:02 2012 +0200
+
+    wacom: Update from gnome-settings-daemon
+
+diff --git a/panels/wacom/gsd-wacom-device.c b/panels/wacom/gsd-wacom-device.c
+index a25d292..d774692 100644
+--- a/panels/wacom/gsd-wacom-device.c
++++ b/panels/wacom/gsd-wacom-device.c
+@@ -42,7 +42,7 @@
+ 
+ #define GSD_WACOM_STYLUS_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), GSD_TYPE_WACOM_STYLUS, GsdWacomStylusPrivate))
+ 
+-#define WACOM_DEVICE_CONFIG_BASE "/desktop/gnome/peripherals/wacom"
++#define WACOM_DEVICE_CONFIG_BASE "/desktop/gnome/peripherals/wacom/%s-%s"
+ #define WACOM_TABLET_SCHEMA	 "/schemas/desktop/gnome/peripherals/wacom"
+ #define WACOM_STYLUS_SCHEMA	 "/schemas/desktop/gnome/peripherals/wacom/stylus"
+ #define WACOM_ERASER_SCHEMA	 "/schemas/desktop/gnome/peripherals/wacom/eraser"
+@@ -342,6 +342,7 @@ struct GsdWacomDevicePrivate
+ 	GsdWacomDeviceType type;
+ 	char *name;
+ 	char *path;
++	char *machine_id;
+ 	const char *icon_name;
+ 	char *tool_name;
+ 	gboolean reversible;
+@@ -1186,7 +1187,9 @@ gsd_wacom_device_update_from_db (GsdWacomDevice *device,
+ 	char *settings_path;
+ 
+ 	schemas_path =  g_strdup (WACOM_TABLET_SCHEMA);
+-	settings_path = gsd_gconf_build_path (WACOM_DEVICE_CONFIG_BASE, libwacom_get_match (wacom_device));
++	settings_path = g_strdup_printf (WACOM_DEVICE_CONFIG_BASE,
++					 device->priv->machine_id,
++					 libwacom_get_match (wacom_device));
+ 
+ 	device->priv->name = g_strdup (libwacom_get_name (wacom_device));
+ 	device->priv->schemas_path = schemas_path;
+@@ -1387,6 +1390,12 @@ gsd_wacom_device_init (GsdWacomDevice *device)
+ {
+ 	device->priv = GSD_WACOM_DEVICE_GET_PRIVATE (device);
+ 	device->priv->type = WACOM_TYPE_INVALID;
++
++	if (g_file_get_contents ("/etc/machine-id", &device->priv->machine_id, NULL, NULL) == FALSE)
++		if (g_file_get_contents ("/var/lib/dbus/machine-id", &device->priv->machine_id, NULL, NULL) == FALSE)
++			device->priv->machine_id = g_strdup ("00000000000000000000000000000000");
++
++	device->priv->machine_id = g_strstrip (device->priv->machine_id);
+ }
+ 
+ static void
+@@ -1419,6 +1428,9 @@ gsd_wacom_device_finalize (GObject *object)
+ 	g_free (p->path);
+ 	p->path = NULL;
+ 
++	g_free (p->machine_id);
++	p->machine_id = NULL;
++
+ 	if (p->modes) {
+ 		g_hash_table_destroy (p->modes);
+ 		p->modes = NULL;

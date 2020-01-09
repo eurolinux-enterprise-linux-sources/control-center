@@ -1,0 +1,205 @@
+diff --git a/panels/wacom/cc-wacom-page.c b/panels/wacom/cc-wacom-page.c
+index dcb5885..42f8e64 100644
+--- a/panels/wacom/cc-wacom-page.c
++++ b/panels/wacom/cc-wacom-page.c
+@@ -20,8 +20,6 @@
+  *
+  */
+ 
+-
+-
+ #include <config.h>
+ 
+ #include <glib/gi18n-lib.h>
+@@ -346,7 +344,6 @@ accel_set_func (GtkTreeViewColumn *tree_column,
+ 	value = gsd_gconf_get (button->settings_path, button->schemas_path, ACTION_TYPE_KEY);
+ 	type = gsd_wacom_get_action_type_from_name (gconf_value_get_string (value));
+ 	gconf_value_free (value);
+-
+ 	if (type == GSD_WACOM_ACTION_TYPE_NONE) {
+ 		g_object_set (cell,
+ 			      "visible", TRUE,
+@@ -519,7 +516,6 @@ accel_edited_callback (GtkCellRendererText   *cell,
+     gsd_gconf_set_string (button->settings_path, CUSTOM_ACTION_KEY, str);
+   }
+   gsd_gconf_set_string (button->settings_path, ACTION_TYPE_KEY, gsd_wacom_get_action_name_from_type(GSD_WACOM_ACTION_TYPE_CUSTOM));
+-
+   g_free (str);
+ }
+ 
+@@ -813,10 +809,8 @@ set_left_handed_from_gsettings (CcWacomPage *page)
+ 
+ 	gConfValue = gsd_gconf_get (priv->wacom_settings_path, priv->wacom_schemas_path, "rotation");
+ 	rotation = gconf_value_get_string (gConfValue);
+-
+ 	if (rotation && strcmp (rotation, "half") == 0)
+ 		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (WID ("switch-left-handed")), TRUE);
+-
+ 	gconf_value_free (gConfValue);
+ }
+ 
+@@ -973,6 +967,7 @@ cc_wacom_page_init (CcWacomPage *self)
+ 	box = WID ("main-grid");
+ 	gtk_box_pack_start (GTK_BOX (self), box, GTK_EXPAND | GTK_FILL,
+ 	                                         GTK_EXPAND | GTK_FILL, 0);
++
+ 	self->priv->notebook = WID ("stylus-notebook");
+ 
+ 	g_signal_connect (WID ("button-calibrate"), "clicked",
+@@ -1110,12 +1105,6 @@ remove_display_link (CcWacomPagePrivate *priv)
+ }
+ 
+ static void
+-remove_button_mapping (CcWacomPagePrivate *priv)
+-{
+-	gtk_widget_destroy (WID ("map-buttons-button"));
+-}
+-
+-static void
+ update_tablet_ui (CcWacomPage *page,
+ 		  int          layout)
+ {
+@@ -1123,9 +1112,9 @@ update_tablet_ui (CcWacomPage *page,
+ 
+ 	priv = page->priv;
+ 
+-	if (priv->pad == NULL) {
+-		remove_button_mapping (page->priv);
+-	}
++	/* Hide the pad buttons if not pad is present */
++	gtk_widget_set_visible (WID ("map-buttons-button"), priv->pad != NULL);
++
+ 	switch (layout) {
+ 	case LAYOUT_NORMAL:
+ 		remove_left_handed (page->priv);
+@@ -1166,6 +1155,33 @@ update_tablet_ui (CcWacomPage *page,
+ 	}
+ }
+ 
++gboolean
++cc_wacom_page_update_tools (CcWacomPage    *page,
++			    GsdWacomDevice *stylus,
++			    GsdWacomDevice *eraser,
++			    GsdWacomDevice *pad)
++{
++	CcWacomPagePrivate *priv;
++	int layout;
++	gboolean changed;
++
++	/* Type of layout */
++	layout = get_layout_type (stylus);
++
++	priv = page->priv;
++	changed = (priv->stylus != stylus || priv->eraser != eraser || priv->pad != pad);
++	if (!changed)
++		return FALSE;
++
++	priv->stylus = stylus;
++	priv->eraser = eraser;
++	priv->pad = pad;
++
++	update_tablet_ui (CC_WACOM_PAGE (page), layout);
++
++	return TRUE;
++}
++
+ GtkWidget *
+ cc_wacom_page_new (CcWacomPanel   *panel,
+ 		   GsdWacomDevice *stylus,
+@@ -1174,7 +1190,6 @@ cc_wacom_page_new (CcWacomPanel   *panel,
+ {
+ 	CcWacomPage *page;
+ 	CcWacomPagePrivate *priv;
+-	int layout;
+ 
+ 	g_return_val_if_fail (GSD_IS_WACOM_DEVICE (stylus), NULL);
+ 	g_return_val_if_fail (gsd_wacom_device_get_device_type (stylus) == WACOM_TYPE_STYLUS, NULL);
+@@ -1188,10 +1203,8 @@ cc_wacom_page_new (CcWacomPanel   *panel,
+ 	page = g_object_new (CC_TYPE_WACOM_PAGE, NULL);
+ 
+ 	priv = page->priv;
+-	priv->panel = panel;
+-	priv->stylus = stylus;
+-	priv->eraser = eraser;
+-	priv->pad = pad;
++
++	cc_wacom_page_update_tools (page, stylus, eraser, pad);
+ 
+ 	/* FIXME move this to construct */
+ 	priv->wacom_settings_path  = (const gchar *) gsd_wacom_device_get_settings_path(stylus);
+@@ -1201,10 +1214,6 @@ cc_wacom_page_new (CcWacomPanel   *panel,
+ 	/* Tablet name */
+ 	gtk_label_set_text (GTK_LABEL (WID ("label-tabletmodel")), gsd_wacom_device_get_name (stylus));
+ 
+-	/* Type of layout */
+-	layout = get_layout_type (stylus);
+-	update_tablet_ui (page, layout);
+-
+ 	/* Left-handedness */
+ 	if (gsd_wacom_device_reversible (stylus))
+ 		set_left_handed_from_gsettings (page);
+diff --git a/panels/wacom/cc-wacom-page.h b/panels/wacom/cc-wacom-page.h
+index 7b8fc2d..12c520e 100644
+--- a/panels/wacom/cc-wacom-page.h
++++ b/panels/wacom/cc-wacom-page.h
+@@ -74,6 +74,11 @@ GtkWidget * cc_wacom_page_new (CcWacomPanel   *panel,
+ 			       GsdWacomDevice *eraser,
+ 			       GsdWacomDevice *pad);
+ 
++gboolean cc_wacom_page_update_tools (CcWacomPage    *page,
++				     GsdWacomDevice *stylus,
++				     GsdWacomDevice *eraser,
++				     GsdWacomDevice *pad);
++
+ void cc_wacom_page_set_navigation (CcWacomPage *page,
+ 				   GtkNotebook *notebook,
+ 				   gboolean     ignore_first_page);
+diff --git a/panels/wacom/cc-wacom-panel.c b/panels/wacom/cc-wacom-panel.c
+index dc444a2..a31a587 100644
+--- a/panels/wacom/cc-wacom-panel.c
++++ b/panels/wacom/cc-wacom-panel.c
+@@ -205,12 +205,11 @@ update_current_page (CcWacomPanel *self)
+ 	tablets = g_hash_table_get_values (ht);
+ 	for (l = tablets; l; l = l->next) {
+ 		Tablet *tablet;
++		GtkWidget *page;
+ 
+ 		tablet = l->data;
+ 		if (tablet->stylus == NULL ||
+ 		    tablet->eraser == NULL) {
+-			GtkWidget *page;
+-
+ 			page = g_hash_table_lookup (priv->pages, tablet->name);
+ 			if (page != NULL) {
+ 				remove_page (GTK_NOTEBOOK (priv->notebook), page);
+@@ -220,17 +219,17 @@ update_current_page (CcWacomPanel *self)
+ 			}
+ 			continue;
+ 		}
+-
+-		if (g_hash_table_lookup (priv->pages, tablet->name) == NULL) {
+-			GtkWidget *page;
++		/* this code is called once the stylus + eraser were set up, but the pad does not exist yet */
++		page = g_hash_table_lookup (priv->pages, tablet->name);
++		if (page == NULL) {
+ 			page = cc_wacom_page_new (self, tablet->stylus, tablet->eraser, tablet->pad);
+ 			cc_wacom_page_set_navigation (CC_WACOM_PAGE (page), GTK_NOTEBOOK (priv->notebook), TRUE);
+ 			gtk_widget_show (page);
+ 			gtk_notebook_append_page (GTK_NOTEBOOK (priv->notebook), page, NULL);
+ 			g_hash_table_insert (priv->pages, g_strdup (tablet->name), page);
+-
+ 			changed = TRUE;
+-		}
++		} else
++			cc_wacom_page_update_tools (CC_WACOM_PAGE (page), tablet->stylus, tablet->eraser, tablet->pad);
+ 	}
+ 	g_list_free (tablets);
+ 
+@@ -356,6 +355,7 @@ cc_wacom_panel_init (CcWacomPanel *self)
+ 	/* Notebook */
+ 	notebook = GTK_NOTEBOOK (gtk_notebook_new ());
+ 	priv->notebook = GTK_WIDGET (notebook);
++
+ 	gtk_notebook_set_show_tabs (notebook, FALSE);
+ 	gtk_container_set_border_width (GTK_CONTAINER (notebook), 0);
+ 	gtk_notebook_set_show_border (notebook, FALSE);

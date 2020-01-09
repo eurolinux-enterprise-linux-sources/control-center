@@ -1,0 +1,80 @@
+diff -up gnome-control-center-2.28.1/capplets/appearance/gnome-wp-xml.c.bg-xml-in-xdg-dirs gnome-control-center-2.28.1/capplets/appearance/gnome-wp-xml.c
+--- gnome-control-center-2.28.1/capplets/appearance/gnome-wp-xml.c.bg-xml-in-xdg-dirs	2009-09-07 07:19:06.000000000 -0400
++++ gnome-control-center-2.28.1/capplets/appearance/gnome-wp-xml.c	2012-03-05 23:54:59.901068772 -0500
+@@ -21,6 +21,7 @@
+ #include "appearance.h"
+ #include "gnome-wp-item.h"
+ #include <gio/gio.h>
++#include <stdlib.h>
+ #include <string.h>
+ #include <libxml/parser.h>
+ 
+@@ -341,21 +342,32 @@ void gnome_wp_xml_load_list (AppearanceD
+   gchar * wpdbfile;
+   gint i;
+ 
+-  wpdbfile = g_build_filename (g_get_home_dir (),
+-			       ".gnome2",
++  wpdbfile = g_build_filename (g_get_user_config_dir (),
++			       "gnome-control-center",
+ 			       "backgrounds.xml",
+ 			       NULL);
+ 
+-  if (g_file_test (wpdbfile, G_FILE_TEST_EXISTS)) {
++  if (g_file_test (wpdbfile, G_FILE_TEST_EXISTS) &&
++      (getenv ("GNOMECC_USE_OLD_BG_PATH") == NULL ||
++       atoi (getenv ("GNOMECC_USE_OLD_BG_PATH")) == 0)) {
+     gnome_wp_xml_load_xml (data, wpdbfile);
+   } else {
+     g_free (wpdbfile);
+     wpdbfile = g_build_filename (g_get_home_dir (),
+-				 ".gnome2",
+-				 "wp-list.xml",
+-				 NULL);
++                                 ".gnome2",
++                                 "backgrounds.xml",
++                                 NULL);
+     if (g_file_test (wpdbfile, G_FILE_TEST_EXISTS)) {
+       gnome_wp_xml_load_xml (data, wpdbfile);
++    } else {
++      g_free (wpdbfile);
++      wpdbfile = g_build_filename (g_get_home_dir (),
++                                   ".gnome2",
++                                   "wp-list.xml",
++                                   NULL);
++      if (g_file_test (wpdbfile, G_FILE_TEST_EXISTS)) {
++        gnome_wp_xml_load_xml (data, wpdbfile);
++      }
+     }
+   }
+   g_free (wpdbfile);
+@@ -399,10 +411,25 @@ void gnome_wp_xml_save_list (AppearanceD
+   g_hash_table_destroy (data->wp_hash);
+   list = g_slist_reverse (list);
+ 
+-  wpfile = g_build_filename (g_get_home_dir (),
+-			     "/.gnome2",
+-			     "backgrounds.xml",
+-			     NULL);
++  if (getenv ("GNOMECC_USE_OLD_BG_PATH") == NULL ||
++      atoi (getenv ("GNOMECC_USE_OLD_BG_PATH")) == 0) {
++    char *dir;
++    dir = g_build_filename (g_get_user_config_dir (),
++                            "gnome-control-center",
++                            NULL);
++    g_mkdir_with_parents (dir, 0755);
++    g_free (dir);
++
++    wpfile = g_build_filename (g_get_user_config_dir (),
++                               "gnome-control-center",
++                               "backgrounds.xml",
++                               NULL);
++  } else {
++    wpfile = g_build_filename (g_get_home_dir (),
++                               ".gnome2",
++                               "backgrounds.xml",
++                               NULL);
++  }
+ 
+   xmlKeepBlanksDefault (0);
+ 

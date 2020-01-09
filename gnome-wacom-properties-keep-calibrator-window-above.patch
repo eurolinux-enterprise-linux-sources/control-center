@@ -1,0 +1,61 @@
+From 1fa1687bdbeafaef6d4cbf5b2bded6d337df384d Mon Sep 17 00:00:00 2001
+From: Olivier Fourdan <ofourdan@redhat.com>
+Date: Wed, 9 May 2012 11:05:36 +0200
+Subject: [PATCH] wacom: Make the calibrator window stay above
+
+Make the calibrator window stay above other windows and cancel
+calibration if/when the calibrator loses input focus (rhbz#818692)
+---
+ panels/wacom/calibrator/gui_gtk.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
+
+diff --git a/panels/wacom/calibrator/gui_gtk.c b/panels/wacom/calibrator/gui_gtk.c
+index c7960c8..bce90a6 100644
+--- a/panels/wacom/calibrator/gui_gtk.c
++++ b/panels/wacom/calibrator/gui_gtk.c
+@@ -319,6 +319,17 @@ on_key_release_event(GtkWidget   *widget,
+ }
+ 
+ static gboolean
++on_focus_out_event (GtkWidget *widget,
++		    GdkEvent  *event,
++		    CalibArea *area)
++{
++    /* If the calibrator window loses focus, simply bail out... */
++    on_delete_event (widget, NULL, area);
++
++    return FALSE;
++}
++
++static gboolean
+ on_timer_signal(CalibArea *area)
+ {
+     GdkWindow *win;
+@@ -396,6 +407,7 @@ calib_area_new (GdkScreen      *screen,
+ 	gtk_widget_realize (calib_area->window);
+ 	window = gtk_widget_get_window (calib_area->window);
+ 	gdk_window_set_background (window, &black);
++	gdk_window_set_group (window, window);
+ 
+ 	/* No cursor */
+ 	cursor = gdk_cursor_new (GDK_BLANK_CURSOR);
+@@ -406,6 +418,7 @@ calib_area_new (GdkScreen      *screen,
+ 	gtk_widget_add_events (calib_area->window, GDK_KEY_RELEASE_MASK | GDK_BUTTON_PRESS_MASK);
+ 	gtk_widget_set_can_focus (calib_area->window, TRUE);
+ 	gtk_window_fullscreen (GTK_WINDOW (calib_area->window));
++	gtk_window_set_keep_above (GTK_WINDOW (calib_area->window), TRUE);
+ 
+ 	/* Connect callbacks */
+ 	g_signal_connect (calib_area->window, "expose-event",
+@@ -416,6 +429,8 @@ calib_area_new (GdkScreen      *screen,
+ 			  G_CALLBACK(on_key_release_event), calib_area);
+ 	g_signal_connect (calib_area->window, "delete-event",
+ 			  G_CALLBACK(on_delete_event), calib_area);
++	g_signal_connect (calib_area->window, "focus-out-event",
++			  G_CALLBACK(on_focus_out_event), calib_area);
+ 
+ 	/* Setup timer for animation */
+ 	calib_area->anim_id = g_timeout_add(TIME_STEP, (GSourceFunc)on_timer_signal, calib_area);
+-- 
+1.7.1
+

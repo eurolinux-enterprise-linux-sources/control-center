@@ -1,0 +1,12 @@
+diff --git a/panels/wacom/cc-wacom-page.c b/panels/wacom/cc-wacom-page.c
+index 42f8e64..4e88205 100644
+--- a/panels/wacom/cc-wacom-page.c
++++ b/panels/wacom/cc-wacom-page.c
+@@ -573,6 +573,7 @@ accel_cleared_callback (GtkCellRendererText *cell,
+ 	    gsd_gconf_set_string (button->settings_path, ACTION_TYPE_KEY,
+                               gsd_wacom_get_action_name_from_type(GSD_WACOM_ACTION_TYPE_NONE));
+     gsd_gconf_value_set_strv (gConfValue, (const gchar * const*) strs);
++    gsd_gconf_set (button->settings_path, KEY_CUSTOM_ELEVATOR_ACTION, gConfValue);
+     gconf_value_free (gConfValue);
+     if (strv != NULL)
+ 	    g_strfreev (strv);
