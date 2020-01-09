@@ -26,7 +26,7 @@
 Summary: Utilities to configure the GNOME desktop
 Name: control-center
 Version: 2.28.1
-Release: 40%{?dist}
+Release: 41%{?dist}
 Epoch: 1
 License: GPLv2+ and GFDL
 Group: User Interface/Desktops
@@ -130,6 +130,7 @@ Patch506: gnome-wacom-properties-set-per-machine-settings.patch
 Patch507: gnome-wacom-properties-keep-calibrator-window-above.patch
 Patch508: gnome-wacom-properties-update-from-gsd-2.28.2-26.patch
 Patch509: control-center-2.28.1_EL6.8-translations.patch
+Patch510: gnome-wacom-no-per-machine-config-file.patch
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 URL: http://www.gnome.org
@@ -142,7 +143,7 @@ Conflicts: desktop-backgrounds-extended < 2.0-27
 Obsoletes: wacomcpl < 0.10.0-5
 Provides: wacomcpl = 0.10.0-5
 
-Requires: gnome-settings-daemon >= 2.28.2-12
+Requires: gnome-settings-daemon >= 2.28.2-36
 Requires: redhat-menus >= %{redhat_menus_version}
 Requires: gnome-icon-theme
 Requires: libgail-gnome
@@ -319,6 +320,7 @@ pushd %{wacom_tool}-%{wacom_tool_version}
 %patch507 -p1 -b .calibrator-above
 %patch508 -p1 -b .update-from-gsd-2.28.2-26
 %patch509 -p2 -b .translations
+%patch510 -p1 -b .no-per-machine-config-file
 popd
 
 %build
@@ -535,6 +537,10 @@ fi
 
 
 %changelog
+* Fri Oct 14 2016 Carlos Garnacho <cgarnach@redhat.com> 2.28.1-41
+- Check ~/.config/gnome-settings-daemon/no-per-machine-config for wacom settings
+  Resolves: #966658
+
 * Wed Mar 09 2016 Bastien Nocera <bnocera@redhat.com> 2.28.1-40
 - Update translations
   Resolves: #887764
