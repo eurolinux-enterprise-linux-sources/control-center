@@ -20,12 +20,11 @@
 #ifndef CC_INFO_OVERVIEWPANEL_H
 #define CC_INFO_OVERVIEWPANEL_H
 
-#include <gtk/gtk.h>
+#include <shell/cc-panel.h>
 
 G_BEGIN_DECLS
 
 #define CC_TYPE_INFO_OVERVIEW_PANEL (cc_info_overview_panel_get_type ())
-
 G_DECLARE_FINAL_TYPE (CcInfoOverviewPanel, cc_info_overview_panel, CC, INFO_OVERVIEW_PANEL, CcPanel)
 
 GtkWidget *cc_info_overview_panel_new (void);

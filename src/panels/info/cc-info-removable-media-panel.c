@@ -21,7 +21,6 @@
 
 #include <config.h>
 
-#include "cc-info-panel.h"
 #include "cc-info-resources.h"
 #include "info-cleanup.h"
 
@@ -156,9 +155,9 @@ autorun_get_preferences (CcInfoRemovableMediaPanel *self,
                          gboolean                  *pref_ignore,
                          gboolean                  *pref_open_folder)
 {
-  char **x_content_start_app;
-  char **x_content_ignore;
-  char **x_content_open_folder;
+  g_auto(GStrv) x_content_start_app = NULL;
+  g_auto(GStrv) x_content_ignore = NULL;
+  g_auto(GStrv) x_content_open_folder = NULL;
 
   g_return_if_fail (pref_start_app != NULL);
   g_return_if_fail (pref_ignore != NULL);
@@ -182,9 +181,6 @@ autorun_get_preferences (CcInfoRemovableMediaPanel *self,
   if (x_content_open_folder != NULL) {
     *pref_open_folder = media_panel_g_strv_find (x_content_open_folder, x_content_type) != -1;
   }
-  g_strfreev (x_content_ignore);
-  g_strfreev (x_content_start_app);
-  g_strfreev (x_content_open_folder);
 }
 
 static void
@@ -194,9 +190,9 @@ autorun_set_preferences (CcInfoRemovableMediaPanel *self,
                          gboolean                   pref_ignore,
                          gboolean                   pref_open_folder)
 {
-  char **x_content_start_app;
-  char **x_content_ignore;
-  char **x_content_open_folder;
+  g_auto(GStrv) x_content_start_app = NULL;
+  g_auto(GStrv) x_content_ignore = NULL;
+  g_auto(GStrv) x_content_open_folder = NULL;
 
   g_assert (x_content_type != NULL);
 
@@ -228,10 +224,6 @@ autorun_set_preferences (CcInfoRemovableMediaPanel *self,
   g_settings_set_strv (self->media_settings,
                        PREF_MEDIA_AUTORUN_X_CONTENT_OPEN_FOLDER, (const gchar * const*) x_content_open_folder);
 
-  g_strfreev (x_content_open_folder);
-  g_strfreev (x_content_ignore);
-  g_strfreev (x_content_start_app);
-
 }
 
 static void
@@ -240,7 +232,7 @@ custom_item_activated_cb (GtkAppChooserButton *button,
                           gpointer             user_data)
 {
   CcInfoRemovableMediaPanel *self = user_data;
-  gchar *content_type;
+  g_autofree gchar *content_type = NULL;
 
   content_type = gtk_app_chooser_get_content_type (GTK_APP_CHOOSER (button));
 
@@ -254,8 +246,6 @@ custom_item_activated_cb (GtkAppChooserButton *button,
     autorun_set_preferences (self, content_type,
                              FALSE, TRUE, FALSE);
   }
-
-  g_free (content_type);
 }
 
 static void
@@ -263,8 +253,8 @@ combo_box_changed_cb (GtkComboBox *combo_box,
                       gpointer     user_data)
 {
   CcInfoRemovableMediaPanel *self = user_data;
-  GAppInfo *info;
-  gchar *content_type;
+  g_autoptr(GAppInfo) info = NULL;
+  g_autofree gchar *content_type = NULL;
 
   info = gtk_app_chooser_get_app_info (GTK_APP_CHOOSER (combo_box));
 
@@ -275,9 +265,6 @@ combo_box_changed_cb (GtkComboBox *combo_box,
   autorun_set_preferences (self, content_type,
                            TRUE, FALSE, FALSE);
   g_app_info_set_as_default_for_type (info, content_type, NULL);
-
-  g_object_unref (info);
-  g_free (content_type);
 }
 
 static void
@@ -290,8 +277,8 @@ prepare_combo_box (CcInfoRemovableMediaPanel *self,
   gboolean pref_start_app;
   gboolean pref_ignore;
   gboolean pref_open_folder;
-  GAppInfo *info;
-  gchar *content_type;
+  g_autoptr(GAppInfo) info = NULL;
+  g_autofree gchar *content_type = NULL;
 
   content_type = gtk_app_chooser_get_content_type (GTK_APP_CHOOSER (app_chooser));
 
@@ -305,7 +292,6 @@ prepare_combo_box (CcInfoRemovableMediaPanel *self,
   /* append the separator only if we have >= 1 apps in the chooser */
   if (info != NULL) {
     gtk_app_chooser_button_append_separator (app_chooser);
-    g_object_unref (info);
   }
 
   gtk_app_chooser_button_append_custom_item (app_chooser, CUSTOM_ITEM_ASK,
@@ -337,8 +323,6 @@ prepare_combo_box (CcInfoRemovableMediaPanel *self,
                     G_CALLBACK (combo_box_changed_cb), self);
   g_signal_connect (app_chooser, "custom-item-activated",
                     G_CALLBACK (custom_item_activated_cb), self);
-
-  g_free (content_type);
 }
 
 static void
@@ -347,11 +331,9 @@ other_type_combo_box_changed (GtkComboBox               *combo_box,
 {
   GtkTreeIter iter;
   GtkTreeModel *model;
-  char *x_content_type;
+  g_autofree gchar *x_content_type = NULL;
   GtkWidget *action_container;
   GtkWidget *action_label;
-
-  x_content_type = NULL;
 
   if (!gtk_combo_box_get_active_iter (combo_box, &iter)) {
     return;
@@ -380,8 +362,6 @@ other_type_combo_box_changed (GtkComboBox               *combo_box,
   action_label = self->media_other_action_label;
 
   gtk_label_set_mnemonic_widget (GTK_LABEL (action_label), self->other_application_combo);
-
-  g_free (x_content_type);
 }
 
 static void
@@ -491,7 +471,7 @@ info_panel_setup_media (CcInfoRemovableMediaPanel *self)
 
   for (l = content_types; l != NULL; l = l->next) {
     char *content_type = l->data;
-    char *description = NULL;
+    g_autofree char *description = NULL;
 
     if (!g_str_has_prefix (content_type, "x-content/"))
       continue;
@@ -525,7 +505,6 @@ info_panel_setup_media (CcInfoRemovableMediaPanel *self)
                         0, description,
                         1, content_type,
                         -1);
-    g_free (description);
   skip:
     ;
   }
@@ -618,6 +597,8 @@ cc_info_removable_media_panel_class_init (CcInfoRemovableMediaPanelClass *klass)
 static void
 cc_info_removable_media_panel_init (CcInfoRemovableMediaPanel *self)
 {
+  g_resources_register (cc_info_get_resource ());
+
   gtk_widget_init_template (GTK_WIDGET (self));
   self->media_settings = g_settings_new (MEDIA_HANDLING_SCHEMA);
 

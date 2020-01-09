@@ -1,0 +1,26 @@
+From 0511d5d926e3cf505d1e8318918c217f8cc1416d Mon Sep 17 00:00:00 2001
+From: Christian Kellner <christian@kellner.me>
+Date: Mon, 11 Jun 2018 17:56:27 +0200
+Subject: [PATCH] meson: default to the gnuc99 c standard
+
+---
+ meson.build | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index 84e04334c..0636d41b6 100644
+--- a/meson.build
++++ b/meson.build
+@@ -2,7 +2,8 @@ project(
+   'gnome-control-center', 'c',
+   version: '3.28.2',
+   license: 'GPL2+',
+-  meson_version: '>= 0.43.0'
++  meson_version: '>= 0.43.0',
++  default_options: ['c_std=gnu99']
+ )
+ 
+ control_center_prefix = get_option('prefix')
+-- 
+2.17.1
+

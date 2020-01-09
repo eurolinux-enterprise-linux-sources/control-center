@@ -307,7 +307,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">0</property>
-                <property name="label">Personal File Sharing allows you to share your Public folder with others on your current network using: &lt;a href="dav://%s"&gt;dav://%s&lt;/a&gt;</property>
+                <property name="label">File Sharing allows you to share your Public folder with others on your current network using: &lt;a href="dav://%s"&gt;dav://%s&lt;/a&gt;</property>
                 <property name="use_markup">True</property>
                 <property name="wrap">True</property>
                 <property name="max-width-chars">40</property>
@@ -430,6 +430,7 @@
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">2</property>
+        <property name="margin">12</property>
         <child>
           <object class="GtkBox" id="box9">
             <property name="visible">True</property>
@@ -477,19 +478,35 @@
             <property name="position">1</property>
           </packing>
         </child>
-      </object>
-    </child>
-    <child type="titlebar">
-      <object class="GtkHeaderBar" id="remote-login-headerbar">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="title" translatable="yes">Remote Login</property>
-        <property name="show_close_button">True</property>
         <child>
-          <object class="GtkSwitch" id="remote-login-switch">
+          <object class="GtkBox">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="valign">center</property>
+            <property name="can_focus">True</property>
+            <style>
+              <class name="frame"/>
+              <class name="view"/>
+            </style>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="margin">12</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="label" translatable="yes">Remote Login</property>
+                    <property name="hexpand">True</property>
+                    <property name="xalign">0</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkSwitch" id="remote-login-switch">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="halign">end</property>
+                  </object>
+                </child>
+              </object>
+            </child>
           </object>
         </child>
       </object>

@@ -125,7 +125,8 @@ check_main_stack_page (CcWifiPanel *self)
 
   if (!nm_version)
     gtk_stack_set_visible_child_name (self->main_stack, "nm-not-running");
-  else if (self->devices->len == 0)
+  else if (self->devices->len == 0 ||
+           !nm_client_wireless_get_enabled (self->client))
     gtk_stack_set_visible_child_name (self->main_stack, "no-wifi-devices");
   else
     gtk_stack_set_visible_child_name (self->main_stack, "wifi-connections");
@@ -386,7 +387,7 @@ device_removed_cb (NMClient    *client,
   /* Remove from the devices list */
   for (i = 0; i < self->devices->len; i++)
     {
-      NetObject *object = g_ptr_array_index (self->devices, 0);
+      NetObject *object = g_ptr_array_index (self->devices, i);
 
       if (g_strcmp0 (net_object_get_id (object), id) == 0)
         {
@@ -399,6 +400,14 @@ device_removed_cb (NMClient    *client,
   update_devices_names (self);
 
   /* And check which page should be visible */
+  check_main_stack_page (self);
+}
+
+static void
+wireless_enabled_cb (NMClient    *client,
+                     NMDevice    *device,
+                     CcWifiPanel *self)
+{
   check_main_stack_page (self);
 }
 
@@ -620,6 +629,11 @@ cc_wifi_panel_init (CcWifiPanel *self)
   g_signal_connect (self->client,
                     "device-removed",
                     G_CALLBACK (device_removed_cb),
+                    self);
+
+  g_signal_connect (self->client,
+                    "notify::wireless-enabled",
+                    G_CALLBACK (wireless_enabled_cb),
                     self);
 
   /* Load Wi-Fi devices */

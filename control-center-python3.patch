@@ -1,0 +1,8 @@
+--- gnome-control-center-3.28.1/meson_post_install.py.python3	2018-04-10 15:18:04.000000000 +0200
++++ gnome-control-center-3.28.1/meson_post_install.py	2018-05-17 16:59:53.834542265 +0200
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python3
++#!/usr/bin/env python
+ 
+ import os
+ import subprocess

@@ -18,6 +18,8 @@
  *
  */
 
+#include "config.h"
+
 #include "cc-wacom-tool.h"
 
 enum {
@@ -252,10 +254,23 @@ get_icon_name_from_type (const WacomStylus *wstylus)
 		return "wacom-stylus-art-pen";
 	case WSTYLUS_CLASSIC:
 		return "wacom-stylus-classic";
+#ifdef HAVE_WACOM_3D_STYLUS
+	case WSTYLUS_3D:
+		return "wacom-stylus-3btn-no-eraser";
+#endif
 	default:
-		if (!libwacom_stylus_has_eraser (wstylus))
-			return "wacom-stylus-no-eraser";
-		return "wacom-stylus";
+		if (!libwacom_stylus_has_eraser (wstylus)) {
+			if (libwacom_stylus_get_num_buttons (wstylus) >= 3)
+				return "wacom-stylus-3btn-no-eraser";
+			else
+				return "wacom-stylus-no-eraser";
+		}
+		else {
+			if (libwacom_stylus_get_num_buttons (wstylus) >= 3)
+				return "wacom-stylus-3btn";
+			else
+				return "wacom-stylus";
+		}
 	}
 }
 

@@ -23,3 +23,14 @@ index 79a6301a0..bec3b962c 100644
 -- 
 2.13.6
 
+--- gnome-control-center-3.28.1/panels/printers/pp-job.c.orig	2018-04-10 15:18:04.000000000 +0200
++++ gnome-control-center-3.28.1/panels/printers/pp-job.c	2018-05-17 16:52:50.139979170 +0200
+@@ -449,7 +449,7 @@
+ 
+       length = g_strv_length (auth_info);
+ 
+-      request = ippNewRequest (IPP_OP_CUPS_AUTHENTICATE_JOB);
++      request = ippNewRequest (CUPS_AUTHENTICATE_JOB);
+       ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_URI,
+                     "job-uri", NULL, job_uri);
+       ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_NAME,

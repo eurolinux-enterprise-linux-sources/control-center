@@ -39,7 +39,6 @@
 #include <libgnome-desktop/gnome-languages.h>
 
 #include "um-user-image.h"
-#include "um-cell-renderer-user-image.h"
 
 #include "um-account-dialog.h"
 #include "cc-language-chooser.h"
@@ -71,6 +70,7 @@ struct _CcUserPanelPrivate {
         GSettings *login_screen_settings;
 
         GtkWidget *headerbar_buttons;
+        GtkWidget *stack;
         GtkWidget *main_box;
         UmCarousel *carousel;
         ActUser *selected_user;
@@ -92,8 +92,13 @@ get_widget (CcUserPanelPrivate *d, const char *name)
         return (GtkWidget *)gtk_builder_get_object (d->builder, name);
 }
 
+/* Headerbar button states. */
 #define PAGE_LOCK "_lock"
 #define PAGE_ADDUSER "_adduser"
+
+/* Panel states */
+#define PAGE_NO_USERS "_empty_state"
+#define PAGE_USERS "_users"
 
 static void show_restart_notification (CcUserPanelPrivate *d, const gchar *locale);
 static gint user_compare (gconstpointer i, gconstpointer u);
@@ -233,6 +238,8 @@ user_added (ActUserManager *um, ActUser *user, CcUserPanelPrivate *d)
         /* Show heading for other accounts if new one have been added. */
         show_carousel = (d->other_accounts > 0);
         gtk_revealer_set_reveal_child (GTK_REVEALER (d->carousel), show_carousel);
+
+        gtk_stack_set_visible_child_name (GTK_STACK (d->stack), PAGE_USERS);
 }
 
 static gint
@@ -270,7 +277,7 @@ reload_users (CcUserPanelPrivate *d, ActUser *selected_user)
 {
         ActUser *user;
         GSList *list, *l;
-        UmCarouselItem *item;
+        UmCarouselItem *item = NULL;
         GtkSettings *settings;
         gboolean animations;
 
@@ -280,7 +287,6 @@ reload_users (CcUserPanelPrivate *d, ActUser *selected_user)
         g_object_set (settings, "gtk-enable-animations", FALSE, NULL);
 
         um_carousel_purge_items (d->carousel);
-
         d->other_accounts = 0;
 
         list = act_user_manager_list_users (d->um);
@@ -294,29 +300,16 @@ reload_users (CcUserPanelPrivate *d, ActUser *selected_user)
         }
         g_slist_free (list);
 
-        if (selected_user) {
+        if (um_carousel_get_item_count (d->carousel) == 0)
+                gtk_stack_set_visible_child_name (GTK_STACK (d->stack), PAGE_NO_USERS);
+        if (d->other_accounts == 0)
+                gtk_revealer_set_reveal_child (GTK_REVEALER (d->carousel), FALSE);
+
+        if (selected_user)
                 item = um_carousel_find_item (d->carousel, selected_user, user_compare);
-                um_carousel_select_item (d->carousel, item);
-        }
+        um_carousel_select_item (d->carousel, item);
 
         g_object_set (settings, "gtk-enable-animations", animations, NULL);
-}
-
-static void
-user_removed (ActUserManager *um, ActUser *user, CcUserPanelPrivate *d)
-{
-        gboolean show_carousel;
-
-        d->other_accounts--;
-        show_carousel = (d->other_accounts > 0);
-        gtk_revealer_set_reveal_child (GTK_REVEALER (d->carousel),
-                                       show_carousel);
-
-        reload_users (d, NULL);
-
-        /* Show the current user */
-        user = act_user_manager_get_user_by_id (d->um, getuid ());
-        show_user (user, d);
 }
 
 static gint
@@ -342,10 +335,7 @@ user_compare (gconstpointer i,
 static void
 user_changed (ActUserManager *um, ActUser *user, CcUserPanelPrivate *d)
 {
-        if (act_user_get_uid (user) != act_user_get_uid (d->selected_user))
-                return;
-
-        reload_users (d, user);
+        reload_users (d, d->selected_user);
 }
 
 static void
@@ -1106,7 +1096,6 @@ users_loaded (ActUserManager     *manager,
               GParamSpec         *pspec,
               CcUserPanelPrivate *d)
 {
-        ActUser *user;
         GtkWidget *dialog;
 
         if (act_user_manager_no_service (d->um)) {
@@ -1128,13 +1117,9 @@ users_loaded (ActUserManager     *manager,
         g_signal_connect (d->um, "user-changed", G_CALLBACK (user_changed), d);
         g_signal_connect (d->um, "user-is-logged-in-changed", G_CALLBACK (user_changed), d);
         g_signal_connect (d->um, "user-added", G_CALLBACK (user_added), d);
-        g_signal_connect (d->um, "user-removed", G_CALLBACK (user_removed), d);
+        g_signal_connect (d->um, "user-removed", G_CALLBACK (user_changed), d);
 
         reload_users (d, NULL);
-
-        /* Show the current user firstly. */
-        user = act_user_manager_get_user_by_id (d->um, getuid ());
-        show_user (user, d);
 }
 
 static void
@@ -1454,7 +1439,6 @@ cc_user_panel_init (CcUserPanel *self)
 
         /* register types that the builder might need */
         type = um_user_image_get_type ();
-        type = um_cell_renderer_user_image_get_type ();
         type = um_carousel_get_type ();
 
         d->builder = gtk_builder_new ();
@@ -1478,13 +1462,14 @@ cc_user_panel_init (CcUserPanel *self)
         g_object_unref (provider);
 
         d->headerbar_buttons = get_widget (d, "headerbar-buttons");
+        d->stack = get_widget (d, "stack");
         d->login_screen_settings = settings_or_null ("org.gnome.login-screen");
 
         d->password_dialog = um_password_dialog_new ();
         button = get_widget (d, "user-icon-button");
         d->photo_dialog = um_photo_dialog_new (button);
         d->main_box = get_widget (d, "accounts-vbox");
-        gtk_container_add (GTK_CONTAINER (self), get_widget (d, "overlay"));
+        gtk_container_add (GTK_CONTAINER (self), d->stack);
         d->history_dialog = um_history_dialog_new ();
         setup_main_window (self);
 }
@@ -1510,10 +1495,6 @@ cc_user_panel_dispose (GObject *object)
         if (priv->password_dialog) {
                 um_password_dialog_free (priv->password_dialog);
                 priv->password_dialog = NULL;
-        }
-        if (priv->photo_dialog) {
-                um_photo_dialog_free (priv->photo_dialog);
-                priv->photo_dialog = NULL;
         }
         if (priv->history_dialog) {
                 um_history_dialog_free (priv->history_dialog);

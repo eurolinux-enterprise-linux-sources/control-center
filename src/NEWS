@@ -1,56 +1,116 @@
 ==============
-Version 3.26.2
+Version 3.28.1
 ==============
 
 - Translation updates
 
-Background:
-- Fix background preview with newer gtk+ versions
-
-Info:
-- Fix opening the panel from the .desktop file
+Keyboard:
+- Make "Set Shortcut" button accessible
 
 Network:
-- Don't require a private key password for TLS connections
-- Avoid a crash with the proxy dialog
-- Avoid crashing if NM doesn't report any devices or connections
+- Silence a compiler warning
+- Cleanup dead code
 
-Notifications:
-- Add help link
+Online Accounts:
+- Remove pending account when closing the panel
 
 Printers:
-- Fix compilation with cups versions < 1.7
+- Fix crash when panel is closed quickly
 
-Privacy:
-- Fix the Empty Trash button
-
-Sound:
-- Fix random selection of input/output device when the selected one
-  is removed
-
-Wifi:
-- Fix help link
+User Accounts:
+- Prevent freezes caused by external cameras
 
 ==============
-Version 3.26.1
+Version 3.28.0
 ==============
 
-- Honor OnlyShowIn/NotShowIn in panel desktop files
-- Make alternative window decoration layouts work with the new split
-  header bar
+- Translation updates
+
+Network:
+- Don't crash when connecting to hidden networks
+
+===============
+Version 3.27.92
+===============
+
+- Add CI to the GitLab repository
+- Translation updates
+
+Network:
+- Use monospace font for Wi-Fi hotspot password
+- Add a new empty page for Wi-Fi when no adapter is found
+- Don't show "Auto-connect" option for VPNs
+
+Power:
+- Don't treat device batteries as power supplies
+
+Printers:
+- Add new command line actions: "authenticate-jobs" and "show-jobs"
+- Add authentication dialog for print jobs
+- Improve code robustness
+
+User Accounts:
+- Don't show legacy faces
+
+===============
+Version 3.27.90
+===============
+
+- Split the window decorations between the header bars
+- Disable the menubar
+- Only load panel corresponding to OnlyShowIn/NotShowIn
+- Modernize object definition by using G_DEFINE_TYPE macro
+- Use g_auto in various places to improve memory management
+- Ship app icon
+- Drop the old shell
+- Allow search to be filtered by panel "keywords"
+- Port to meson build system (and drop autotools)
+- Make Bluetooth, Network, and Wacom panels mandatory on Linux
+- Swap Display and Printers panels position in Devices section
+- Remember the last used panel
 - Translation updates
 
 Background:
-- Improve panel responsiveness
+- Cache pixbufs for performance improvement
 
-Color:
-- Ensure a reasonable minimum height
+Display:
+- Replace modal dialogs with popovers
+
+Info:
+- Ignore more virtual filesystems
+
+Network:
+- Make asynchronous calls cancellable
+- Allow empty 802.1x certificate passwords
+- Avoid crashing if NM reports no devices or no connections
+- Consider empty IPv6 gateway to be valid
+
+Notifications:
+- Add link to help/documentation
+
+Power:
+- Add gaming input devices label
+- Add 20 and 25 minutes suspend timeouts (complying with EU energy regulations)
+
+Printers:
+- Stay backwards compatible with old cups
+- Don't show the supply level bar if there's no ink info
+
+Privacy:
+- Add link to Location Services privacy policy
+
+Sound:
+- Update art work (new icons)
+- Respect setting (gsetting) for allowing output volume over 100%
+- Update gvc to not require ALSA support
 
 User Accounts:
 - Fix password strength check
+- Update user face pictures (new pictures)
+- Introduce a new avatar chooser popover
 
-Wifi:
-- Prevent some potential crashes
+Wacom
+- Add support for three-button styli
 
 ==============
 Version 3.26.0

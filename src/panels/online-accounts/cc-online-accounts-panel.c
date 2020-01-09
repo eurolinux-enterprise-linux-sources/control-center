@@ -1,6 +1,6 @@
 /* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*- */
 /*
- * Copyright (C) 2011, 2012 Red Hat, Inc.
+ * Copyright (C) 2011 - 2017 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -234,8 +234,7 @@ show_non_branded_providers (CcGoaPanel *self)
 
 static void
 add_account (CcGoaPanel  *self,
-             GoaProvider *provider,
-             GVariant    *preseed)
+             GoaProvider *provider)
 {
   GoaObject *object;
   GError *error;
@@ -261,9 +260,6 @@ add_account (CcGoaPanel  *self,
                                      GTK_BOX (self->new_account_vbox),
                                      &error);
 
-  if (preseed)
-    goa_provider_set_preseed_data (provider, preseed);
-
   if (object == NULL)
     gtk_widget_hide (self->edit_account_dialog);
   else
@@ -285,7 +281,7 @@ on_provider_row_activated (CcGoaPanel    *self,
 
   provider = g_object_get_data (G_OBJECT (activated_row), "goa-provider");
 
-  add_account (self, provider, NULL);
+  add_account (self, provider);
 }
 
 /* ---------------------------------------------------------------------------------------------------- */
@@ -311,7 +307,7 @@ static void
 command_add (CcGoaPanel *panel,
              GVariant   *parameters)
 {
-  GVariant *v, *preseed = NULL;
+  GVariant *v = NULL;
   GoaProvider *provider = NULL;
   const gchar *provider_name = NULL;
 
@@ -320,8 +316,6 @@ command_add (CcGoaPanel *panel,
 
   switch (g_variant_n_children (parameters))
     {
-      case 3:
-        g_variant_get_child (parameters, 2, "v", &preseed);
       case 2:
         g_variant_get_child (parameters, 1, "v", &v);
         if (g_variant_is_of_type (v, G_VARIANT_TYPE_STRING))
@@ -345,12 +339,11 @@ command_add (CcGoaPanel *panel,
           goto out;
         }
 
-      add_account (panel, provider, preseed);
+      add_account (panel, provider);
     }
 
 out:
   g_clear_object (&provider);
-  g_clear_pointer (&preseed, g_variant_unref);
 }
 
 static void
@@ -408,6 +401,22 @@ static void
 cc_goa_panel_finalize (GObject *object)
 {
   CcGoaPanel *panel = CC_GOA_PANEL (object);
+
+  if (panel->removed_object != NULL)
+    {
+      g_autoptr(GError) error = NULL;
+      goa_account_call_remove_sync (goa_object_peek_account (panel->removed_object),
+                                    NULL, /* GCancellable */
+                                    &error);
+
+      if (error != NULL)
+        {
+          g_warning ("Error removing account: %s (%s, %d)",
+                     error->message,
+                     g_quark_to_string (error->domain),
+                     error->code);
+        }
+    }
 
   g_clear_object (&panel->client);
 

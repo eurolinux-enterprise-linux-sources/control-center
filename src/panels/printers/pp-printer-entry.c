@@ -93,6 +93,7 @@ struct _PpPrinterEntryClass
 
   void (*printer_changed) (PpPrinterEntry *printer_entry);
   void (*printer_delete)  (PpPrinterEntry *printer_entry);
+  void (*printer_renamed) (PpPrinterEntry *printer_entry, const gchar *new_name);
 };
 
 G_DEFINE_TYPE (PpPrinterEntry, pp_printer_entry, GTK_TYPE_LIST_BOX_ROW)
@@ -106,6 +107,7 @@ enum {
 enum {
   IS_DEFAULT_PRINTER,
   PRINTER_DELETE,
+  PRINTER_RENAMED,
   LAST_SIGNAL,
 };
 
@@ -227,6 +229,15 @@ sanitize_printer_model (gchar *printer_make_and_model)
   return g_strdup (printer_model);
 }
 
+static gboolean
+supply_level_is_empty (PpPrinterEntry *self)
+{
+    return !((self->inklevel->marker_levels != NULL) &&
+             (self->inklevel->marker_colors != NULL) &&
+             (self->inklevel->marker_names != NULL) &&
+             (self->inklevel->marker_types != NULL));
+}
+
 /* To tone down the colors in the supply level bar
  * we shade them by darkening the hue.
  *
@@ -267,8 +278,7 @@ supply_levels_draw_cb (GtkWidget      *widget,
 
   gtk_render_background (context, cr, 0, 0, width, height);
 
-  if (self->inklevel->marker_levels && self->inklevel->marker_colors &&
-      self->inklevel->marker_names && self->inklevel->marker_types)
+  if (!supply_level_is_empty (self))
     {
       GSList   *markers = NULL;
       GSList   *tmp_list = NULL;
@@ -383,6 +393,16 @@ supply_levels_draw_cb (GtkWidget      *widget,
 }
 
 static void
+printer_renamed_cb (PpDetailsDialog *dialog,
+                    gchar           *new_name,
+                    gpointer         user_data)
+{
+ PpPrinterEntry *self = PP_PRINTER_ENTRY (user_data);
+
+ g_signal_emit_by_name (self, "printer-renamed", new_name);
+}
+
+static void
 details_dialog_cb (GtkDialog *dialog,
                    gint       response_id,
                    gpointer   user_data)
@@ -416,6 +436,7 @@ on_show_printer_details_dialog (GtkButton      *button,
     self->is_authorized);
 
   g_signal_connect (self->pp_details_dialog, "response", G_CALLBACK (details_dialog_cb), self);
+  g_signal_connect (self->pp_details_dialog, "printer-renamed", G_CALLBACK (printer_renamed_cb), self);
   gtk_widget_show_all (GTK_WIDGET (self->pp_details_dialog));
 }
 
@@ -641,17 +662,31 @@ printer_jobs_dialog_free_cb (GtkDialog *dialog,
   pp_jobs_dialog_free ((PpJobsDialog *) user_data);
 }
 
+void
+pp_printer_entry_show_jobs_dialog (PpPrinterEntry *self)
+{
+  if (self->pp_jobs_dialog == NULL)
+    {
+      self->pp_jobs_dialog = pp_jobs_dialog_new (
+        GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (self))),
+        jobs_dialog_response_cb,
+        self,
+        self->printer_name);
+    }
+}
+
+void
+pp_printer_entry_authenticate_jobs (PpPrinterEntry *self)
+{
+  pp_printer_entry_show_jobs_dialog (self);
+  pp_jobs_dialog_authenticate_jobs (self->pp_jobs_dialog);
+}
+
 static void
 show_jobs_dialog (GtkButton *button,
                   gpointer   user_data)
 {
-  PpPrinterEntry *self = PP_PRINTER_ENTRY (user_data);
-
-  self->pp_jobs_dialog = pp_jobs_dialog_new (
-    GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (self))),
-    jobs_dialog_response_cb,
-    self,
-    self->printer_name);
+  pp_printer_entry_show_jobs_dialog (PP_PRINTER_ENTRY (user_data));
 }
 
 enum
@@ -694,6 +729,7 @@ pp_printer_entry_new (cups_dest_t  printer,
   PpPrinterEntry *self;
   cups_ptype_t    printer_type = 0;
   gboolean        is_accepting_jobs;
+  gboolean        ink_supply_is_empty;
   gchar          *instance;
   gchar          *printer_uri = NULL;
   gchar          *location = NULL;
@@ -935,6 +971,9 @@ pp_printer_entry_new (cups_dest_t  printer,
     }
 
   g_signal_connect (self->supply_drawing_area, "draw", G_CALLBACK (supply_levels_draw_cb), self);
+  ink_supply_is_empty = supply_level_is_empty (self);
+  gtk_widget_set_visible (GTK_WIDGET (self->printer_inklevel_label), !ink_supply_is_empty);
+  gtk_widget_set_visible (GTK_WIDGET (self->supply_frame), !ink_supply_is_empty);
 
   pp_printer_entry_update_jobs_count (self);
 
@@ -1054,4 +1093,13 @@ pp_printer_entry_class_init (PpPrinterEntryClass *klass)
                   G_STRUCT_OFFSET (PpPrinterEntryClass, printer_delete),
                   NULL, NULL, NULL,
                   G_TYPE_NONE, 0);
+
+  signals[PRINTER_RENAMED] =
+    g_signal_new ("printer-renamed",
+                  G_TYPE_FROM_CLASS (klass),
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (PpPrinterEntryClass, printer_renamed),
+                  NULL, NULL, NULL,
+                  G_TYPE_NONE, 1,
+                  G_TYPE_STRING);
 }

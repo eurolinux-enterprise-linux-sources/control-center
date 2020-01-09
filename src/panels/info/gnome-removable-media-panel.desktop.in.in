@@ -1,18 +1,18 @@
 [Desktop Entry]
-# Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
-_Name=Remo­vable Media
-_Comment=Configure Removable Media settings
+Name=Removable Media
+Comment=Configure Removable Media settings
 Exec=gnome-control-center removable-media
+# Translators: Do NOT translate or transliterate this text (this is an icon file name)!
 Icon=media-removable
 Terminal=false
 Type=Application
 NoDisplay=true
 StartupNotify=true
-Categories=GNOME;GTK;Settings;X-GNOME-Hidden;X-GNOME-SystemSettings;X-GNOME-Settings-Panel;X-GNOME-DevicesSettings;
+Categories=GNOME;GTK;Settings;X-GNOME-Settings-Panel;X-GNOME-DevicesSettings;
 OnlyShowIn=GNOME;Unity;
 X-GNOME-Bugzilla-Bugzilla=GNOME
 X-GNOME-Bugzilla-Product=gnome-control-center
 X-GNOME-Bugzilla-Component=info
 X-GNOME-Bugzilla-Version=@VERSION@
-# Translators: those are keywords for the Removable Media panel
-_Keywords=device;system;default;application;preferred;cd;dvd;usb;audio;video;disc;removable;media;autorun;
+# Translators: Search terms to find the Removable Media panel. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
+Keywords=device;system;default;application;preferred;cd;dvd;usb;audio;video;disc;removable;media;autorun;

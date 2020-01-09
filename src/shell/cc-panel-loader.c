@@ -36,7 +36,6 @@ extern GType cc_bluetooth_panel_get_type (void);
 extern GType cc_color_panel_get_type (void);
 extern GType cc_date_time_panel_get_type (void);
 extern GType cc_display_panel_get_type (void);
-extern GType cc_info_panel_get_type (void);
 extern GType cc_info_overview_panel_get_type (void);
 extern GType cc_info_default_apps_panel_get_type (void);
 extern GType cc_info_removable_media_panel_get_type (void);
@@ -82,7 +81,6 @@ static struct {
   PANEL_TYPE("color",            cc_color_panel_get_type        ),
   PANEL_TYPE("datetime",         cc_date_time_panel_get_type    ),
   PANEL_TYPE("display",          cc_display_panel_get_type      ),
-  PANEL_TYPE("info",             cc_info_panel_get_type         ),
   PANEL_TYPE("info-overview",    cc_info_overview_panel_get_type),
   PANEL_TYPE("default-apps",     cc_info_default_apps_panel_get_type),
   PANEL_TYPE("removable-media",  cc_info_removable_media_panel_get_type),
@@ -134,19 +132,7 @@ parse_categories (GDesktopAppInfo *app)
 
 #define const_strv(s) ((const gchar* const*) s)
 
-#ifdef CC_ENABLE_ALT_CATEGORIES
-  if (g_strv_contains (const_strv (split), "X-GNOME-Hidden"))
-    retval = CC_CATEGORY_HIDDEN;
-  else if (g_strv_contains (const_strv (split), "HardwareSettings"))
-    retval = CC_CATEGORY_HARDWARE;
-  else if (g_strv_contains (const_strv (split), "X-GNOME-PersonalSettings"))
-    retval = CC_CATEGORY_PERSONAL;
-  else if (g_strv_contains (const_strv (split), "X-GNOME-SystemSettings"))
-    retval = CC_CATEGORY_SYSTEM;
-#else
-  if (g_strv_contains (const_strv (split), "X-GNOME-AltHidden"))
-    retval = CC_CATEGORY_HIDDEN;
-  else if (g_strv_contains (const_strv (split), "X-GNOME-ConnectivitySettings"))
+  if (g_strv_contains (const_strv (split), "X-GNOME-ConnectivitySettings"))
     retval = CC_CATEGORY_CONNECTIVITY;
   else if (g_strv_contains (const_strv (split), "X-GNOME-PersonalizationSettings"))
     retval = CC_CATEGORY_PERSONALIZATION;
@@ -158,7 +144,6 @@ parse_categories (GDesktopAppInfo *app)
     retval = CC_CATEGORY_DETAILS;
   else if (g_strv_contains (const_strv (split), "HardwareSettings"))
     retval = CC_CATEGORY_HARDWARE;
-#endif
 
 #undef const_strv
 
@@ -201,11 +186,7 @@ cc_panel_loader_fill_model (CcShellModel *model)
       if (!g_desktop_app_info_get_show_in (app, NULL))
         continue;
 
-      /* Only add the panel when it is not hidden, e.g. the Details subpanels
-       * that are only visible in the new Shell.
-       */
-      if (category != CC_CATEGORY_HIDDEN)
-        cc_shell_model_add_item (model, category, G_APP_INFO (app), all_panels[i].name);
+      cc_shell_model_add_item (model, category, G_APP_INFO (app), all_panels[i].name);
     }
 }
 

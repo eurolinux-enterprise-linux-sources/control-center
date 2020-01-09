@@ -1,133 +1,117 @@
-%define gettext_package gnome-control-center-2.0
-
-%define glib2_version 2.53.0
-%define gtk3_version 3.22.0
-%define gsd_version 3.25.90
-%define gnome_desktop_version 3.21.2
-%define gsettings_desktop_schemas_version 3.21.4
 %define gnome_online_accounts_version 3.25.3
+%define glib2_version 2.53.0
+%define gnome_desktop_version 3.27.90
+%define gsd_version 3.25.90
+%define gsettings_desktop_schemas_version 3.27.2
+%define gtk3_version 3.22.20
+%define upower_version 0.99.6
+%define cheese_version 3.28.0
 %define gnome_bluetooth_version 3.18.2
 
-Name: control-center
-Epoch: 1
-Version: 3.26.2
-Release: 9%{?dist}
-Summary: Utilities to configure the GNOME desktop
+Name:           control-center
+Epoch:          1
+Version:        3.28.1
+Release:        4%{?dist}
+Summary:        Utilities to configure the GNOME desktop
 
-License: GPLv2+ and GFDL
-URL: http://www.gnome.org
-Source0: https://download.gnome.org/sources/gnome-control-center/3.26/gnome-control-center-%{version}.tar.xz
+License:        GPLv2+ and CC-BY-SA
+URL:            http://www.gnome.org
+Source0:        https://download.gnome.org/sources/gnome-control-center/3.28/gnome-control-center-%{version}.tar.xz
 
 # https://bugzilla.gnome.org/show_bug.cgi?id=695691
-Patch0: distro-logo.patch
-Patch1: 0002-mouse-Handle-Synaptics-devices-again.patch
-Patch2: 0003-Revert-datetime-12h-time-format-is-now-always-availa.patch
-Patch3: 0002-display-night-light-widget-Avoid-c99-requirement.patch
-Patch4: 0001-printers-Fix-compilation-with-RHEL-cups-version.patch
-Patch5: display-fix-multi-monitor-layout.patch
-Patch6: 0001-printer-Don-t-show-the-supply-level-bar-by-default.patch
-Patch7: 0001-common-Use-GdkDevices-directly-as-HT-keys-on-GsdDevi.patch
+Patch0:         distro-logo.patch
+Patch1:         0002-mouse-Handle-Synaptics-devices-again.patch
+Patch4:         0001-printers-Fix-compilation-with-RHEL-cups-version.patch
+# Fix the build with Python 2
+Patch5:         control-center-python3.patch
+Patch6:         thunderbolt-panel.patch
+Patch7:         gnuc99-standard.patch
+Patch8:         0001-po-Remove-soft-hyphens-from-japanese-translation.patch
 
-Patch10: 0001-user-accounts-Prevent-crashes-if-current-user-is-not.patch
-Patch11: 0002-user-accounts-Introduce-an-empty-state-page.patch
-
-Patch20: 0001-network-Fix-cloned-MAC-not-being-saved-for-Ethernet.patch
-Patch21: 0001-network-Really-fix-clone-MAC-support.patch
-Patch22: 0001-network-Really-really-fix-cloned-MAC-support.patch
-
-Patch23: 0001-network-Consider-empty-IPv6-gateway-to-be-valid.patch
-
-Patch24: 0001-network-Request-periodic-Wi-Fi-scans.patch
-Patch25: 0002-wifi-Show-the-Wi-Fi-disabled-page-if-it-is-disabled.patch
-
-Patch26: wacom-pro-pen-3d.patch
-
-BuildRequires: autoconf automake libtool intltool gnome-common
-
-BuildRequires: gnome-settings-daemon-devel
-BuildRequires: pkgconfig(accountsservice)
-BuildRequires: pkgconfig(cheese-gtk) >= 3.5.91
-BuildRequires: pkgconfig(clutter-gtk-1.0)
-BuildRequires: pkgconfig(colord)
-BuildRequires: pkgconfig(colord-gtk)
-BuildRequires: pkgconfig(gdk-pixbuf-2.0) >= 2.23.0
-%if 0%{?fedora}
-BuildRequires: pkgconfig(gdk-wayland-3.0)
-%endif
-BuildRequires: pkgconfig(gio-2.0) >= %{glib2_version}
-BuildRequires: pkgconfig(gnome-desktop-3.0) >= %{gnome_desktop_version}
-BuildRequires: pkgconfig(gnome-settings-daemon) >= %{gsd_version}
-BuildRequires: pkgconfig(goa-1.0) >= %{gnome_online_accounts_version}
-BuildRequires: pkgconfig(goa-backend-1.0)
-BuildRequires: pkgconfig(grilo-0.3)
-BuildRequires: pkgconfig(gsettings-desktop-schemas) >= %{gsettings_desktop_schemas_version}
-BuildRequires: pkgconfig(gtk+-3.0) >= %{gtk3_version}
-BuildRequires: pkgconfig(gudev-1.0)
-BuildRequires: pkgconfig(ibus-1.0)
-BuildRequires: pkgconfig(libcanberra-gtk3)
-BuildRequires: pkgconfig(libgtop-2.0)
-BuildRequires: pkgconfig(libnm)
-BuildRequires: pkgconfig(libnma)
-BuildRequires: pkgconfig(libpulse)
-BuildRequires: pkgconfig(libpulse-mainloop-glib)
-BuildRequires: pkgconfig(libsoup-2.4)
-BuildRequires: pkgconfig(libxml-2.0)
-BuildRequires: pkgconfig(mm-glib)
-BuildRequires: pkgconfig(NetworkManager)
-BuildRequires: pkgconfig(polkit-gobject-1)
-BuildRequires: pkgconfig(pwquality)
-BuildRequires: pkgconfig(smbclient)
-BuildRequires: pkgconfig(upower-glib)
-BuildRequires: pkgconfig(x11)
-BuildRequires: pkgconfig(xi)
-BuildRequires: desktop-file-utils
-BuildRequires: gettext
-BuildRequires: intltool >= 0.37.1
-BuildRequires: libXxf86misc-devel
-BuildRequires: chrpath
-BuildRequires: gnome-common
-BuildRequires: cups-devel
-BuildRequires: docbook-style-xsl
+BuildRequires:  chrpath
+BuildRequires:  cups-devel
+BuildRequires:  desktop-file-utils
+BuildRequires:  docbook-style-xsl libxslt
+BuildRequires:  gettext
+BuildRequires:  libXxf86misc-devel
+BuildRequires:  meson
+BuildRequires:  pkgconfig(accountsservice)
+BuildRequires:  pkgconfig(cheese) >= %{cheese_version}
+BuildRequires:  pkgconfig(cheese-gtk)
+BuildRequires:  pkgconfig(clutter-gtk-1.0)
+BuildRequires:  pkgconfig(colord)
+BuildRequires:  pkgconfig(colord-gtk)
+BuildRequires:  pkgconfig(gdk-pixbuf-2.0)
+BuildRequires:  pkgconfig(gdk-wayland-3.0)
+BuildRequires:  pkgconfig(gio-2.0) >= %{glib2_version}
+BuildRequires:  pkgconfig(gnome-desktop-3.0) >= %{gnome_desktop_version}
+BuildRequires:  pkgconfig(gnome-settings-daemon) >= %{gsd_version}
+BuildRequires:  pkgconfig(goa-1.0) >= %{gnome_online_accounts_version}
+BuildRequires:  pkgconfig(goa-backend-1.0)
+BuildRequires:  pkgconfig(grilo-0.3)
+BuildRequires:  pkgconfig(gsettings-desktop-schemas) >= %{gsettings_desktop_schemas_version}
+BuildRequires:  pkgconfig(gtk+-3.0) >= %{gtk3_version}
+BuildRequires:  pkgconfig(gudev-1.0)
+BuildRequires:  pkgconfig(ibus-1.0)
+BuildRequires:  pkgconfig(libcanberra-gtk3)
+BuildRequires:  pkgconfig(libgtop-2.0)
+BuildRequires:  pkgconfig(libnm)
+BuildRequires:  pkgconfig(libnma)
+BuildRequires:  pkgconfig(libpulse)
+BuildRequires:  pkgconfig(libpulse-mainloop-glib)
+BuildRequires:  pkgconfig(libsoup-2.4)
+BuildRequires:  pkgconfig(libxml-2.0)
+BuildRequires:  pkgconfig(mm-glib)
+BuildRequires:  pkgconfig(polkit-gobject-1)
+BuildRequires:  pkgconfig(pwquality)
+BuildRequires:  pkgconfig(smbclient)
+BuildRequires:  pkgconfig(upower-glib) >= %{upower_version}
+BuildRequires:  pkgconfig(x11)
+BuildRequires:  pkgconfig(xi)
 %ifnarch s390 s390x
-BuildRequires: pkgconfig(gnome-bluetooth-1.0) >= %{gnome_bluetooth_version}
-BuildRequires: pkgconfig(libwacom)
+BuildRequires:  pkgconfig(gnome-bluetooth-1.0) >= %{gnome_bluetooth_version}
+BuildRequires:  pkgconfig(libwacom)
 %endif
 
-Requires: gnome-settings-daemon >= %{gsd_version}
-Requires: alsa-lib
-Requires: gnome-desktop3 >= %{gnome_desktop_version}
-Requires: dbus-x11
-Requires: control-center-filesystem = %{epoch}:%{version}-%{release}
+# Versioned library deps
+Requires: cheese-libs%{?_isa} >= %{cheese_version}
 Requires: glib2%{?_isa} >= %{glib2_version}
+Requires: gnome-desktop3%{?_isa} >= %{gnome_desktop_version}
 Requires: gnome-online-accounts%{?_isa} >= %{gnome_online_accounts_version}
+Requires: gnome-settings-daemon%{?_isa} >= %{gsd_version}
 Requires: gsettings-desktop-schemas%{?_isa} >= %{gsettings_desktop_schemas_version}
 Requires: gtk3%{?_isa} >= %{gtk3_version}
+Requires: upower%{?_isa} >= %{upower_version}
 %ifnarch s390 s390x
 Requires: gnome-bluetooth%{?_isa} >= 1:%{gnome_bluetooth_version}
 %endif
-# for user accounts
+
+Requires: %{name}-filesystem = %{epoch}:%{version}-%{release}
+# For user accounts
 Requires: accountsservice
-# For the user languages
-Requires: iso-codes
-# For the sharing panel
-%if 0%{?fedora}
-Requires: rygel
-%endif
-Requires: vino
+Requires: alsa-lib
+# For the thunderbolt panel
+Requires: bolt
+# For the color panel
+Requires: colord
 # For the printers panel
 Requires: cups-pk-helper
+Requires: dbus-x11
+# For the info/details panel
+Requires: glx-utils
+# For the user languages
+Requires: iso-codes
 # For the network panel
 Requires: nm-connection-editor
 Requires: NetworkManager-wifi
+%if 0%{?fedora}
+# For the sharing panel
+Requires: rygel
+%endif
 # For the info/details panel
-Requires: glx-utils
+Requires: vino
 # For the keyboard panel
 Requires: /usr/bin/gkbd-keyboard-display
-# For the color panel
-Requires: colord
-%if 0%{?fedora}
-Recommends: gnome-color-manager
-%endif
 
 Provides: control-center-extra = %{epoch}:%{version}-%{release}
 Obsoletes: control-center-extra < 1:2.30.3-3
@@ -147,7 +131,7 @@ properties, screen resolution, and other settings.
 %package filesystem
 Summary: GNOME Control Center directories
 # NOTE: this is an "inverse dep" subpackage. It gets pulled in
-# NOTE: by the main package an MUST not depend on the main package
+# NOTE: by the main package and MUST not depend on the main package
 
 %description filesystem
 The GNOME control-center provides a number of extension points
@@ -155,67 +139,27 @@ for applications. This package contains directories where applications
 can install configuration files that are picked up by the control-center
 utilities.
 
-
 %prep
-%setup -q -n gnome-control-center-%{version}
-%patch0 -p1 -b .distro-logo
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
-%patch5 -p1
-%patch6 -p1
-%patch7 -p1
-
-%patch10 -p1
-%patch11 -p1
-
-%patch20 -p1
-%patch21 -p1
-%patch22 -p1
-
-%patch23 -p1
-
-%patch24 -p1
-%patch25 -p1
-%patch26 -p1
-
-autoreconf -f -i
+%autosetup -n gnome-control-center-%{version} -p1
 
 %build
-%configure \
-        --disable-static \
-        --disable-update-mimedb \
-        CFLAGS="$RPM_OPT_FLAGS -Wno-error"
-
-# drop unneeded direct library deps with --as-needed
-# libtool doesn't make this easy, so we do it the hard way
-sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0 /g' -e 's/    if test "$export_dynamic" = yes && test -n "$export_dynamic_flag_spec"; then/      func_append compile_command " -Wl,-O1,--as-needed"\n      func_append finalize_command " -Wl,-O1,--as-needed"\n\0/' libtool
-
-make %{?_smp_mflags} V=1
+%meson -Ddocumentation=true
+%meson_build
 
 %install
-%make_install
+%meson_install
 
-desktop-file-install --delete-original			\
-  --dir $RPM_BUILD_ROOT%{_datadir}/applications		\
-  --add-only-show-in GNOME				\
-  $RPM_BUILD_ROOT%{_datadir}/applications/*.desktop
-
-# we do want this
+# We do want this
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/gnome/wm-properties
 
-# we don't want these
+# We don't want these
 rm -rf $RPM_BUILD_ROOT%{_datadir}/gnome/autostart
 rm -rf $RPM_BUILD_ROOT%{_datadir}/gnome/cursor-fonts
 
-# remove useless libtool archive files
-find $RPM_BUILD_ROOT -name '*.la' -exec rm -f {} \;
-
-# remove rpath
+# Remove rpath
 chrpath --delete $RPM_BUILD_ROOT%{_bindir}/gnome-control-center
 
-%find_lang %{gettext_package} --all-name --with-gnome
+%find_lang %{name} --all-name --with-gnome
 
 %post
 /sbin/ldconfig
@@ -233,42 +177,58 @@ fi
 %posttrans
 gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
-%files -f %{gettext_package}.lang
+%files -f %{name}.lang
 %license COPYING
 %doc AUTHORS NEWS README
-%{_datadir}/gnome-control-center/keybindings/*.xml
-%{_datadir}/gnome-control-center/pixmaps
-%{_datadir}/gnome-control-center/sounds/gnome-sounds-default.xml
-%{_datadir}/appdata/gnome-control-center.appdata.xml
-%{_datadir}/applications/*.desktop
-%{_datadir}/icons/hicolor/*/*/*
-%{_datadir}/gnome-control-center/icons/
-%{_datadir}/polkit-1/actions/org.gnome.controlcenter.*.policy
-%{_datadir}/pkgconfig/gnome-keybindings.pc
-%{_datadir}/sounds/gnome/default/*/*.ogg
 %{_bindir}/gnome-control-center
-%{_libexecdir}/cc-remote-login-helper
-%{_libexecdir}/gnome-control-center-search-provider
-%{_datadir}/pixmaps/faces
-%{_datadir}/man/man1/gnome-control-center.1.*
+%{_datadir}/applications/*.desktop
+%{_datadir}/bash-completion/completions/gnome-control-center
 %{_datadir}/dbus-1/services/org.gnome.ControlCenter.SearchProvider.service
 %{_datadir}/dbus-1/services/org.gnome.ControlCenter.service
 %{_datadir}/gettext/
+%{_datadir}/glib-2.0/schemas/org.gnome.ControlCenter.gschema.xml
+%{_datadir}/gnome-control-center/icons/
+%{_datadir}/gnome-control-center/keybindings/*.xml
+%{_datadir}/gnome-control-center/pixmaps
+%{_datadir}/gnome-control-center/sounds/gnome-sounds-default.xml
 %{_datadir}/gnome-shell/search-providers/gnome-control-center-search-provider.ini
+%{_datadir}/icons/hicolor/*/*/*
+%{_datadir}/man/man1/gnome-control-center.1*
+%{_datadir}/metainfo/gnome-control-center.appdata.xml
+%{_datadir}/pixmaps/faces
+%{_datadir}/pkgconfig/gnome-keybindings.pc
+%{_datadir}/polkit-1/actions/org.gnome.controlcenter.*.policy
 %{_datadir}/polkit-1/rules.d/gnome-control-center.rules
-%{_datadir}/bash-completion/completions/gnome-control-center
+%{_datadir}/sounds/gnome/default/*/*.ogg
+%{_libexecdir}/cc-remote-login-helper
+%{_libexecdir}/gnome-control-center-search-provider
 
 %files filesystem
-%dir %{_datadir}/gnome/wm-properties
 %dir %{_datadir}/gnome-control-center
 %dir %{_datadir}/gnome-control-center/keybindings
 %dir %{_datadir}/gnome-control-center/sounds
-
+%dir %{_datadir}/gnome/wm-properties
 
 %changelog
+* Tue Sep 04 2018 Kalev Lember <klember@redhat.com> - 3.28.1-4
+- Backport two additional upstream patches for thunderbolt panel
+- Resolves: #1594880
+
+* Tue Jun 19 2018 Carlos Garnacho <cgarnach@redhat.com> - 3.28.1-3
+- Remove outdated soft hyphens from Japanese translation
+- Resolves: #1519109
+
+* Mon Jun 11 2018 Christian Kellner <ckellner@redhat.com> - 3.28.1-2
+- Include thunderbolt panel
+- Resolves: #1567179
+
+* Thu May 17 2018 Kalev Lember <klember@redhat.com> - 3.28.1-1
+- Update to 3.28.1
+- Resolves: #1567179
+
 * Tue Apr 17 2018 Carlos Garnacho <cgarnach@redhat.com> - 3.26.2-9
 - Add support for Wacom Pro Pen 3D styli
-  Resolves: #1568701
+  Resolves: #1557256
 
 * Tue Feb 20 2018 Bastien Nocera <bnocera@redhat.com> - 3.26.2-8
 + control-center-3.26.2-8

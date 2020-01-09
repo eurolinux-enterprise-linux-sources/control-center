@@ -16,10 +16,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: gnome-control-center gnome-3-26\n"
+"Project-Id-Version: gnome-control-center master\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-09-12 22:27+0300\n"
-"PO-Revision-Date: 2017-09-12 22:28+0300\n"
+"POT-Creation-Date: 2017-09-12 22:26+0300\n"
+"PO-Revision-Date: 2017-09-12 22:26+0300\n"
 "Last-Translator: Alexander Shopov <ash@kambanaria.org>\n"
 "Language-Team: Bulgarian <dict@fsa-bg.org>\n"
 "Language: bg\n"
@@ -1697,7 +1697,7 @@ msgid "Launch help browser"
 msgstr "Стартиране на програмата за помощ"
 
 #: ../panels/keyboard/01-launchers.xml.in.h:3 ../shell/alt/cc-window.c:1590
-#: ../shell/cc-window.c:251 ../shell/cc-window.c:831
+#: ../shell/cc-window.c:251 ../shell/cc-window.c:828
 #: ../shell/gnome-control-center.desktop.in.in.h:1 ../shell/window.ui.h:1
 msgid "Settings"
 msgstr "Настройки"
@@ -7317,7 +7317,7 @@ msgid "page 3"
 msgstr "страница 3"
 
 #: ../shell/alt/cc-window.c:53 ../shell/alt/cc-window.c:1484
-#: ../shell/cc-window.c:758
+#: ../shell/cc-window.c:755
 msgid "All Settings"
 msgstr "Всички настройки"
 

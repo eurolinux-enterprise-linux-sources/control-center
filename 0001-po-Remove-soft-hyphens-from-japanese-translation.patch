@@ -1,0 +1,144 @@
+From 370f8df6d298353e2b2c02756255be79e811cffd Mon Sep 17 00:00:00 2001
+From: Carlos Garnacho <carlosg@gnome.org>
+Date: Fri, 15 Jun 2018 20:19:03 +0200
+Subject: [PATCH] po: Remove soft hyphens from japanese translation
+
+---
+ po/ja.po | 30 ++++++++++++------------------
+ 1 file changed, 12 insertions(+), 18 deletions(-)
+
+diff --git a/po/ja.po b/po/ja.po
+index 5f4767f39..65322c7f9 100644
+--- a/po/ja.po
++++ b/po/ja.po
+@@ -166,7 +166,7 @@ msgstr "現在の背景"
+ 
+ #. Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+ #: ../panels/background/gnome-background-panel.desktop.in.in.h:2
+-msgid "Back­ground"
++msgid "Background"
+ msgstr "背景"
+ 
+ #: ../panels/background/gnome-background-panel.desktop.in.in.h:3
+@@ -861,7 +861,7 @@ msgstr "D75"
+ 
+ #. Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+ #: ../panels/color/gnome-color-panel.desktop.in.in.h:2
+-msgid "Co­lor"
++msgid "Color"
+ msgstr "色管理"
+ 
+ #: ../panels/color/gnome-color-panel.desktop.in.in.h:3
+@@ -1312,7 +1312,7 @@ msgstr "終了"
+ 
+ #. Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+ #: ../panels/display/gnome-display-panel.desktop.in.in.h:2
+-msgid "Dis­plays"
++msgid "Displays"
+ msgstr "ディスプレイ"
+ 
+ #: ../panels/display/gnome-display-panel.desktop.in.in.h:3
+@@ -1486,7 +1486,7 @@ msgstr ""
+ 
+ #. Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+ #: ../panels/info/gnome-info-overview-panel.desktop.in.in.h:2
+-msgid "Ab­out"
++msgid "About"
+ msgstr "情報"
+ 
+ #: ../panels/info/gnome-info-overview-panel.desktop.in.in.h:3
+@@ -1913,7 +1913,7 @@ msgstr "ショートカットの追加"
+ 
+ #. Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+ #: ../panels/keyboard/gnome-keyboard-panel.desktop.in.in.h:2
+-msgid "Key­board"
++msgid "Keyboard"
+ msgstr "キーボード"
+ 
+ #: ../panels/keyboard/gnome-keyboard-panel.desktop.in.in.h:3
+@@ -2006,7 +2006,7 @@ msgstr "設定を確認する(_S)"
+ 
+ #. Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+ #: ../panels/mouse/gnome-mouse-panel.desktop.in.in.h:2
+-msgid "Mouse & Touch­pad"
++msgid "Mouse & Touchpad"
+ msgstr "マウスとタッチパッド"
+ 
+ #: ../panels/mouse/gnome-mouse-panel.desktop.in.in.h:3
+@@ -3751,7 +3751,7 @@ msgstr "ロック画面にメッセージの内容を表示する(_O)"
+ 
+ #. Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+ #: ../panels/notifications/gnome-notifications-panel.desktop.in.in.h:2
+-msgid "No­ti­fi­ca­tions"
++msgid "Notifications"
+ msgstr "通知"
+ 
+ #: ../panels/notifications/gnome-notifications-panel.desktop.in.in.h:3
+@@ -3805,7 +3805,7 @@ msgstr "<b>%s</b> 削除しました"
+ 
+ #. Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+ #: ../panels/online-accounts/gnome-online-accounts-panel.desktop.in.in.h:2
+-msgid "On­line Accounts"
++msgid "Online Accounts"
+ msgstr "オンラインアカウント"
+ 
+ #: ../panels/online-accounts/gnome-online-accounts-panel.desktop.in.in.h:3
+@@ -4110,7 +4110,7 @@ msgstr "デバイス"
+ 
+ #. Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+ #: ../panels/power/gnome-power-panel.desktop.in.in.h:2
+-msgid "Po­wer"
++msgid "Power"
+ msgstr "電源管理"
+ 
+ #: ../panels/power/gnome-power-panel.desktop.in.in.h:3
+@@ -4262,7 +4262,7 @@ msgstr "PPDファイルのインストール…"
+ 
+ #. Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+ #: ../panels/printers/gnome-printers-panel.desktop.in.in.h:2
+-msgid "Prin­ters"
++msgid "Printers"
+ msgstr "プリンター"
+ 
+ #: ../panels/printers/gnome-printers-panel.desktop.in.in.h:3
+@@ -4894,7 +4894,7 @@ msgstr "プライバシーポリシー"
+ 
+ #. Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+ #: ../panels/privacy/gnome-privacy-panel.desktop.in.in.h:2
+-msgid "Pri­va­cy"
++msgid "Privacy"
+ msgstr "プライバシー"
+ 
+ #: ../panels/privacy/gnome-privacy-panel.desktop.in.in.h:3
+@@ -5124,7 +5124,7 @@ msgstr "用紙サイズ"
+ 
+ #. Translators: Add soft hyphens to your translations so that the icon view won't clip your translations. See https://bugzilla.gnome.org/show_bug.cgi?id=647087#c13 for details
+ #: ../panels/region/gnome-region-panel.desktop.in.in.h:2
+-msgid "Re­gion & Lan­guage"
++msgid "Region & Language"
+ msgstr "地域と言語"
+ 
+ #: ../panels/region/gnome-region-panel.desktop.in.in.h:3
+@@ -7621,9 +7621,6 @@ msgstr "結果がありません"
+ #~ msgid "<small>Your account</small>"
+ #~ msgstr "<small>あなたのアカウント</small>"
+ 
+-#~ msgid "Color"
+-#~ msgstr "色"
+-
+ #~ msgid "Wayland"
+ #~ msgstr "Wayland"
+ 
+@@ -7843,9 +7840,6 @@ msgstr "結果がありません"
+ #~ msgid "Print _Test Page"
+ #~ msgstr "テストページを印刷(_T)"
+ 
+-#~ msgid "Privacy"
+-#~ msgstr "プライバシー"
+-
+ #~ msgctxt "Search Location"
+ #~ msgid "Other"
+ #~ msgstr "その他"
+-- 
+2.14.3
+

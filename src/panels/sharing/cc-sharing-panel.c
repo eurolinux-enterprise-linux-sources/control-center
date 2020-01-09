@@ -200,6 +200,8 @@ cc_sharing_panel_class_init (CcSharingPanelClass *klass)
   object_class->dispose = cc_sharing_panel_dispose;
 
   panel_class->get_help_uri = cc_sharing_panel_get_help_uri;
+
+  g_type_ensure (CC_TYPE_HOSTNAME_ENTRY);
 }
 
 static void
@@ -523,7 +525,8 @@ cc_sharing_panel_new_media_sharing_row (const char     *uri_or_path,
 
   row = gtk_list_box_row_new ();
   box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_container_set_border_width (GTK_CONTAINER (box), 12);
+  gtk_container_set_border_width (GTK_CONTAINER (box), 3);
+  gtk_widget_set_margin_start (box, 6);
   gtk_container_add (GTK_CONTAINER (row), box);
 
   /* Find the icon and create it */
@@ -574,7 +577,7 @@ cc_sharing_panel_new_add_media_sharing_row (CcSharingPanel *self)
 
   row = gtk_list_box_row_new ();
   box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_container_set_border_width (GTK_CONTAINER (box), 12);
+  gtk_container_set_border_width (GTK_CONTAINER (box), 3);
   gtk_container_add (GTK_CONTAINER (row), box);
 
   w = gtk_image_new_from_icon_name ("list-add-symbolic", GTK_ICON_SIZE_SMALL_TOOLBAR);
@@ -658,7 +661,7 @@ cc_sharing_panel_label_activate_link (GtkLabel *label,
                                       gchar    *uri,
                                       GtkMenu  *menu)
 {
-  gtk_menu_popup (menu, NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time ());
+  gtk_menu_popup_at_pointer (menu, NULL);
 
   g_object_set_data_full (G_OBJECT (menu), "uri-text", g_strdup (uri), g_free);
 
@@ -687,7 +690,7 @@ cc_sharing_panel_setup_label (CcSharingPanel *self,
   gchar *text;
 
   if (label == WID ("personal-file-sharing-label"))
-    text = g_strdup_printf (_("Personal File Sharing allows you to share your Public folder with others on your current network using: <a href=\"dav://%s\">dav://%s</a>"), hostname, hostname);
+    text = g_strdup_printf (_("File Sharing allows you to share your Public folder with others on your current network using: <a href=\"dav://%s\">dav://%s</a>"), hostname, hostname);
   else if (label == WID ("remote-login-label"))
     text = g_strdup_printf (_("When remote login is enabled, remote users can connect using the Secure Shell command:\n<a href=\"ssh %s\">ssh %s</a>"), hostname, hostname);
   else if (label == WID ("screen-sharing-label"))
