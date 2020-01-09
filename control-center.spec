@@ -26,7 +26,7 @@
 Summary: Utilities to configure the GNOME desktop
 Name: control-center
 Version: 2.28.1
-Release: 39%{?dist}
+Release: 40%{?dist}
 Epoch: 1
 License: GPLv2+ and GFDL
 Group: User Interface/Desktops
@@ -129,6 +129,7 @@ Patch505: gnome-wacom-properties-fix-unsetting-touch-strip-buttons.patch
 Patch506: gnome-wacom-properties-set-per-machine-settings.patch
 Patch507: gnome-wacom-properties-keep-calibrator-window-above.patch
 Patch508: gnome-wacom-properties-update-from-gsd-2.28.2-26.patch
+Patch509: control-center-2.28.1_EL6.8-translations.patch
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 URL: http://www.gnome.org
@@ -317,6 +318,7 @@ pushd %{wacom_tool}-%{wacom_tool_version}
 %patch506 -p1 -b .per-machine-settings
 %patch507 -p1 -b .calibrator-above
 %patch508 -p1 -b .update-from-gsd-2.28.2-26
+%patch509 -p2 -b .translations
 popd
 
 %build
@@ -533,6 +535,10 @@ fi
 
 
 %changelog
+* Wed Mar 09 2016 Bastien Nocera <bnocera@redhat.com> 2.28.1-40
+- Update translations
+  Resolves: #887764
+
 * Thu Jun 11 2013 Matthew Barnes <mbarnes@redhat.com> 2.28.1-39
 - Rebuild against newer evolution-data-server.
   Resolves: #973279
