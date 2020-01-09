@@ -1,4 +1,4 @@
-m4_define([gnome_control_center_version], 3.22.2)
+m4_define([gnome_control_center_version], 3.26.2)
 AC_INIT([gnome-control-center], [gnome_control_center_version],
         [http://bugzilla.gnome.org/enter_bug.cgi?product=gnome-control-center])
 
@@ -63,7 +63,8 @@ AC_SUBST(XF86MISC_LIBS)
 AC_CHECK_HEADERS(X11/extensions/XKB.h)
 CPPFLAGS=$savecppflags
 
-AC_CHECK_LIB(m, floor)
+AC_CHECK_LIBM
+AC_SUBST(LIBM)
 
 # IBus support
 IBUS_REQUIRED_VERSION=1.5.2
@@ -85,13 +86,13 @@ dnl ==============================================
 dnl Check that we meet the  dependencies
 dnl ==============================================
 
-GLIB_REQUIRED_VERSION=2.44.0
+GLIB_REQUIRED_VERSION=2.53.0
 GTK_REQUIRED_VERSION=3.22.0
 PA_REQUIRED_VERSION=2.0
 CANBERRA_REQUIRED_VERSION=0.13
 GDKPIXBUF_REQUIRED_VERSION=2.23.0
 POLKIT_REQUIRED_VERSION=0.103
-GSD_REQUIRED_VERSION=3.19.1
+GSD_REQUIRED_VERSION=3.25.90
 NETWORK_MANAGER_REQUIRED_VERSION=1.2.0
 NETWORK_MANAGER_APPLET_REQUIRED_VERSION=1.2.0
 MODEM_MANAGER_REQUIRED_VERSION=0.7
@@ -100,7 +101,7 @@ GNOME_DESKTOP_REQUIRED_VERSION=3.21.2
 SCHEMAS_REQUIRED_VERSION=3.21.4
 LIBWACOM_REQUIRED_VERSION=0.7
 CLUTTER_REQUIRED_VERSION=1.11.3
-GOA_REQUIRED_VERSION=3.21.5
+GOA_REQUIRED_VERSION=3.25.3
 ACCOUNTSSERVICE_REQUIRED_VERSION=0.6.39
 COLORD_REQUIRED_VERSION=0.1.34
 COLORD_GTK_REQUIRED_VERSION=0.1.24
@@ -114,7 +115,7 @@ COMMON_MODULES="gtk+-3.0 >= $GTK_REQUIRED_VERSION
  gio-unix-2.0
  gsettings-desktop-schemas >= $SCHEMAS_REQUIRED_VERSION"
 
-LIBGD_INIT([_view-common notification static])
+LIBGD_INIT([_view-common static])
 
 PKG_CHECK_MODULES(LIBLANGUAGE, $COMMON_MODULES gnome-desktop-3.0 fontconfig)
 PKG_CHECK_MODULES(LIBSHORTCUTS, $COMMON_MODULES x11)
@@ -128,13 +129,13 @@ PKG_CHECK_MODULES(DATETIME_PANEL, $COMMON_MODULES
                   polkit-gobject-1 >= $POLKIT_REQUIRED_VERSION
                   gdk-pixbuf-2.0 >= $GDKPIXBUF_REQUIRED_VERSION)
 PKG_CHECK_MODULES(DISPLAY_PANEL, $COMMON_MODULES gnome-desktop-3.0 >= 3.1.0
+                  colord >= $COLORD_REQUIRED_VERSION
                   upower-glib >= 0.99.0)
 PKG_CHECK_MODULES(INFO_PANEL, $COMMON_MODULES libgtop-2.0
 		  polkit-gobject-1 >= $POLKIT_REQUIRED_VERSION)
 PKG_CHECK_MODULES(KEYBOARD_PANEL, $COMMON_MODULES
                   gnome-desktop-3.0 >= $GNOME_DESKTOP_REQUIRED_VERSION
                   x11)
-PKG_CHECK_MODULES(MEDIA_PANEL, $COMMON_MODULES)
 PKG_CHECK_MODULES(MOUSE_PANEL, $COMMON_MODULES xi >= 1.2
                   gnome-settings-daemon >= $GSD_REQUIRED_VERSION x11)
 PKG_CHECK_MODULES(NETWORK_PANEL, $COMMON_MODULES gmodule-2.0
@@ -147,7 +148,8 @@ PKG_CHECK_MODULES(COLOR_PANEL, $COMMON_MODULES
                   libsoup-2.4
                   gnome-desktop-3.0 >= $GNOME_DESKTOP_REQUIRED_VERSION)
 PKG_CHECK_MODULES(PRINTERS_PANEL, $COMMON_MODULES
-                  polkit-gobject-1 >= $POLKIT_REQUIRED_VERSION)
+                  polkit-gobject-1 >= $POLKIT_REQUIRED_VERSION
+                  smbclient)
 PKG_CHECK_MODULES(PRIVACY_PANEL, $COMMON_MODULES)
 PKG_CHECK_MODULES(REGION_PANEL, $COMMON_MODULES
                   polkit-gobject-1 >= $POLKIT_REQUIRED_VERSION
@@ -190,13 +192,45 @@ if test "x$have_wayland" = xyes ; then
 	fi
 fi
 
+# Panels that must be built on Linux systems
+linux_error_or_warn()
+{
+	case $host_os in
+	linux*)
+		AC_MSG_ERROR([$1])
+		;;
+	*)
+		AC_MSG_WARN([$1])
+		;;
+	esac
+
+}
+
+# Panels that must be built on Linux systems with
+# USB support (so not on S390)
+linux_usb_error_or_warn()
+{
+	case $host_os in
+	linux*)
+		if test "$host_cpu" = s390 -o "$host_cpu" = s390x; then
+			AC_MSG_WARN([$1 (no USB support on this platform) ***])
+		else
+			AC_MSG_ERROR([$1 ***])
+		fi
+		;;
+	*)
+		AC_MSG_NOTICE([$1])
+		;;
+	esac
+}
+
 PKG_CHECK_MODULES(NETWORK_MANAGER,
                   libnm >= $NETWORK_MANAGER_REQUIRED_VERSION
                   libnma >= $NETWORK_MANAGER_APPLET_REQUIRED_VERSION
                   mm-glib >= $MODEM_MANAGER_REQUIRED_VERSION,
                   [have_networkmanager=yes], have_networkmanager=no)
 if test "x$have_networkmanager" = xno ; then
-        AC_MSG_WARN(*** Network panel will not be built (NetworkManager or ModemManager not found) ***)
+        linux_error_or_warn "*** Network panel will not be built (NetworkManager or ModemManager not found) ***"
 else
 	AC_DEFINE(BUILD_NETWORK, 1, [Define to 1 to build the Network panel])
 fi
@@ -224,63 +258,47 @@ PKG_CHECK_MODULES(BLUETOOTH, $COMMON_MODULES gnome-bluetooth-1.0 >= 3.18.2,
 		  [have_bluetooth=yes], have_bluetooth=no)
 if test "x$have_bluetooth" = xyes ; then
 	AC_DEFINE(BUILD_BLUETOOTH, 1, [Define to 1 to build the Bluetooth panel])
+else
+	linux_usb_error_or_warn "*** Bluetooth panel will not be built"
 fi
 AM_CONDITIONAL(BUILD_BLUETOOTH, [test x$have_bluetooth = xyes])
 if test x${have_bluetooth} = xyes; then
   AC_DEFINE(HAVE_BLUETOOTH, 1, [Define to 1 if bluetooth support is available])
 fi
 
-# Check for smbclient
-PKG_CHECK_MODULES(SMBCLIENT, smbclient, [have_smbclient=yes], [have_smbclient=no])
-
-if test x"$have_smbclient" = x"no"; then
-    AC_MSG_WARN(*** Printer panel will not be built (smbclient.pc not found) ***)
-    enable_cups=no
-fi
-
 # Check for CUPS 1.4 or newer
-AC_ARG_ENABLE([cups],
-              AS_HELP_STRING([--disable-cups], [disable CUPS support (default: enabled)]),,
-              [enable_cups=yes])
+AC_PROG_SED
 
-if test x"$enable_cups" != x"no" ; then
-  AC_PROG_SED
+AC_PATH_PROG(CUPS_CONFIG, cups-config)
 
-  AC_PATH_PROG(CUPS_CONFIG, cups-config)
-
-  if test x$CUPS_CONFIG = x; then
-    AC_MSG_ERROR([cups-config not found but CUPS support requested])
-  fi
-
-  CUPS_API_VERSION=`$CUPS_CONFIG --api-version`
-  CUPS_API_MAJOR=`echo $ECHO_N $CUPS_API_VERSION | cut -d . -f 1`
-  CUPS_API_MINOR=`echo $ECHO_N $CUPS_API_VERSION | cut -d . -f 2`
-
-  AC_CHECK_HEADERS([cups/cups.h cups/http.h cups/ipp.h cups/ppd.h],,
-                   AC_MSG_ERROR([CUPS headers not found but CUPS support requested]))
-
-  if ! test $CUPS_API_MAJOR -gt 1 -o \
-            $CUPS_API_MAJOR -eq 1 -a $CUPS_API_MINOR -ge 4 ; then
-    AC_MSG_ERROR([CUPS 1.4 or newer not found, but CUPS support requested])
-  fi
-
-  AC_DEFINE(BUILD_PRINTERS, 1, [Define to 1 to build the Printers panel])
-
-  # https://bugzilla.gnome.org/show_bug.cgi?id=696766
-  CUPS_CPPFLAGS=""
-  if test $CUPS_API_MAJOR -gt 1 -o \
-          $CUPS_API_MAJOR -eq 1 -a $CUPS_API_MINOR -ge 6 ; then
-     CUPS_CPPFLAGS=-D_PPD_DEPRECATED=""
-  fi
-
-  CUPS_CFLAGS=`$CUPS_CONFIG --cflags | $SED -e 's/-O\w*//g' -e 's/-m\w*//g'`
-  CUPS_LIBS=`$CUPS_CONFIG --libs`
-  AC_SUBST(CUPS_CPPFLAGS)
-  AC_SUBST(CUPS_CFLAGS)
-  AC_SUBST(CUPS_LIBS)
+if test x$CUPS_CONFIG = x; then
+  AC_MSG_ERROR([cups-config not found])
 fi
 
-AM_CONDITIONAL(BUILD_PRINTERS, [test x"$enable_cups" = x"yes"])
+CUPS_API_VERSION=`$CUPS_CONFIG --api-version`
+CUPS_API_MAJOR=`echo $ECHO_N $CUPS_API_VERSION | cut -d . -f 1`
+CUPS_API_MINOR=`echo $ECHO_N $CUPS_API_VERSION | cut -d . -f 2`
+
+AC_CHECK_HEADERS([cups/cups.h cups/http.h cups/ipp.h cups/ppd.h],,
+                 AC_MSG_ERROR([CUPS headers not found]))
+
+if ! test $CUPS_API_MAJOR -gt 1 -o \
+          $CUPS_API_MAJOR -eq 1 -a $CUPS_API_MINOR -ge 4 ; then
+  AC_MSG_ERROR([CUPS 1.4 or newer not found])
+fi
+
+# https://bugzilla.gnome.org/show_bug.cgi?id=696766
+CUPS_CPPFLAGS=""
+if test $CUPS_API_MAJOR -gt 1 -o \
+        $CUPS_API_MAJOR -eq 1 -a $CUPS_API_MINOR -ge 6 ; then
+   CUPS_CPPFLAGS=-D_PPD_DEPRECATED=""
+fi
+
+CUPS_CFLAGS=`$CUPS_CONFIG --cflags | $SED -e 's/-O\w*//g' -e 's/-m\w*//g'`
+CUPS_LIBS=`$CUPS_CONFIG --libs`
+AC_SUBST(CUPS_CPPFLAGS)
+AC_SUBST(CUPS_CFLAGS)
+AC_SUBST(CUPS_LIBS)
 
 # Optional dependency for the user accounts panel
 AC_ARG_WITH([cheese],
@@ -300,27 +318,21 @@ else
 fi
 AM_CONDITIONAL(BUILD_CHEESE, test x${have_cheese} = xyes)
 
-# wacom is disabled for s390/s390x and non Linux platforms (needs udev)
-case $host_os in
-  linux*)
-    if test "$host_cpu" = s390 -o "$host_cpu" = s390x; then
-      have_wacom=no
-    else
-      PKG_CHECK_MODULES(WACOM_PANEL, $COMMON_MODULES
-                        gnome-settings-daemon >= $GSD_REQUIRED_VERSION
-                        xi >= 1.2 x11 libwacom >= $LIBWACOM_REQUIRED_VERSION
-                        gnome-desktop-3.0 >= $GNOME_DESKTOP_REQUIRED_VERSION
-                        clutter-gtk-1.0
-                        clutter-1.0 >= $CLUTTER_REQUIRED_VERSION)
-      have_wacom=yes
-      AC_DEFINE(BUILD_WACOM, 1, [Define to 1 to build the Wacom panel])
-      AC_DEFINE(HAVE_WACOM, 1, [Define to 1 is Wacom is supportted])
-    fi
-    ;;
-  *)
-    have_wacom=no
-    ;;
-esac
+# Wacom
+PKG_CHECK_MODULES(WACOM_PANEL, $COMMON_MODULES
+                  gnome-settings-daemon >= $GSD_REQUIRED_VERSION
+                  xi >= 1.2 x11 libwacom >= $LIBWACOM_REQUIRED_VERSION
+                  gnome-desktop-3.0 >= $GNOME_DESKTOP_REQUIRED_VERSION
+                  clutter-gtk-1.0
+                  clutter-1.0 >= $CLUTTER_REQUIRED_VERSION,
+                  [have_wacom=yes], [have_wacom=no])
+
+if test "x$have_wacom" = xyes ; then
+	AC_DEFINE(BUILD_WACOM, 1, [Define to 1 to build the Wacom panel])
+	AC_DEFINE(HAVE_WACOM, 1, [Define to 1 is Wacom is supportted])
+else
+	linux_usb_error_or_warn "*** Wacom panel will not be built"
+fi
 AM_CONDITIONAL(BUILD_WACOM, [test x${have_wacom} = xyes])
 
 # Kerberos kerberos support
@@ -437,22 +449,6 @@ else
         AC_MSG_RESULT(no)
 fi
 
-case $host_os in
-  linux*)
-    if test "$host_cpu" = s390 -o "$host_cpu" = s390x; then
-      # Nothing
-      echo "USB-related panels disabled on S390"
-    else
-      if test "x$have_networkmanager" != "xyes" -o \
-              "x$have_bluetooth" != "xyes" -o \
-              "x$enable_cups" != "xyes" -o \
-              "x$have_wacom" != "xyes"; then
-        AC_MSG_ERROR([The Network, Bluetooth, Printers and Wacom panels are not optional on Linux systems])
-     fi
-    fi
-    ;;
-esac
-
 AC_CONFIG_FILES([
 Makefile
 panels/Makefile
@@ -518,6 +514,9 @@ panels/sound/data/icons/scalable/devices/Makefile
 panels/sound/data/sounds/Makefile
 panels/info/Makefile
 panels/info/gnome-info-panel.desktop.in
+panels/info/gnome-info-overview-panel.desktop.in
+panels/info/gnome-default-apps-panel.desktop.in
+panels/info/gnome-removable-media-panel.desktop.in
 panels/power/Makefile
 panels/power/gnome-power-panel.desktop.in
 panels/power/icons/Makefile
@@ -546,6 +545,7 @@ panels/network/Makefile
 panels/network/wireless-security/Makefile
 panels/network/connection-editor/Makefile
 panels/network/gnome-network-panel.desktop.in
+panels/network/gnome-wifi-panel.desktop.in
 panels/notifications/Makefile
 panels/notifications/gnome-notifications-panel.desktop.in
 panels/universal-access/Makefile
@@ -579,11 +579,6 @@ if test "x$have_bluetooth" = "xyes"; then
 	AC_MSG_NOTICE([** gnome-bluetooth (Bluetooth panel)])
 else
 	AC_MSG_NOTICE([   Bluetooth panel disabled])
-fi
-if test "x$enable_cups" = "xyes"; then
-	AC_MSG_NOTICE([** CUPS (Printers panel)])
-else
-	AC_MSG_NOTICE([   Printers panel disabled])
 fi
 if test "x$have_cheese" = "xyes"; then
 	AC_MSG_NOTICE([** Cheese (Users panel webcam support)])

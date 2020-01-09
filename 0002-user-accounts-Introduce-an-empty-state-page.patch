@@ -1,0 +1,444 @@
+From 099115c26e2df45cca0f9705e614424733724ca9 Mon Sep 17 00:00:00 2001
+From: Felipe Borges <felipeborges@gnome.org>
+Date: Wed, 22 Feb 2017 12:18:24 +0100
+Subject: [PATCH 2/2] user-accounts: Introduce an empty state page
+
+There are eventually corner cases where there's no user other than
+root in the system and control-center can be launched by the root
+user (not recommended). In this cases, the panel crashes without
+any user to show (since accountsservice would just list normal
+users).
+
+This patch introduces an empty state[0] "No Users Page".
+
+[0] https://wiki.gnome.org/Design/OS/EmptyStates
+
+https://bugzilla.gnome.org/show_bug.cgi?id=773673
+---
+ panels/user-accounts/data/user-accounts-dialog.ui | 48 +++++++++++++++++++++++
+ panels/user-accounts/um-user-panel.c              | 17 +++++++-
+ 2 files changed, 64 insertions(+), 1 deletion(-)
+
+diff --git a/panels/user-accounts/data/user-accounts-dialog.ui b/panels/user-accounts/data/user-accounts-dialog.ui
+index cdd4951e4..a2c11b197 100644
+--- a/panels/user-accounts/data/user-accounts-dialog.ui
++++ b/panels/user-accounts/data/user-accounts-dialog.ui
+@@ -15,60 +15,65 @@
+     </child>
+     <child>
+       <object class="GtkButton" id="add-user-toolbutton">
+         <property name="visible">True</property>
+         <property name="can_focus">True</property>
+         <property name="label" translatable="yes">_Add User…</property>
+         <property name="use_underline">True</property>
+         <style>
+           <class name="suggested-action"/>
+         </style>
+       </object>
+       <packing>
+         <property name="name">_adduser</property>
+       </packing>
+     </child>
+   </object>
+   <object class="GtkListStore" id="shortname-model">
+     <columns>
+       <!-- column-name gchararray -->
+       <column type="gchararray"/>
+     </columns>
+   </object>
+   <object class="GtkListStore" id="language-model">
+     <columns>
+       <!-- column-name gchararray -->
+       <column type="gchararray"/>
+       <!-- column-name gchararray1 -->
+       <column type="gchararray"/>
+     </columns>
+   </object>
++
++  <object class="GtkStack" id="stack">
++    <property name="visible">True</property>
++    <property name="visible-child">empty-state</property>
++    <child>
+       <object class="GtkOverlay" id="overlay">
+         <property name="visible">True</property>
+         <child type="overlay">
+           <object class="GtkRevealer" id="notification">
+             <property name="visible">True</property>
+             <property name="halign">GTK_ALIGN_CENTER</property>
+             <property name="valign">GTK_ALIGN_START</property>
+             <child>
+               <object class="GtkBox">
+                 <property name="visible">True</property>
+                 <property name="spacing">6</property>
+                 <style>
+                   <class name="app-notification"/>
+                 </style>
+                 <child>
+                   <object class="GtkLabel">
+                     <property name="visible">True</property>
+                     <property name="wrap">True</property>
+                     <property name="max_width_chars">30</property>
+                     <property name="label" translatable="yes">Your session needs to be restarted for changes to take effect</property>
+                   </object>
+                 </child>
+                 <child>
+                   <object class="GtkButton" id="restart-button">
+                     <property name="visible">True</property>
+                     <property name="can_focus">True</property>
+                     <property name="valign">GTK_ALIGN_CENTER</property>
+                     <property name="label" translatable="yes">Restart Now</property>
+                   </object>
+                 </child>
+@@ -408,60 +413,103 @@
+                       </object>
+                     </child>
+                   </object>
+                   <packing>
+                     <property name="left_attach">1</property>
+                     <property name="top_attach">6</property>
+                     <property name="width">1</property>
+                     <property name="height">1</property>
+                   </packing>
+                 </child>
+               </object>
+             </child>
+             <child>
+               <object class="GtkButton" id="remove-user-toolbutton">
+                 <property name="visible">True</property>
+                 <property name="can_focus">False</property>
+                 <property name="halign">GTK_ALIGN_END</property>
+                 <property name="valign">GTK_ALIGN_END</property>
+                 <property name="margin_bottom">20</property>
+                 <property name="margin_top">20</property>
+                 <property name="margin_end">20</property>
+                 <property name="label" translatable="yes">Remove User…</property>
+                 <style>
+                   <class name="destructive-action"/>
+                 </style>
+               </object>
+             </child>
+           </object>
+         </child>
+       </object>
++      <packing>
++        <property name="name">_users</property>
++      </packing>
++    </child>
++    <child>
++      <object class="GtkBox" id="empty-state">
++        <property name="visible">True</property>
++        <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
++        <property name="valign">GTK_ALIGN_CENTER</property>
++        <property name="spacing">12</property>
++        <style>
++          <class name="dim-label"/>
++        </style>
++        <child>
++          <object class="GtkImage">
++            <property name="visible">True</property>
++            <property name="icon_name">avatar-default-symbolic</property>
++            <property name="pixel_size">192</property>
++          </object>
++        </child>
++        <child>
++          <object class="GtkLabel">
++            <property name="visible">True</property>
++            <property name="label" translatable="yes" comments="Translators: This is the empty state page label which states that there are no users to show in the panel.">No Users Found</property>
++            <attributes>
++              <attribute name="weight" value="bold"/>
++              <attribute name="scale" value="1.6"/>
++            </attributes>
++          </object>
++        </child>
++        <child>
++          <object class="GtkLabel">
++            <property name="visible">True</property>
++            <property name="label" translatable="yes">Unlock to add a user account.</property>
++          </object>
++        </child>
++      </object>
++      <packing>
++        <property name="name">_empty_state</property>
++      </packing>
++    </child>
++  </object>
++
+   <object class="GtkSizeGroup" id="user-icon-sizegroup">
+     <property name="mode">both</property>
+     <widgets>
+       <widget name="user-icon-button"/>
+       <widget name="user-icon-image"/>
+     </widgets>
+   </object>
+   <object class="GtkSizeGroup" id="label-sizegroup">
+     <property name="mode">both</property>
+     <widgets>
+       <widget name="account-fingerprint-label"/>
+       <widget name="language-label"/>
+       <widget name="password-label"/>
+       <widget name="account-type-label"/>
+       <widget name="autologin-label"/>
+       <widget name="last-login-label"/>
+     </widgets>
+   </object>
+   <object class="GtkSizeGroup" id="option-sizegroup">
+     <property name="mode">both</property>
+     <widgets>
+       <widget name="account-fingerprint-button"/>
+       <widget name="account-language-button"/>
+       <widget name="account-password-button"/>
+       <widget name="account-type-box"/>
+       <widget name="autologin-box"/>
+       <widget name="last-login-button"/>
+     </widgets>
+   </object>
+   <object class="GtkSizeGroup">
+diff --git a/panels/user-accounts/um-user-panel.c b/panels/user-accounts/um-user-panel.c
+index 4e7009f28..3047295d5 100644
+--- a/panels/user-accounts/um-user-panel.c
++++ b/panels/user-accounts/um-user-panel.c
+@@ -44,84 +44,90 @@
+ #include "um-account-dialog.h"
+ #include "cc-language-chooser.h"
+ #include "um-password-dialog.h"
+ #include "um-carousel.h"
+ #include "um-photo-dialog.h"
+ #include "um-fingerprint-dialog.h"
+ #include "um-utils.h"
+ #include "um-resources.h"
+ #include "um-history-dialog.h"
+ 
+ #include "cc-common-language.h"
+ #include "cc-util.h"
+ 
+ #include "um-realm-manager.h"
+ 
+ #define USER_ACCOUNTS_PERMISSION "org.gnome.controlcenter.user-accounts.administration"
+ 
+ CC_PANEL_REGISTER (CcUserPanel, cc_user_panel)
+ 
+ #define UM_USER_PANEL_PRIVATE(o) \
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), UM_TYPE_USER_PANEL, CcUserPanelPrivate))
+ 
+ struct _CcUserPanelPrivate {
+         ActUserManager *um;
+         GCancellable  *cancellable;
+         GtkBuilder *builder;
+         GtkWidget *notification;
+         GSettings *login_screen_settings;
+ 
+         GtkWidget *headerbar_buttons;
++        GtkWidget *stack;
+         GtkWidget *main_box;
+         UmCarousel *carousel;
+         ActUser *selected_user;
+         GPermission *permission;
+         GtkWidget *language_chooser;
+ 
+         UmPasswordDialog *password_dialog;
+         UmPhotoDialog *photo_dialog;
+         UmHistoryDialog *history_dialog;
+ 
+         gint other_accounts;
+ 
+         UmAccountDialog *account_dialog;
+ };
+ 
+ static GtkWidget *
+ get_widget (CcUserPanelPrivate *d, const char *name)
+ {
+         return (GtkWidget *)gtk_builder_get_object (d->builder, name);
+ }
+ 
++/* Headerbar button states. */
+ #define PAGE_LOCK "_lock"
+ #define PAGE_ADDUSER "_adduser"
+ 
++/* Panel states */
++#define PAGE_NO_USERS "_empty_state"
++#define PAGE_USERS "_users"
++
+ static void show_restart_notification (CcUserPanelPrivate *d, const gchar *locale);
+ static gint user_compare (gconstpointer i, gconstpointer u);
+ 
+ typedef struct {
+         CcUserPanel *self;
+         GCancellable *cancellable;
+         gchar *login;
+ } AsyncDeleteData;
+ 
+ static void
+ async_delete_data_free (AsyncDeleteData *data)
+ {
+         g_object_unref (data->self);
+         g_object_unref (data->cancellable);
+         g_free (data->login);
+         g_slice_free (AsyncDeleteData, data);
+ }
+ 
+ static void
+ show_error_dialog (CcUserPanelPrivate *d,
+                    const gchar *message,
+                    GError *error)
+ {
+         GtkWidget *dialog;
+ 
+         dialog = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (d->main_box)),
+                                          GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
+                                          GTK_MESSAGE_ERROR,
+                                          GTK_BUTTONS_CLOSE,
+                                          "%s", message);
+@@ -248,72 +254,80 @@ sort_users (gconstpointer a, gconstpointer b)
+         ub = ACT_USER (b);
+ 
+         /* Make sure the current user is shown first */
+         if (act_user_get_uid (ua) == getuid ()) {
+                 result = -G_MAXINT32;
+         }
+         else if (act_user_get_uid (ub) == getuid ()) {
+                 result = G_MAXINT32;
+         }
+         else {
+                 name1 = g_utf8_collate_key (get_real_or_user_name (ua), -1);
+                 name2 = g_utf8_collate_key (get_real_or_user_name (ub), -1);
+ 
+                 result = strcmp (name1, name2);
+ 
+                 g_free (name1);
+                 g_free (name2);
+         }
+ 
+         return result;
+ }
+ 
+ static void
+ reload_users (CcUserPanelPrivate *d, ActUser *selected_user)
+ {
+         ActUser *user;
+         GSList *list, *l;
+         UmCarouselItem *item = NULL;
+         GtkSettings *settings;
+         gboolean animations;
++        gboolean can_reload;
+ 
+         settings = gtk_settings_get_default ();
+ 
+         g_object_get (settings, "gtk-enable-animations", &animations, NULL);
+         g_object_set (settings, "gtk-enable-animations", FALSE, NULL);
+ 
+         um_carousel_purge_items (d->carousel);
+         d->other_accounts = 0;
+ 
+         list = act_user_manager_list_users (d->um);
+         g_debug ("Got %d users\n", g_slist_length (list));
+ 
++        can_reload = (list != NULL);
++        gtk_stack_set_visible_child_name (GTK_STACK (d->stack),
++                                          can_reload ? PAGE_USERS : PAGE_NO_USERS);
++
++        if (!can_reload)
++            return;
++
+         list = g_slist_sort (list, (GCompareFunc) sort_users);
+         for (l = list; l; l = l->next) {
+                 user = l->data;
+                 g_debug ("adding user %s\n", get_real_or_user_name (user));
+                 user_added (d->um, user, d);
+         }
+         g_slist_free (list);
+ 
+         if (um_carousel_get_item_count (d->carousel) == 0)
+                 gtk_stack_set_visible_child_name (GTK_STACK (d->stack), PAGE_NO_USERS);
+         if (d->other_accounts == 0)
+                 gtk_revealer_set_reveal_child (GTK_REVEALER (d->carousel), FALSE);
+ 
+         if (selected_user)
+                 item = um_carousel_find_item (d->carousel, selected_user, user_compare);
+         um_carousel_select_item (d->carousel, item);
+ 
+         g_object_set (settings, "gtk-enable-animations", animations, NULL);
+ }
+ 
+ static gint
+ user_compare (gconstpointer i,
+               gconstpointer u)
+ {
+         UmCarouselItem *item;
+         ActUser *user;
+         gint uid_a, uid_b;
+         gint result;
+ 
+         item = (UmCarouselItem *) i;
+@@ -1431,67 +1445,68 @@ cc_user_panel_init (CcUserPanel *self)
+ 
+         d = self->priv = UM_USER_PANEL_PRIVATE (self);
+         g_resources_register (um_get_resource ());
+ 
+         /* register types that the builder might need */
+         type = um_user_image_get_type ();
+         type = um_cell_renderer_user_image_get_type ();
+         type = um_carousel_get_type ();
+ 
+         d->builder = gtk_builder_new ();
+         d->um = act_user_manager_get_default ();
+         d->cancellable = g_cancellable_new ();
+ 
+         error = NULL;
+         if (!gtk_builder_add_from_resource (d->builder,
+                                             "/org/gnome/control-center/user-accounts/user-accounts-dialog.ui",
+                                             &error)) {
+                 g_error ("%s", error->message);
+                 g_error_free (error);
+                 return;
+         }
+ 
+         provider = gtk_css_provider_new ();
+         gtk_css_provider_load_from_resource (provider, "/org/gnome/control-center/user-accounts/user-accounts-dialog.css");
+         gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
+                                                    GTK_STYLE_PROVIDER (provider),
+                                                    GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+         g_object_unref (provider);
+ 
+         d->headerbar_buttons = get_widget (d, "headerbar-buttons");
++        d->stack = get_widget (d, "stack");
+         d->login_screen_settings = settings_or_null ("org.gnome.login-screen");
+ 
+         d->password_dialog = um_password_dialog_new ();
+         button = get_widget (d, "user-icon-button");
+         d->photo_dialog = um_photo_dialog_new (button);
+         d->main_box = get_widget (d, "accounts-vbox");
+-        gtk_container_add (GTK_CONTAINER (self), get_widget (d, "overlay"));
++        gtk_container_add (GTK_CONTAINER (self), d->stack);
+         d->history_dialog = um_history_dialog_new ();
+         setup_main_window (self);
+ }
+ 
+ static void
+ cc_user_panel_dispose (GObject *object)
+ {
+         CcUserPanelPrivate *priv = UM_USER_PANEL (object)->priv;
+ 
+         g_cancellable_cancel (priv->cancellable);
+         g_clear_object (&priv->cancellable);
+ 
+         g_clear_object (&priv->login_screen_settings);
+ 
+         if (priv->um) {
+                 g_signal_handlers_disconnect_by_data (priv->um, priv);
+                 priv->um = NULL;
+         }
+         if (priv->builder) {
+                 g_object_unref (priv->builder);
+                 priv->builder = NULL;
+         }
+         if (priv->password_dialog) {
+                 um_password_dialog_free (priv->password_dialog);
+                 priv->password_dialog = NULL;
+         }
+         if (priv->photo_dialog) {
+                 um_photo_dialog_free (priv->photo_dialog);
+                 priv->photo_dialog = NULL;
+         }
+-- 
+2.14.3
+

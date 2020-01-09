@@ -124,7 +124,7 @@ file_chooser_response (GtkDialog     *chooser,
 {
         gchar *filename;
         GError *error;
-        GdkPixbuf *pixbuf;
+        GdkPixbuf *pixbuf, *pixbuf2;
 
         if (response != GTK_RESPONSE_ACCEPT) {
                 gtk_widget_destroy (GTK_WIDGET (chooser));
@@ -141,10 +141,13 @@ file_chooser_response (GtkDialog     *chooser,
         }
         g_free (filename);
 
+        pixbuf2 = gdk_pixbuf_apply_embedded_orientation (pixbuf);
+        g_object_unref (pixbuf);
+
         gtk_widget_destroy (GTK_WIDGET (chooser));
 
-        um_photo_dialog_crop (um, pixbuf);
-        g_object_unref (pixbuf);
+        um_photo_dialog_crop (um, pixbuf2);
+        g_object_unref (pixbuf2);
 }
 
 static void
@@ -157,7 +160,7 @@ update_preview (GtkFileChooser               *chooser,
 
         if (uri) {
                 GdkPixbuf *pixbuf = NULL;
-                const gchar *mime_type = NULL;
+                char *mime_type = NULL;
                 GFile *file;
                 GFileInfo *file_info;
                 GtkWidget *preview;
@@ -173,7 +176,7 @@ update_preview (GtkFileChooser               *chooser,
 
                 if (file_info != NULL &&
                     g_file_info_get_file_type (file_info) != G_FILE_TYPE_DIRECTORY) {
-                        mime_type = g_file_info_get_content_type (file_info);
+                        mime_type = g_strdup (g_file_info_get_content_type (file_info));
                         g_object_unref (file_info);
                 }
 
@@ -181,6 +184,7 @@ update_preview (GtkFileChooser               *chooser,
                         pixbuf = gnome_desktop_thumbnail_factory_generate_thumbnail (thumb_factory,
                                                                                      uri,
                                                                                      mime_type);
+                        g_free (mime_type);
                 }
 
                 gtk_dialog_set_response_sensitive (GTK_DIALOG (chooser),
@@ -494,13 +498,21 @@ skip_faces:
 static void
 popup_icon_menu (GtkToggleButton *button, UmPhotoDialog *um)
 {
+        GtkWindow *window;
+
+        window = GTK_WINDOW (gtk_widget_get_toplevel (um->photo_popup));
         if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (button)) && !gtk_widget_get_visible (um->photo_popup)) {
-                gtk_menu_popup (GTK_MENU (um->photo_popup),
-                                NULL, NULL,
-                                (GtkMenuPositionFunc) popup_menu_below_button, um->popup_button,
-                                0, gtk_get_current_event_time ());
+                gtk_menu_popup_at_widget (GTK_MENU (um->photo_popup),
+                                          GTK_WIDGET (button),
+                                          GDK_GRAVITY_NORTH_WEST,
+                                          GDK_GRAVITY_SOUTH_WEST,
+                                          NULL);
+
+                gtk_window_set_transient_for (window, GTK_WINDOW (gtk_widget_get_toplevel (um->popup_button)));
         } else {
                 gtk_menu_popdown (GTK_MENU (um->photo_popup));
+
+                gtk_window_set_transient_for (window, NULL);
         }
 }
 
@@ -540,12 +552,6 @@ popup_button_draw (GtkWidget      *widget,
             !gtk_widget_is_focus (widget)) {
                 return;
         }
-
-        down_arrow (gtk_widget_get_style_context (widget),
-                    cr,
-                    gtk_widget_get_allocated_width (widget) - 12,
-                    gtk_widget_get_allocated_height (widget) - 12,
-                    12, 12);
 }
 
 static void

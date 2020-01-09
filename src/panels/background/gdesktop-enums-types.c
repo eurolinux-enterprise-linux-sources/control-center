@@ -5,7 +5,7 @@
 #include "gdesktop-enums-types.h"
 #include "cc-background-item.h"
 
-/* enumerations from "/home/hadess/Projects/gnome-install/include/gsettings-desktop-schemas/gdesktop-enums.h" */
+/* enumerations from "/home/rmatos/Source/git.gnome.org/install/include/gsettings-desktop-schemas/gdesktop-enums.h" */
 GType
 g_desktop_proxy_mode_get_type (void)
 {

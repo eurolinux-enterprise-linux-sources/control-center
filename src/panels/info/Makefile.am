@@ -21,6 +21,12 @@ libinfo_la_SOURCES =		\
 	$(BUILT_SOURCES)	\
 	cc-info-panel.c		\
 	cc-info-panel.h		\
+	cc-info-overview-panel.c		\
+	cc-info-overview-panel.h		\
+	cc-info-default-apps-panel.c		\
+	cc-info-default-apps-panel.h		\
+	cc-info-removable-media-panel.c		\
+	cc-info-removable-media-panel.h		\
 	gsd-disk-space-helper.h	\
 	gsd-disk-space-helper.c	\
 	info-cleanup.h		\
@@ -46,7 +52,12 @@ cc-info-resources.h: info.gresource.xml $(resource_files)
 @INTLTOOL_DESKTOP_RULE@
 
 desktopdir = $(datadir)/applications
-desktop_in_files = gnome-info-panel.desktop.in
+desktop_in_files = \
+		gnome-info-panel.desktop.in		\
+		gnome-info-overview-panel.desktop.in	\
+		gnome-default-apps-panel.desktop.in	\
+		gnome-removable-media-panel.desktop.in
+
 desktop_DATA = $(desktop_in_files:.desktop.in=.desktop)
 
 SPACEDIR=$(top_srcdir)/../gnome-settings-daemon/plugins/housekeeping/

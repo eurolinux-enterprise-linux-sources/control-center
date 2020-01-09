@@ -1,0 +1,30 @@
+From 6df5cc00ce707657f258dcdf3a5590355fdb1cc6 Mon Sep 17 00:00:00 2001
+From: Bastien Nocera <hadess@hadess.net>
+Date: Fri, 16 Feb 2018 13:23:20 +0100
+Subject: [PATCH] network: Really really fix cloned MAC support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+And now that we're reading a text entry, read the correct one 🙄
+Follow-up to a2a70c7
+---
+ panels/network/connection-editor/ce-page-ethernet.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/panels/network/connection-editor/ce-page-ethernet.c b/panels/network/connection-editor/ce-page-ethernet.c
+index 67c4478eb..7b8f5b587 100644
+--- a/panels/network/connection-editor/ce-page-ethernet.c
++++ b/panels/network/connection-editor/ce-page-ethernet.c
+@@ -96,7 +96,7 @@ ui_to_setting (CEPageEthernet *page)
+                 device_mac = ce_page_trim_address (text);
+         }
+ 
+-        text = gtk_entry_get_text (GTK_ENTRY (entry));
++        text = gtk_entry_get_text (GTK_ENTRY (page->cloned_mac));
+         cloned_mac = ce_page_trim_address (text);
+ 
+         g_object_set (page->setting_wired,
+-- 
+2.14.3
+

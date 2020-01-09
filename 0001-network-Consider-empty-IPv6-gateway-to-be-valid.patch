@@ -1,0 +1,46 @@
+From dd8b63bdebddb736f0e871088762a9d0486bced9 Mon Sep 17 00:00:00 2001
+From: Bastien Nocera <hadess@hadess.net>
+Date: Tue, 6 Feb 2018 10:30:57 +0100
+Subject: [PATCH] network: Consider empty IPv6 gateway to be valid
+
+The string we get back from the text entries are never NULL (as long as
+the UI isn't broken that is), but can be empty strings. Consider an
+empty IPv6 address to be invalid, but an empty gateway to be valid.
+
+See https://bugzilla.redhat.com/show_bug.cgi?id=1467308
+---
+ panels/network/connection-editor/ce-page-ip6.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/panels/network/connection-editor/ce-page-ip6.c b/panels/network/connection-editor/ce-page-ip6.c
+index c9daab1ec..995197504 100644
+--- a/panels/network/connection-editor/ce-page-ip6.c
++++ b/panels/network/connection-editor/ce-page-ip6.c
+@@ -616,7 +616,7 @@ ui_to_setting (CEPageIP6 *page)
+                         continue;
+                 }
+ 
+-                if (!text_address || !nm_utils_ipaddr_valid (AF_INET6, text_address)) {
++                if (!*text_address || !nm_utils_ipaddr_valid (AF_INET6, text_address)) {
+                         widget_set_error (GTK_WIDGET (entry));
+                         ret = FALSE;
+                 } else {
+@@ -631,12 +631,13 @@ ui_to_setting (CEPageIP6 *page)
+                         widget_unset_error (g_object_get_data (G_OBJECT (row), "prefix"));
+                 }
+ 
+-                if (text_gateway && !nm_utils_ipaddr_valid (AF_INET6, text_gateway)) {
++                if (*text_gateway && !nm_utils_ipaddr_valid (AF_INET6, text_gateway)) {
+                         widget_set_error (g_object_get_data (G_OBJECT (row), "gateway"));
+                         ret = FALSE;
+                 } else {
+                         widget_unset_error (g_object_get_data (G_OBJECT (row), "gateway"));
+-                        have_gateway = TRUE;
++                        if (*text_gateway)
++                                have_gateway = TRUE;
+                 }
+ 
+                 if (!ret)
+-- 
+2.14.3
+

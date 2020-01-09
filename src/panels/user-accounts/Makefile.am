@@ -31,6 +31,8 @@ libuser_accounts_la_SOURCES =		\
 	um-account-type.c 		\
 	um-account-dialog.h		\
 	um-account-dialog.c		\
+	um-carousel.h			\
+	um-carousel.c			\
 	um-password-dialog.h		\
 	um-password-dialog.c		\
 	pw-utils.h			\
@@ -64,7 +66,7 @@ libuser_accounts_la_LIBADD = 		\
 	$(builddir)/../common/liblanguage.la	\
 	-lpwquality			\
 	-lcrypt				\
-	-lm				\
+	$(LIBM)				\
 	$(top_builddir)/libgd/libgd.la
 
 if BUILD_CHEESE

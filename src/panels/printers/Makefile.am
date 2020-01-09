@@ -6,7 +6,7 @@ AM_CPPFLAGS = 						\
 	$(PANEL_CFLAGS)					\
 	$(PRINTERS_PANEL_CFLAGS)			\
 	$(CUPS_CFLAGS)					\
-	$(SMBCLIENT_CFLAGS)				\
+	-I$(srcdir)/../common/				\
 	-I$(top_srcdir)/shell/				\
 	-DGNOMELOCALEDIR="\"$(datadir)/locale\""	\
 	-DTEST_SRCDIR=\""$(srcdir)/"\"			\
@@ -46,17 +46,19 @@ libprinters_la_SOURCES =		\
 	pp-job.h			\
 	pp-jobs-dialog.c		\
 	pp-jobs-dialog.h		\
-	pp-authentication-dialog.c	\
-	pp-authentication-dialog.h	\
+	pp-details-dialog.c		\
+	pp-details-dialog.h		\
 	pp-samba.c			\
 	pp-samba.h			\
 	pp-print-device.c		\
 	pp-print-device.h		\
+	pp-printer-entry.c		\
+	pp-printer-entry.h		\
 	cc-printers-panel.c		\
 	cc-printers-panel.h
 
 libprinters_la_CPPFLAGS = $(AM_CPPFLAGS)
-libprinters_la_LIBADD = $(PRINTERS_PANEL_LIBS) $(PANEL_LIBS) $(CUPS_LIBS) $(SMBCLIENT_LIBS)
+libprinters_la_LIBADD = $(PRINTERS_PANEL_LIBS) $(PANEL_LIBS) $(CUPS_LIBS) $(LIBM)
 
 resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/printers.gresource.xml)
 cc-printers-resources.c: printers.gresource.xml $(resource_files)

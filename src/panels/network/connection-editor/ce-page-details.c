@@ -31,6 +31,12 @@
 
 G_DEFINE_TYPE (CEPageDetails, ce_page_details, CE_TYPE_PAGE)
 
+static void
+forget_cb (GtkButton *button, CEPageDetails *page)
+{
+        net_connection_editor_forget (page->editor);
+}
+
 static gchar *
 get_ap_security_string (NMAccessPoint *ap)
 {
@@ -112,13 +118,30 @@ out:
 }
 
 static void
+all_user_changed (GtkToggleButton *b, CEPageDetails *page)
+{
+        gboolean all_users;
+        NMSettingConnection *sc;
+
+        sc = nm_connection_get_setting_connection (CE_PAGE (page)->connection);
+        all_users = gtk_toggle_button_get_active (b);
+
+        g_object_set (sc, "permissions", NULL, NULL);
+        if (!all_users)
+                nm_setting_connection_add_permission (sc, "user", g_get_user_name (), NULL);
+}
+
+static void
 connect_details_page (CEPageDetails *page)
 {
+        NMSettingConnection *sc;
+        GtkWidget *widget;
         guint speed;
         guint strength;
         NMDeviceState state;
         NMAccessPoint *active_ap;
         const gchar *str;
+        const gchar *type;
         gboolean device_is_active;
 
         if (NM_IS_DEVICE_WIFI (page->device))
@@ -198,6 +221,37 @@ connect_details_page (CEPageDetails *page)
         else
                 panel_set_device_widget_details (CE_PAGE (page)->builder, "last_used", NULL);
 
+        /* Auto connect check */
+        widget = GTK_WIDGET (gtk_builder_get_object (CE_PAGE (page)->builder,
+                                                     "auto_connect_check"));
+        sc = nm_connection_get_setting_connection (CE_PAGE (page)->connection);
+        g_object_bind_property (sc, "autoconnect",
+                                widget, "active",
+                                G_BINDING_BIDIRECTIONAL | G_BINDING_SYNC_CREATE);
+        g_signal_connect_swapped (widget, "toggled", G_CALLBACK (ce_page_changed), page);
+
+        /* All users check */
+        widget = GTK_WIDGET (gtk_builder_get_object (CE_PAGE (page)->builder,
+                                                     "all_user_check"));
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget),
+                                      nm_setting_connection_get_num_permissions (sc) == 0);
+        g_signal_connect (widget, "toggled",
+                          G_CALLBACK (all_user_changed), page);
+        g_signal_connect_swapped (widget, "toggled", G_CALLBACK (ce_page_changed), page);
+
+        /* Forget button */
+        widget = GTK_WIDGET (gtk_builder_get_object (CE_PAGE (page)->builder, "button_forget"));
+        g_signal_connect (widget, "clicked", G_CALLBACK (forget_cb), page);
+
+        type = nm_setting_connection_get_connection_type (sc);
+        if (g_str_equal (type, NM_SETTING_WIRELESS_SETTING_NAME))
+                gtk_button_set_label (GTK_BUTTON (widget), _("Forget Connection"));
+        else if (g_str_equal (type, NM_SETTING_WIRED_SETTING_NAME))
+                gtk_button_set_label (GTK_BUTTON (widget), _("Remove Connection Profile"));
+        else if (g_str_equal (type, NM_SETTING_VPN_SETTING_NAME))
+                gtk_button_set_label (GTK_BUTTON (widget), _("Remove VPN"));
+        else
+                gtk_widget_hide (widget);
 }
 
 static void
@@ -211,10 +265,11 @@ ce_page_details_class_init (CEPageDetailsClass *class)
 }
 
 CEPage *
-ce_page_details_new (NMConnection     *connection,
-                     NMClient         *client,
-                     NMDevice         *device,
-                     NMAccessPoint    *ap)
+ce_page_details_new (NMConnection        *connection,
+                     NMClient            *client,
+                     NMDevice            *device,
+                     NMAccessPoint       *ap,
+                     NetConnectionEditor *editor)
 {
         CEPageDetails *page;
 
@@ -224,6 +279,7 @@ ce_page_details_new (NMConnection     *connection,
                                              "/org/gnome/control-center/network/details-page.ui",
                                              _("Details")));
 
+        page->editor = editor;
         page->device = device;
         page->ap = ap;
 
@@ -231,4 +287,3 @@ ce_page_details_new (NMConnection     *connection,
 
         return CE_PAGE (page);
 }
-

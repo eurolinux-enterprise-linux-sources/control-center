@@ -2019,20 +2019,28 @@ gcm_prefs_connect_cb (GObject *object,
                       GAsyncResult *res,
                       gpointer user_data)
 {
+  CcColorPanelPrivate *priv;
+  CcColorPanel *prefs;
   gboolean ret;
   GError *error = NULL;
-  CcColorPanel *prefs = CC_COLOR_PANEL (user_data);
-  CcColorPanelPrivate *priv = prefs->priv;
 
-  ret = cd_client_connect_finish (priv->client,
+  ret = cd_client_connect_finish (CD_CLIENT (object),
                                   res,
                                   &error);
   if (!ret)
     {
-      g_warning ("failed to connect to colord: %s", error->message);
+      if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+        g_warning ("failed to connect to colord: %s", error->message);
+
       g_error_free (error);
       return;
     }
+
+  /* Only cast the parameters after making sure it didn't fail. At this point,
+   * the user can potentially already have changed to another panel, effectively
+   * making user_data invalid. */
+  prefs = CC_COLOR_PANEL (user_data);
+  priv = prefs->priv;
 
   /* set calibrate button sensitivity */
   gcm_prefs_sensor_coldplug (prefs);
@@ -2314,17 +2322,6 @@ cc_color_panel_init (CcColorPanel *prefs)
                     G_CALLBACK (gcm_prefs_profiles_row_activated_cb),
                     prefs);
 
-  /* make larger by default */
-  widget = GTK_WIDGET (gtk_builder_get_object (priv->builder,
-                                               "scrolledwindow_assign"));
-  gtk_widget_set_size_request (widget, -1, 250);
-
-  /* force to be at least ~6 rows high */
-  widget = GTK_WIDGET (gtk_builder_get_object (priv->builder,
-                                               "scrolledwindow_devices"));
-  gtk_scrolled_window_set_min_content_height (GTK_SCROLLED_WINDOW (widget),
-                                              300);
-
   widget = GTK_WIDGET (gtk_builder_get_object (priv->builder,
                                                "toolbutton_device_default"));
   g_signal_connect (widget, "clicked",
@@ -2337,12 +2334,6 @@ cc_color_panel_init (CcColorPanel *prefs)
                                                "toolbutton_device_calibrate"));
   g_signal_connect (widget, "clicked",
                     G_CALLBACK (gcm_prefs_calibrate_cb), prefs);
-
-  /* make devices toolbar sexy */
-  widget = GTK_WIDGET (gtk_builder_get_object (priv->builder,
-                                               "scrolledwindow_devices"));
-  context = gtk_widget_get_style_context (widget);
-  gtk_style_context_set_junction_sides (context, GTK_JUNCTION_BOTTOM);
 
   widget = GTK_WIDGET (gtk_builder_get_object (priv->builder,
                                                "toolbar_devices"));
@@ -2529,7 +2520,7 @@ cc_color_panel_init (CcColorPanel *prefs)
                     prefs);
   priv->list_box_size = gtk_size_group_new (GTK_SIZE_GROUP_VERTICAL);
 
-  widget = GTK_WIDGET (gtk_builder_get_object (priv->builder, "scrolledwindow_devices"));
+  widget = GTK_WIDGET (gtk_builder_get_object (priv->builder, "frame_devices"));
   gtk_container_add (GTK_CONTAINER (widget), GTK_WIDGET (priv->list_box));
   gtk_widget_show (GTK_WIDGET (priv->list_box));
 

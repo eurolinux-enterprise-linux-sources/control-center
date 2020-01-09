@@ -1,0 +1,25 @@
+From 5c7cc82171f1312c9af2df6b5d5cc07c5f17be50 Mon Sep 17 00:00:00 2001
+From: Rui Matos <tiagomatos@gmail.com>
+Date: Mon, 23 Oct 2017 16:06:14 +0200
+Subject: [PATCH] printers: Fix compilation with RHEL cups version
+
+---
+ panels/printers/pp-printer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/panels/printers/pp-printer.c b/panels/printers/pp-printer.c
+index 79a6301a0..bec3b962c 100644
+--- a/panels/printers/pp-printer.c
++++ b/panels/printers/pp-printer.c
+@@ -551,7 +551,7 @@ print_file_thread (GTask        *task,
+     {
+       if (ippGetState (response) == IPP_ERROR)
+         g_warning ("An error has occured during printing of test page.");
+-      if (ippGetState (response) == IPP_STATE_IDLE)
++      if (ippGetState (response) == IPP_IDLE)
+         ret = TRUE;
+ 
+       ippDelete (response);
+-- 
+2.13.6
+

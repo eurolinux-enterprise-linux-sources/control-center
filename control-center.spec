@@ -1,42 +1,48 @@
 %define gettext_package gnome-control-center-2.0
 
-%define glib2_version 2.44.0
+%define glib2_version 2.53.0
 %define gtk3_version 3.22.0
-%define gsd_version 3.19.1
+%define gsd_version 3.25.90
 %define gnome_desktop_version 3.21.2
 %define gsettings_desktop_schemas_version 3.21.4
+%define gnome_online_accounts_version 3.25.3
 %define gnome_bluetooth_version 3.18.2
 
 Name: control-center
 Epoch: 1
-Version: 3.22.2
-Release: 5%{?dist}
+Version: 3.26.2
+Release: 8%{?dist}
 Summary: Utilities to configure the GNOME desktop
 
 License: GPLv2+ and GFDL
 URL: http://www.gnome.org
-Source0: https://download.gnome.org/sources/gnome-control-center/3.22/gnome-control-center-%{version}.tar.xz
+Source0: https://download.gnome.org/sources/gnome-control-center/3.26/gnome-control-center-%{version}.tar.xz
 
 # https://bugzilla.gnome.org/show_bug.cgi?id=695691
 Patch0: distro-logo.patch
-Patch1: wacom-ekr.patch
-Patch2: handle-synaptics-touchpads.patch
-# https://bugzilla.redhat.com/show_bug.cgi?id=1298881
-Patch3: cursor-size-selection.patch
-# https://bugzilla.gnome.org/show_bug.cgi?id=774324
-Patch4: 0001-info-Fix-build-when-Wayland-is-disabled.patch
-# https://bugzilla.redhat.com/show_bug.cgi?id=1440816
-Patch5: 0001-printers-actualize-printers-list.patch
-# https://bugzilla.redhat.com/show_bug.cgi?id=1309331
-Patch6: 0001-hostname-helper-don-t-read-past-0.patch
-Patch7: 0002-hostname-helper-fall-back-to-kernel-hostname-when-th.patch
-Patch8: 0003-hostname-helper-use-SSID_MAX_LEN.patch
-Patch9: 0001-wacom-Fix-eraser-pressure-sensitivity.patch
-# https://bugzilla.redhat.com/show_bug.cgi?id=1457691
-Patch10: 0001-network-Simplify-the-ignored-Network-interface-types.patch
+Patch1: 0002-mouse-Handle-Synaptics-devices-again.patch
+Patch2: 0003-Revert-datetime-12h-time-format-is-now-always-availa.patch
+Patch3: 0002-display-night-light-widget-Avoid-c99-requirement.patch
+Patch4: 0001-printers-Fix-compilation-with-RHEL-cups-version.patch
+Patch5: display-fix-multi-monitor-layout.patch
+Patch6: 0001-printer-Don-t-show-the-supply-level-bar-by-default.patch
+Patch7: 0001-common-Use-GdkDevices-directly-as-HT-keys-on-GsdDevi.patch
+
+Patch10: 0001-user-accounts-Prevent-crashes-if-current-user-is-not.patch
+Patch11: 0002-user-accounts-Introduce-an-empty-state-page.patch
+
+Patch20: 0001-network-Fix-cloned-MAC-not-being-saved-for-Ethernet.patch
+Patch21: 0001-network-Really-fix-clone-MAC-support.patch
+Patch22: 0001-network-Really-really-fix-cloned-MAC-support.patch
+
+Patch23: 0001-network-Consider-empty-IPv6-gateway-to-be-valid.patch
+
+Patch24: 0001-network-Request-periodic-Wi-Fi-scans.patch
+Patch25: 0002-wifi-Show-the-Wi-Fi-disabled-page-if-it-is-disabled.patch
 
 BuildRequires: autoconf automake libtool intltool gnome-common
 
+BuildRequires: gnome-settings-daemon-devel
 BuildRequires: pkgconfig(accountsservice)
 BuildRequires: pkgconfig(cheese-gtk) >= 3.5.91
 BuildRequires: pkgconfig(clutter-gtk-1.0)
@@ -49,7 +55,7 @@ BuildRequires: pkgconfig(gdk-wayland-3.0)
 BuildRequires: pkgconfig(gio-2.0) >= %{glib2_version}
 BuildRequires: pkgconfig(gnome-desktop-3.0) >= %{gnome_desktop_version}
 BuildRequires: pkgconfig(gnome-settings-daemon) >= %{gsd_version}
-BuildRequires: pkgconfig(goa-1.0)
+BuildRequires: pkgconfig(goa-1.0) >= %{gnome_online_accounts_version}
 BuildRequires: pkgconfig(goa-backend-1.0)
 BuildRequires: pkgconfig(grilo-0.3)
 BuildRequires: pkgconfig(gsettings-desktop-schemas) >= %{gsettings_desktop_schemas_version}
@@ -91,6 +97,7 @@ Requires: gnome-desktop3 >= %{gnome_desktop_version}
 Requires: dbus-x11
 Requires: control-center-filesystem = %{epoch}:%{version}-%{release}
 Requires: glib2%{?_isa} >= %{glib2_version}
+Requires: gnome-online-accounts%{?_isa} >= %{gnome_online_accounts_version}
 Requires: gsettings-desktop-schemas%{?_isa} >= %{gsettings_desktop_schemas_version}
 Requires: gtk3%{?_isa} >= %{gtk3_version}
 %ifnarch s390 s390x
@@ -109,6 +116,7 @@ Requires: vino
 Requires: cups-pk-helper
 # For the network panel
 Requires: nm-connection-editor
+Requires: NetworkManager-wifi
 # For the info/details panel
 Requires: glx-utils
 # For the keyboard panel
@@ -147,7 +155,27 @@ utilities.
 
 
 %prep
-%autosetup -S git -n gnome-control-center-%{version}
+%setup -q -n gnome-control-center-%{version}
+%patch0 -p1 -b .distro-logo
+%patch1 -p1
+%patch2 -p1
+%patch3 -p1
+%patch4 -p1
+%patch5 -p1
+%patch6 -p1
+%patch7 -p1
+
+%patch10 -p1
+%patch11 -p1
+
+%patch20 -p1
+%patch21 -p1
+%patch22 -p1
+
+%patch23 -p1
+
+%patch24 -p1
+%patch25 -p1
 
 autoreconf -f -i
 
@@ -235,208 +263,343 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
 
 %changelog
-* Tue Jun 20 2017 Bastien Nocera <bnocera@redhat.com> - 3.22.2-5
-+ control-center-3.22.2-5
-- Don't show veth interfaces, we don't have code to set them up
-Resolves: #1457691
+* Tue Feb 20 2018 Bastien Nocera <bnocera@redhat.com> - 3.26.2-8
++ control-center-3.26.2-8
+- Fix Wi-Fi networks not getting updated
+- Show "Wi-Fi disabled" page when Wi-Fi is disabled
+- Resolves: #1545713
 
-* Tue Jun 13 2017 Carlos Garnacho <cgarnach@redhat.com> - 3.22.2-4
-- Fix eraser pressure mimicking tip pressure
-Resolves: #1458352
+* Tue Feb 20 2018 Bastien Nocera <bnocera@redhat.com> - 3.26.2-7
++ control-center-3.26.2-7
+- Allow empty IPv6 gateway
+- Resolves: #1467308
 
-* Fri May 05 2017 Bastien Nocera <bnocera@redhat.com> - 3.22.2-3
-- Fix Hotspot not working when PrettyHostname is unset
-Resolves: #1309331
+* Fri Feb 16 2018 Bastien Nocera <bnocera@redhat.com> - 3.26.2-6
++ control-center-3.26.2-6
+- Fix Clone MAC not being saved in Ethernet device properties
+- Resolves: #1467295
 
-* Tue Apr 18 2017 Felipe Borges <feborges@redhat.com> - 3.22.2-2
-- Make actualize_printers_list cancellable
-- Resolves: #1440816
+* Tue Feb 13 2018 Ray Strode <rstrode@redhat.com> - 3.26.2-5
+- Fix crash with root user
+  Resolves: #1544369
 
-* Tue Mar 14 2017 Bastien Nocera <bnocera@redhat.com> - 3.22.2-1
-+ control-center-3.22.2-1
-- Update to 3.22.2
-- Add cursor size selection patch
-Resolves: #1386839, #1298881
+* Wed Feb 07 2018 Carlos Garnacho <cgarnach@redhat.com> - 1:3.26.2-4
+- Handle multiple tablet devices sharing the same event node
+- Resolves: #1528356
 
-* Mon Mar 13 2017 Carlos Garnacho <cgarnach@redhat.com> - 1:3.22.1-4
-- Handle synaptics touchpads, in sync with mutter
-- Resolves: #1386839
+* Tue Dec 19 2017 Marek Kasik <mkasik@redhat.com> - 1:3.26.2-3
+- Don't show the supply level bar by default
+- Resolves: #1525062
 
-* Fri Mar 10 2017 Carlos Garnacho <cgarnach@redhat.com> - 1:3.22.1-3
-- Support Wacom EKR devices
-- Resolves: #1342998
+* Wed Nov 15 2017 Rui Matos <rmatos@redhat.com> - 1:3.26.2-2
+- Fix display arrangement widget
+- Resolves: #1512448
 
-* Thu Feb 23 2017 Kalev Lember <klember@redhat.com> - 1:3.22.1-2
-- Remove a workaround for older accountsservice
-- Resolves: #1386839
+* Wed Nov 01 2017 Kalev Lember <klember@redhat.com> - 1:3.26.2-1
+- Update to 3.26.2
+- Related: #1481407
+
+* Mon Oct 30 2017 Rui Matos <rmatos@redhat.com> - 1:3.26.1-3
+- network/eap-method-tls: Don't require a private key password
+- Resolves: #1415760
+
+* Fri Oct 20 2017 Rui Matos <rmatos@redhat.com> - 1:3.26.1-2
+- Rebase to 3.26.1
+- Resolves: #1481407
+
+* Sun Oct 08 2017 Kalev Lember <klember@redhat.com> - 1:3.26.1-1
+- Update to 3.26.1
+
+* Wed Sep 13 2017 Kalev Lember <klember@redhat.com> - 1:3.26.0-1
+- Update to 3.26.0
+
+* Tue Sep 05 2017 Kalev Lember <klember@redhat.com> - 1:3.25.92.1-1
+- Update to 3.25.92.1
+
+* Thu Aug 24 2017 Kalev Lember <klember@redhat.com> - 1:3.25.91-1
+- Update to 3.25.91
+
+* Wed Aug 02 2017 Fedora Release Engineering <releng@fedoraproject.org> - 1:3.25.4-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Binutils_Mass_Rebuild
+
+* Wed Jul 26 2017 Kalev Lember <klember@redhat.com> - 1:3.25.4-1
+- Update to 3.25.4
+- Rebase distro-logo.patch
+
+* Wed Jul 26 2017 Fedora Release Engineering <releng@fedoraproject.org> - 1:3.24.2-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
+
+* Mon Jun 12 2017 Kevin Fenzi <kevin@scrye.com> - 1:3.24.2-2
+- Rebuild for new libgtop2
+
+* Wed May 10 2017 Kalev Lember <klember@redhat.com> - 1:3.24.2-1
+- Update to 3.24.2
+
+* Wed Apr 12 2017 Kalev Lember <klember@redhat.com> - 1:3.24.1-1
+- Update to 3.24.1
+
+* Tue Mar 28 2017 Bastien Nocera <bnocera@redhat.com> - 3.24.0-2
++ control-center-3.24.0-2
+- Require NetworkManager-wifi so it doesn't get auto-removed
+
+* Tue Mar 21 2017 Kalev Lember <klember@redhat.com> - 1:3.24.0-1
+- Update to 3.24.0
+
+* Thu Mar 16 2017 Kalev Lember <klember@redhat.com> - 1:3.23.92-1
+- Update to 3.23.92
+
+* Mon Mar 06 2017 Kalev Lember <klember@redhat.com> - 1:3.23.91-1
+- Update to 3.23.91
+- Restore distro-logo.patch
+
+* Wed Feb 15 2017 Richard Hughes <rhughes@redhat.com> - 1:3.23.90-1
+- Update to 3.23.90
+
+* Fri Feb 10 2017 Fedora Release Engineering <releng@fedoraproject.org> - 1:3.22.1-4
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild
+
+* Fri Oct 21 2016 Bastien Nocera <bnocera@redhat.com> - 3.22.1-3
++ control-center-3.22.1-3
+- Remove trailing spaces from renderer strings
+
+* Fri Oct 21 2016 Bastien Nocera <bnocera@redhat.com> - 1:3.22.1-2
++ control-center-3.22.1-2
+- Show the correct GPUs available when under Wayland or with dual GPUs
 
 * Wed Oct 12 2016 Kalev Lember <klember@redhat.com> - 1:3.22.1-1
 - Update to 3.22.1
-- Resolves: #1386839
 
-* Thu Jun 30 2016 Bastien Nocera <bnocera@redhat.com> - 3.14.5-19
-- Update translations again
-Resolves: #1273273
+* Thu Sep 22 2016 Kalev Lember <klember@redhat.com> - 1:3.22.0-1
+- Update to 3.22.0
+- Rebase distro-logo.patch
 
-* Wed May 18 2016 Bastien Nocera <bnocera@redhat.com> - 3.14.5-17
-- Fix VPN passwords being blank when editing
-Resolves: #1319744
+* Wed Apr 13 2016 Kalev Lember <klember@redhat.com> - 1:3.20.1-1
+- Update to 3.20.1
 
-* Wed May 18 2016 Bastien Nocera <bnocera@redhat.com> - 3.14.5-16
-- Fix empty Wi-Fi list
-Resolves: #1306253
+* Tue Mar 22 2016 Kalev Lember <klember@redhat.com> - 1:3.20.0-1
+- Update to 3.20.0
 
-* Mon Apr 25 2016 Rui Matos <rmatos@redhat.com> - 1:3.14.5-15
-- Input chooser improvements
-  Resolves: #1293068
+* Thu Mar 17 2016 Kalev Lember <klember@redhat.com> - 1:3.19.92-1
+- Update to 3.19.92
 
-* Wed Apr 20 2016 Carlos Garnacho <cgarnach@redhat.com> - 3.15.5-14
-- Calibrate Wacom ISD devices in builtin output
-  Resolves: #1089037
+* Fri Mar 04 2016 Kalev Lember <klember@redhat.com> - 1:3.19.91-1
+- Update to 3.19.91
 
-* Wed Apr 13 2016 Matthias Clasen <mclasen@redhat.com> - 3.15.5-13
-- Translation updates
-  Resolves: #1273273
+* Wed Feb 17 2016 Richard Hughes <rhughes@redhat.com> - 1:3.19.90-1
+- Update to 3.19.90
 
-* Wed Mar 16 2016 Martin Hatina <mhatina@redhat.com> - 3.14.5-12
-- Add missing patches
-- Resolves: #1298951
+* Wed Feb 03 2016 Fedora Release Engineering <releng@fedoraproject.org> - 1:3.19.5-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
 
-* Wed Mar 16 2016 Martin Hatina <mhatina@redhat.com> - 3.14.5-11
-- Check zero length string and invalid pointer
-- Resolves: #1298951
+* Wed Jan 20 2016 Kalev Lember <klember@redhat.com> - 1:3.19.5-1
+- Update to 3.19.5
 
-* Mon Mar 14 2016 Martin Hatina <mhatina@redhat.com> - 3.14.5-10
-- Do not show nameless applications
-- Resolves: #1298943
+* Mon Jan 18 2016 Michael Catanzaro <mcatanzaro@gnome.org> - 1:3.19.4-2
+- Add Recommends: gnome-color-manager for the Color panel
 
-* Mon Feb 15 2016 Felipe Borges <feborges@redhat.com> - 3.14.5-9
-- Avoid crashes when searching for printers with  special chars
-Resolves: #1298952
+* Fri Dec 18 2015 Kalev Lember <klember@redhat.com> - 1:3.19.4-1
+- Update to 3.19.4
+- Build with grilo 0.3
 
-* Wed Aug 26 2015 Rui Matos <rmatos@redhat.com> - 3.14.5-8
-- Update timezones for new "Pyongyang Time"
-Related: #1256633
+* Tue Dec 15 2015 Kalev Lember <klember@redhat.com> - 1:3.19.3-1
+- Update to 3.19.3
 
-* Tue Aug 25 2015 Rui Matos <rmatos@redhat.com> - 3.14.5-7
-- If language isn't set in AccountsService, show current locale
-Resolves: #1256633
+* Tue Nov 10 2015 Kalev Lember <klember@redhat.com> - 1:3.18.2-1
+- Update to 3.18.2
 
-* Thu Jun 18 2015 Marek Kasik <mkasik@redhat.com> 3.14.5-6
-- Fix setting of page size in Printers panel
-Resolves: #1232751
+* Mon Oct 12 2015 Kalev Lember <klember@redhat.com> - 1:3.18.1-1
+- Update to 3.18.1
 
-* Thu Jun 18 2015 Marek Kasik <mkasik@redhat.com> 3.14.5-5
-- Show border around 'No printers detected' text
-Resolves: #1232758
+* Mon Sep 21 2015 Kalev Lember <klember@redhat.com> - 1:3.18.0-1
+- Update to 3.18.0
 
-* Tue Jun 2 2015 Ondrej Holy <oholy@redhat.com> 3.14.5-4
-- Fix enterprise accounts deleting
-Resolves: #1141949
+* Tue Sep 15 2015 Kalev Lember <klember@redhat.com> - 1:3.17.92-2
+- Set minimum gnome-bluetooth version
 
-* Wed May 27 2015 Rui Matos <rmatos@redhat.com> - 3.14.5-3
-- Add patch to fix a network panel crash
-Resolves: #1221078
+* Tue Sep 15 2015 Kalev Lember <klember@redhat.com> - 1:3.17.92-1
+- Update to 3.17.92
 
-* Tue May 12 2015 Matthias Clasen <mclasen@redhat.com> 3.14.5-2
-- Rebuild against new colord
-Related: #1174602
+* Tue Aug 18 2015 Kalev Lember <klember@redhat.com> - 1:3.17.90-1
+- Update to 3.17.90
+- Use make_install macro
 
-* Thu Apr 30 2015 Bastien Nocera <bnocera@redhat.com> 3.14.5-1
-- Update to 3.14.5
-Resolves: #1174602
+* Mon Aug 17 2015 Kalev Lember <klember@redhat.com> - 1:3.17.3-2
+- Rebuilt for libcheese soname bump
 
-* Thu Jan 15 2015 Bastien Nocera <bnocera@redhat.com> 3.8.6-18
-- Make network panel work with NetworkManager 1.0
-Resolves: #1175499
+* Wed Jul 22 2015 David King <amigadave@amigadave.com> - 1:3.17.3-1
+- Update to 3.17.3
+- Use pkgconfig for BuildRequires
 
-* Thu Oct 09 2014 David King <dking@redhat.com> - 3.8.6-17
-- Rebuild for libgtop2 soversion bump (#1151155)
+* Wed Jun 17 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1:3.17.2-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
 
-* Fri Sep 05 2014 Bastien Nocera <bnocera@redhat.com> 3.8.6-16
-- Fix possible crasher after visiting keyboard panel
-Resolves: #1094480
+* Fri Jun 05 2015 Kalev Lember <kalevlember@gmail.com> - 1:3.17.2-1
+- Update to 3.17.2
 
-* Thu Mar 27 2014 Debarshi Ray <debarshir@redhat.com> 3.8.6-15
-- Disable the apply button if the display can not be applied
-Resolves: #840913
+* Tue May 12 2015 Kalev Lember <kalevlember@gmail.com> - 1:3.16.2-1
+- Update to 3.16.2
 
-* Tue Mar 18 2014 Matthias Clasen <mclasen@redhat.com> 3.8.6-14
-- Translation updates for Bengali
-Resolves: #1030321
+* Thu Apr 16 2015 Kalev Lember <kalevlember@gmail.com> - 1:3.16.1-1
+- Update to 3.16.1
 
-* Thu Feb 27 2014 Bastien Nocera <bnocera@redhat.com> 3.8.6-13
-- Fix untruthful "Immediately" option in Privacy panel
-Resolves: #1056247
+* Mon Mar 23 2015 Kalev Lember <kalevlember@gmail.com> - 1:3.16.0-1
+- Update to 3.16.0
 
-* Wed Feb 26 2014 Bastien Nocera <bnocera@redhat.com> 3.8.6-12
-- Fix unexpected Off label in Usage & History dialogue
-Resolves: #1054404
+* Tue Mar 17 2015 Kalev Lember <kalevlember@gmail.com> - 1:3.15.92-1
+- Update to 3.15.92
 
-* Tue Feb 18 2014 Matthias Clasen <mclasen@redhat.com> 3.8.6-11
-- Translation updates
-Resolves: #1030321
+* Tue Mar 03 2015 Kalev Lember <kalevlember@gmail.com> - 1:3.15.91-1
+- Update to 3.15.91
+- Use the %%license macro for the COPYING file
 
-* Tue Feb 18 2014 Bastien Nocera <bnocera@redhat.com> 3.8.6-10
-- Add support for network Teams
-Resolves: #1040525
+* Tue Feb 17 2015 Richard Hughes <rhughes@redhat.com> - 1:3.15.90-1
+- Update to 3.15.90
 
-* Mon Feb 17 2014 Matthias Clasen <mclasen@redhat.com> - 1:3.8.6-9
-- Fix a typo in the German translation
-Resolves: #1054796
+* Sun Jan 25 2015 David King <amigadave@amigadave.com> - 1:3.15.4-1
+- Update to 3.15.4
+- Depend on gudev in order to build udev device manager
 
-* Fri Jan 24 2014 Daniel Mach <dmach@redhat.com> - 1:3.8.6-8
-- Mass rebuild 2014-01-24
+* Tue Nov 11 2014 Kalev Lember <kalevlember@gmail.com> - 1:3.14.2-1
+- Update to 3.14.2
 
-* Wed Jan 22 2014 Ray Strode <rstrode@redhat.com> - 1:3.8.6-7
-- Update logo to better match mockups from Brand team
-Resolves: #1053000
+* Fri Oct 31 2014 Richard Hughes <richard@hughsie.com> - 1:3.14.1-3
+- Do not depend on rygel on non-Fedora; the UI should do the right thing.
 
-* Fri Jan 10 2014 Matthias Clasen <mclasen@redhat.com> - 1:3.8.6-6
-- Improve user deletion dialog
-Resolves: #1051525
+* Wed Oct 15 2014 Kalev Lember <kalevlember@gmail.com> - 1:3.14.1-2
+- Fix a symbol collision with cheese
 
-* Fri Dec 27 2013 Daniel Mach <dmach@redhat.com> - 1:3.8.6-5
-- Mass rebuild 2013-12-27
+* Tue Oct 14 2014 Kalev Lember <kalevlember@gmail.com> - 1:3.14.1-1
+- Update to 3.14.1
 
-* Mon Dec 09 2013 Bastien Nocera <bnocera@redhat.com> 3.8.6-4
-- Add mnemonic widget links
-Resolves: #1039111
+* Mon Sep 22 2014 Kalev Lember <kalevlember@gmail.com> - 1:3.14.0-1
+- Update to 3.14.0
 
-* Tue Nov 26 2013 Matthias Clasen <mclasen@redhat.com> 3.8.6-3
-- Fix network panel apply button
-Resolves: #1029788
+* Wed Sep 17 2014 Kalev Lember <kalevlember@gmail.com> - 1:3.13.92-1
+- Update to 3.13.92
 
-* Fri Nov 22 2013 Bastien Nocera <bnocera@redhat.com> 3.8.6-2
-- Fix potential unset variable use in distro logo patch
-- Fix crasher when NM restarts
-- Fix crasher when disconnecting from a Bluetooth device
-Resolves: #1030904, #1032736
+* Wed Sep 03 2014 Kalev Lember <kalevlember@gmail.com> - 1:3.13.91-1
+- Update to 3.13.91
 
-* Thu Oct 31 2013 Bastien Nocera <bnocera@redhat.com> 3.8.6-1
-- Update to 3.8.6
-Resolves: #1016208
+* Tue Aug 19 2014 Kalev Lember <kalevlember@gmail.com> - 1:3.13.90-1
+- Update to 3.13.90
 
-* Thu Sep 19 2013 Bastien Nocera <bnocera@redhat.com> 3.8.5-3
-- Patch from Bill Nottingham to use the Pretty name in priority
-  to the name+version in the details panel
-  Resolves: #988613
+* Mon Aug 18 2014 Kalev Lember <kalevlember@gmail.com> - 1:3.13.4-3
+- Rebuilt for upower 0.99.1 soname bump
 
-* Wed Sep 18 2013 Ray Strode <rstrode@redhat.com> 1:3.8.5-2
-- Drop 'Requires: rygel' so there's no sharing panel
-  Resolves: #1009020
+* Sat Aug 16 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1:3.13.4-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_22_Mass_Rebuild
 
-* Fri Sep 13 2013 Rui Matos <rmatos@redhat.com> - 1:3.8.5-1
-- Update to 3.8.5
+* Wed Jul 23 2014 Kalev Lember <kalevlember@gmail.com> - 1:3.13.4-1
+- Update to 3.13.4
+- Drop obsolete gnome-menus and redhat-menus deps
 
-* Mon Aug 19 2013 Marek Kasik <mkasik@redhat.com> - 1:3.8.4.1-1
-- Update to 3.8.4.1
+* Fri Jun 27 2014 Rex Dieter <rdieter@fedoraproject.org> 3.13.3-3
+- drop needless scriptlet deps too
 
-* Wed Jun 26 2013 Debarshi Ray <rishi@fedoraproject.org> - 1:3.8.3-2
+* Fri Jun 27 2014 Bastien Nocera <bnocera@redhat.com> 3.13.3-2
+- Don't run update-mime-database in post, we don't ship mime XML
+  files anymore
+
+* Thu Jun 26 2014 Richard Hughes <rhughes@redhat.com> - 1:3.13.3-1
+- Update to 3.13.3
+
+* Tue Jun 24 2014 Richard Hughes <rhughes@redhat.com> - 1:3.13.2-1
+- Update to 3.13.2
+
+* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1:3.13.1-6
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
+
+* Thu May 22 2014 Adam Williamson <awilliam@redhat.com> - 1:3.13.1-5
+- backport upstream fix for BGO #730080 (i need it, so everyone gets it)
+
+* Wed May 07 2014 Kalev Lember <kalevlember@gmail.com> - 1:3.13.1-4
+- Drop gnome-icon-theme and gnome-icon-theme-symbolic dependencies
+
+* Mon May 05 2014 Kalev Lember <kalevlember@gmail.com> - 1:3.13.1-3
+- Drop unused libXrandr dep
+
+* Wed Apr 30 2014 Richard Hughes <rhughes@redhat.com> - 1:3.13.1-2
+- Rebuild for libgtop
+
+* Mon Apr 28 2014 Richard Hughes <rhughes@redhat.com> - 1:3.13.1-1
+- Update to 3.13.1
+
+* Wed Apr 16 2014 Kalev Lember <kalevlember@gmail.com> - 1:3.12.1-1
+- Update to 3.12.1
+
+* Sat Apr 05 2014 Kalev Lember <kalevlember@gmail.com> - 1:3.12.0-2
+- Update dep versions
+
+* Mon Mar 24 2014 Richard Hughes <rhughes@redhat.com> - 1:3.12.0-1
+- Update to 3.12.0
+
+* Tue Mar 18 2014 Richard Hughes <rhughes@redhat.com> - 1:3.11.92-1
+- Update to 3.11.92
+
+* Wed Mar 05 2014 Richard Hughes <rhughes@redhat.com> - 1:3.11.91-1
+- Update to 3.11.91
+
+* Wed Feb 19 2014 Richard Hughes <rhughes@redhat.com> - 1:3.11.90-2
+- Rebuilt for gnome-desktop soname bump
+
+* Tue Feb 18 2014 Richard Hughes <rhughes@redhat.com> - 1:3.11.90-1
+- Update to 3.11.90
+
+* Tue Feb 04 2014 Richard Hughes <rhughes@redhat.com> - 1:3.11.5-1
+- Update to 3.11.5
+
+* Tue Dec 17 2013 Richard Hughes <rhughes@redhat.com> - 1:3.11.3-1
+- Update to 3.11.3
+
+* Mon Nov 25 2013 Richard Hughes <rhughes@redhat.com> - 1:3.11.2-1
+- Update to 3.11.2
+
+* Wed Nov 13 2013 Bastien Nocera <bnocera@redhat.com> - 1:3.11.1-2
+- Add vino dependency
+
+* Thu Oct 31 2013 Florian Müllner <fmuellner@redhat.com> - 1:3.11.1-1
+- Update to 3.11.1
+
+* Mon Oct 28 2013 Richard Hughes <rhughes@redhat.com> - 1:3.10.1-1
+- Update to 3.10.1
+
+* Wed Sep 25 2013 Richard Hughes <rhughes@redhat.com> - 1:3.10.0-1
+- Update to 3.10.0
+
+* Wed Sep 18 2013 Kalev Lember <kalevlember@gmail.com> - 1:3.9.92-1
+- Update to 3.9.92
+
+* Wed Sep 04 2013 Kalev Lember <kalevlember@gmail.com> - 1:3.9.91-1
+- Update to 3.9.91
+
+* Tue Sep 03 2013 Kalev Lember <kalevlember@gmail.com> - 1:3.9.90.1-2
+- Rebuilt for libgnome-desktop soname bump
+
+* Thu Aug 22 2013 Kalev Lember <kalevlember@gmail.com> - 1:3.9.90.1-1
+- Update to 3.9.90.1
+
+* Thu Aug 22 2013 Kalev Lember <kalevlember@gmail.com> - 1:3.9.90-1
+- Update to 3.9.90
+- Drop obsolete build deps
+
+* Thu Aug 15 2013 Kalev Lember <kalevlember@gmail.com> - 1:3.9.5-2
+- Rebuilt with bluetooth support
+
+* Wed Jul 31 2013 Adam Williamson <awilliam@redhat.com> - 1:3.9.5-1
+- Update to 3.9.5
+- buildrequires libsoup-devel
+
+* Tue Jul 30 2013 Richard Hughes <rhughes@redhat.com> - 1:3.9.3-2
+- Rebuild for colord soname bump
+
+* Tue Jul 16 2013 Richard Hughes <rhughes@redhat.com> - 1:3.9.3-1
+- Update to 3.9.3
+
+* Wed Jun 26 2013 Debarshi Ray <rishi@fedoraproject.org> - 1:3.9.2.1-2
 - Add 'Requires: rygel' for the sharing panel
 
-* Fri Jun  7 2013 Rui Matos <rmatos@redhat.com> - 1:3.8.3-1
-- Update to 3.8.3
+* Mon Jun 03 2013 Kalev Lember <kalevlember@gmail.com> - 1:3.9.2.1-1
+- Update to 3.9.2.1
 
 * Tue May 14 2013 Richard Hughes <rhughes@redhat.com> - 1:3.8.2-1
 - Update to 3.8.2

@@ -31,9 +31,18 @@ panels/datetime/gnome-datetime-panel.desktop.in.in
 panels/datetime/org.gnome.controlcenter.datetime.policy.in
 [type: gettext/glade]panels/datetime/ydm.ui
 panels/display/cc-display-panel.c
+[type: gettext/glade]panels/display/display.ui
 panels/display/gnome-display-panel.desktop.in.in
+panels/info/cc-info-overview-panel.c
 panels/info/cc-info-panel.c
+panels/info/cc-info-removable-media-panel.c
+panels/info/gnome-default-apps-panel.desktop.in.in
+panels/info/gnome-info-overview-panel.desktop.in.in
 panels/info/gnome-info-panel.desktop.in.in
+panels/info/gnome-removable-media-panel.desktop.in.in
+[type: gettext/glade]panels/info/info-default-apps.ui
+[type: gettext/glade]panels/info/info-overview.ui
+[type: gettext/glade]panels/info/info-removable-media.ui
 [type: gettext/glade]panels/info/info.ui
 panels/keyboard/00-multimedia.xml.in
 panels/keyboard/01-input-sources.xml.in
@@ -56,6 +65,7 @@ panels/mouse/gnome-mouse-properties.c
 panels/mouse/gnome-mouse-test.c
 [type: gettext/glade]panels/mouse/gnome-mouse-test.ui
 panels/network/cc-network-panel.c
+panels/network/cc-wifi-panel.c
 [type: gettext/glade]panels/network/connection-editor/8021x-security-page.ui
 panels/network/connection-editor/ce-page-8021x-security.c
 panels/network/connection-editor/ce-page.c
@@ -63,23 +73,21 @@ panels/network/connection-editor/ce-page-details.c
 panels/network/connection-editor/ce-page-ethernet.c
 panels/network/connection-editor/ce-page-ip4.c
 panels/network/connection-editor/ce-page-ip6.c
-panels/network/connection-editor/ce-page-reset.c
 panels/network/connection-editor/ce-page-security.c
 panels/network/connection-editor/ce-page-vpn.c
 panels/network/connection-editor/ce-page-wifi.c
 [type: gettext/glade]panels/network/connection-editor/connection-editor.ui
 [type: gettext/glade]panels/network/connection-editor/details-page.ui
 [type: gettext/glade]panels/network/connection-editor/ethernet-page.ui
-panels/network/connection-editor/firewall-helpers.c
 [type: gettext/glade]panels/network/connection-editor/ip4-page.ui
 [type: gettext/glade]panels/network/connection-editor/ip6-page.ui
 panels/network/connection-editor/net-connection-editor.c
-[type: gettext/glade]panels/network/connection-editor/reset-page.ui
 [type: gettext/glade]panels/network/connection-editor/security-page.ui
 panels/network/connection-editor/vpn-helpers.c
 [type: gettext/glade]panels/network/connection-editor/vpn-page.ui
 [type: gettext/glade]panels/network/connection-editor/wifi-page.ui
 panels/network/gnome-network-panel.desktop.in.in
+panels/network/gnome-wifi-panel.desktop.in.in
 panels/network/net-device-ethernet.c
 panels/network/net-device-mobile.c
 panels/network/net-device-wifi.c
@@ -92,6 +100,7 @@ panels/network/net-vpn.c
 [type: gettext/glade]panels/network/network.ui
 [type: gettext/glade]panels/network/network-vpn.ui
 [type: gettext/glade]panels/network/network-wifi.ui
+[type: gettext/glade]panels/network/wifi.ui
 panels/network/panel-common.c
 panels/network/wireless-security/eap-method.c
 panels/network/wireless-security/eap-method-fast.c
@@ -120,7 +129,6 @@ panels/notifications/cc-notifications-panel.c
 [type: gettext/glade]panels/notifications/edit-dialog.ui
 panels/notifications/gnome-notifications-panel.desktop.in.in
 [type: gettext/glade]panels/notifications/notifications.ui
-panels/online-accounts/cc-online-accounts-add-account-dialog.c
 panels/online-accounts/cc-online-accounts-panel.c
 panels/online-accounts/gnome-online-accounts-panel.desktop.in.in
 [type: gettext/glade]panels/online-accounts/online-accounts.ui
@@ -129,10 +137,12 @@ panels/power/gnome-power-panel.desktop.in.in
 [type: gettext/glade]panels/power/power.ui
 [type: gettext/glade]panels/printers/authentication-dialog.ui
 panels/printers/cc-printers-panel.c
+[type: gettext/glade]panels/printers/details-dialog.ui
 panels/printers/gnome-printers-panel.desktop.in.in
 [type: gettext/glade]panels/printers/jobs-dialog.ui
 [type: gettext/glade]panels/printers/new-printer-dialog.ui
 [type: gettext/glade]panels/printers/options-dialog.ui
+panels/printers/pp-details-dialog.c
 [type: gettext/glade]panels/printers/ppd-selection-dialog.ui
 panels/printers/pp-host.c
 panels/printers/pp-ipp-option-widget.c
@@ -141,7 +151,9 @@ panels/printers/pp-new-printer-dialog.c
 panels/printers/pp-options-dialog.c
 panels/printers/pp-ppd-option-widget.c
 panels/printers/pp-ppd-selection-dialog.c
+panels/printers/pp-printer-entry.c
 panels/printers/pp-samba.c
+[type: gettext/glade]panels/printers/printer-entry.ui
 [type: gettext/glade]panels/printers/printers.ui
 panels/privacy/cc-privacy-panel.c
 panels/privacy/gnome-privacy-panel.desktop.in.in
@@ -208,10 +220,10 @@ panels/wacom/cc-wacom-button-row.h
 panels/wacom/cc-wacom-mapping-panel.c
 panels/wacom/cc-wacom-nav-button.c
 panels/wacom/cc-wacom-page.c
+panels/wacom/cc-wacom-panel.c
 panels/wacom/cc-wacom-stylus-page.c
 panels/wacom/gnome-wacom-panel.desktop.in.in
 [type: gettext/glade]panels/wacom/gnome-wacom-properties.ui
-panels/wacom/gsd-wacom-device.c
 panels/wacom/gsd-wacom-key-shortcut-button.c
 [type: gettext/glade]panels/wacom/wacom-stylus-page.ui
 shell/alt/cc-window.c

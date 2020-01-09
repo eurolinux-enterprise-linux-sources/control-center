@@ -296,8 +296,8 @@ add_row (CcPrivacyPanel *self,
   gtk_widget_set_halign (w, GTK_ALIGN_START);
   gtk_widget_set_margin_start (w, 20);
   gtk_widget_set_margin_end (w, 20);
-  gtk_widget_set_margin_top (w, 12);
-  gtk_widget_set_margin_bottom (w, 12);
+  gtk_widget_set_margin_top (w, 18);
+  gtk_widget_set_margin_bottom (w, 18);
   gtk_widget_set_halign (w, GTK_ALIGN_START);
   gtk_widget_set_valign (w, GTK_ALIGN_CENTER);
   gtk_widget_set_hexpand (w, TRUE);
@@ -755,7 +755,7 @@ on_perm_store_lookup_done(GObject *source_object,
   if (ret == NULL)
     {
       if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
-        g_warning ("Failed fetch permissions from xdg-app permission store: %s",
+        g_warning ("Failed fetch permissions from flatpak permission store: %s",
                    error->message);
       g_error_free (error);
 
@@ -787,7 +787,7 @@ on_perm_store_ready (GObject *source_object,
   if (proxy == NULL)
     {
       if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
-          g_warning ("Failed to connect to xdg-app permission store: %s",
+          g_warning ("Failed to connect to flatpak permission store: %s",
                      error->message);
       g_error_free (error);
 
@@ -1035,6 +1035,7 @@ static gboolean
 run_warning (GtkWindow *parent, char *prompt, char *text, char *button_title)
 {
   GtkWidget *dialog;
+  GtkWidget *button;
   int result;
   dialog = gtk_message_dialog_new (parent,
                                    0,
@@ -1049,6 +1050,9 @@ run_warning (GtkWindow *parent, char *prompt, char *text, char *button_title)
   gtk_dialog_add_button (GTK_DIALOG (dialog), button_title, GTK_RESPONSE_OK);
 
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), FALSE);
+
+  button = gtk_dialog_get_widget_for_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
+  gtk_style_context_add_class (gtk_widget_get_style_context (button), "destructive-action");
 
   result = gtk_dialog_run (GTK_DIALOG (dialog));
   gtk_widget_destroy (dialog);
@@ -1073,7 +1077,7 @@ empty_trash (CcPrivacyPanel *self)
 
   bus = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, NULL);
   g_dbus_connection_call (bus,
-                          "org.gnome.SettingsDaemon",
+                          "org.gnome.SettingsDaemon.Housekeeping",
                           "/org/gnome/SettingsDaemon/Housekeeping",
                           "org.gnome.SettingsDaemon.Housekeeping",
                           "EmptyTrash",
@@ -1098,7 +1102,7 @@ purge_temp (CcPrivacyPanel *self)
 
   bus = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, NULL);
   g_dbus_connection_call (bus,
-                          "org.gnome.SettingsDaemon",
+                          "org.gnome.SettingsDaemon.Housekeeping",
                           "/org/gnome/SettingsDaemon/Housekeeping",
                           "org.gnome.SettingsDaemon.Housekeeping",
                           "RemoveTempFiles",

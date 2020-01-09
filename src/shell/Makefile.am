@@ -55,6 +55,8 @@ common_sources =				\
 
 gnome_control_center_SOURCES =			\
 	$(common_sources)			\
+	cc-panel-list.c				\
+	cc-panel-list.h				\
 	cc-window.c				\
 	cc-window.h
 
@@ -93,14 +95,11 @@ gnome_control_center_LDADD =						\
 	$(top_builddir)/panels/sharing/libsharing.la			\
 	$(top_builddir)/panels/sound/libsound.la			\
 	$(top_builddir)/panels/universal-access/libuniversal-access.la	\
-	$(top_builddir)/panels/user-accounts/libuser-accounts.la
+	$(top_builddir)/panels/user-accounts/libuser-accounts.la	\
+	$(top_builddir)/panels/printers/libprinters.la
 
 if BUILD_WACOM
 gnome_control_center_LDADD += $(top_builddir)/panels/wacom/libwacom-properties.la
-endif
-
-if BUILD_PRINTERS
-gnome_control_center_LDADD += $(top_builddir)/panels/printers/libprinters.la
 endif
 
 if BUILD_NETWORK
