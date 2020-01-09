@@ -1,0 +1,55 @@
+From 3e896edc5ab6bdb2488b1bd3442a67a2e79608a1 Mon Sep 17 00:00:00 2001
+From: Rui Matos <tiagomatos@gmail.com>
+Date: Mon, 25 Apr 2016 20:04:02 +0200
+Subject: [PATCH 2/3] region: Be more thorough in cc_input_chooser_reset()
+
+This should result in returning to the initial state as intended
+instead of keeping the filter entry shown and the filter applied.
+---
+ panels/region/cc-input-chooser.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/panels/region/cc-input-chooser.c b/panels/region/cc-input-chooser.c
+index 74a0f6d..5d2b478 100644
+--- a/panels/region/cc-input-chooser.c
++++ b/panels/region/cc-input-chooser.c
+@@ -1117,6 +1117,17 @@ cc_input_chooser_private_free (gpointer data)
+   g_free (priv);
+ }
+ 
++static gboolean
++reset_on_escape (GtkWidget   *widget,
++                 GdkEventKey *event,
++                 GtkWidget   *chooser)
++{
++  if (event->keyval == GDK_KEY_Escape)
++    cc_input_chooser_reset (chooser);
++
++  return FALSE;
++}
++
+ GtkWidget *
+ cc_input_chooser_new (GtkWindow    *main_window,
+                       GnomeXkbInfo *xkb_info,
+@@ -1160,6 +1171,7 @@ cc_input_chooser_new (GtkWindow    *main_window,
+   g_signal_connect (priv->list, "selected-rows-changed", G_CALLBACK (selected_rows_changed), chooser);
+ 
+   g_signal_connect_swapped (priv->filter_entry, "search-changed", G_CALLBACK (filter_changed), chooser);
++  g_signal_connect (priv->filter_entry, "key-release-event", G_CALLBACK (reset_on_escape), chooser);
+ 
+   get_locale_infos (chooser);
+ #ifdef HAVE_IBUS
+@@ -1227,5 +1239,10 @@ cc_input_chooser_get_selected (GtkWidget  *chooser,
+ void
+ cc_input_chooser_reset (GtkWidget *chooser)
+ {
++  CcInputChooserPrivate *priv = GET_PRIVATE (chooser);
++  priv->showing_extra = FALSE;
++  gtk_entry_set_text (GTK_ENTRY (priv->filter_entry), "");
++  gtk_widget_hide (priv->filter_entry);
++  g_clear_pointer (&priv->filter_words, g_strfreev);
+   show_locale_rows (chooser);
+ }
+-- 
+2.5.0
+

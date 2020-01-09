@@ -1,0 +1,41 @@
+From 44debcbb1a8b37a8fbae03dc5a8c9999ebbac47f Mon Sep 17 00:00:00 2001
+From: Martin Hatina <mhatina@redhat.com>
+Date: Thu, 30 Apr 2015 15:12:28 +0200
+Subject: [PATCH] notifications: do not show nameless apps
+
+Apps with no name are not added to list.
+
+https://bugzilla.gnome.org/show_bug.cgi?id=693622
+---
+ panels/notifications/cc-notifications-panel.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/panels/notifications/cc-notifications-panel.c b/panels/notifications/cc-notifications-panel.c
+index 7a176ae..8e9f62c 100644
+--- a/panels/notifications/cc-notifications-panel.c
++++ b/panels/notifications/cc-notifications-panel.c
+@@ -193,6 +193,11 @@ add_application (CcNotificationsPanel *panel,
+ {
+   GtkWidget *box, *w, *row;
+   GIcon *icon;
++  gchar *app_name;
++
++  app_name = g_app_info_get_name (app->app_info);
++  if (app_name == NULL || *app_name == '\0')
++    return;
+
+   icon = g_app_info_get_icon (app->app_info);
+   if (icon == NULL)
+     icon = g_themed_icon_new ("application-x-executable");
+@@ -284,7 +289,7 @@ add_application (CcNotificationsPanel *panel,
+   gtk_container_add (GTK_CONTAINER (box), w);
+   g_object_unref (icon);
+ 
+-  w = gtk_label_new (g_app_info_get_name (app->app_info));
++  w = gtk_label_new (app_name);
+   gtk_container_add (GTK_CONTAINER (box), w);
+ 
+   w = gtk_label_new ("");
+-- 
+2.1.0
+

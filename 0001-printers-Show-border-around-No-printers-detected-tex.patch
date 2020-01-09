@@ -1,0 +1,49 @@
+From bd4fcd5706b2bc20c2bf62e33be5c769153512fb Mon Sep 17 00:00:00 2001
+From: Marek Kasik <mkasik@redhat.com>
+Date: Tue, 26 May 2015 11:43:08 +0200
+Subject: [PATCH] printers: Show border around 'No printers detected' text
+
+The GtkStack page which shows the label 'No printers detected' in the
+'New printer dialog' misses border.
+This commit places the GtkLabel into a GtkFrame to achieve that.
+
+https://bugzilla.gnome.org/show_bug.cgi?id=749883
+---
+ panels/printers/new-printer-dialog.ui | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/panels/printers/new-printer-dialog.ui b/panels/printers/new-printer-dialog.ui
+index 751bce2..2024978 100644
+--- a/panels/printers/new-printer-dialog.ui
++++ b/panels/printers/new-printer-dialog.ui
+@@ -148,14 +148,21 @@
+                       </packing>
+                     </child>
+                     <child>
+-                      <object class="GtkLabel" id="no-devices-label">
++                      <object class="GtkFrame" id="frame1">
+                         <property name="visible">True</property>
+                         <property name="can_focus">False</property>
+-                        <property name="sensitive">False</property>
+-                        <property name="label" translatable="yes" comments="Translators: No printers were found">No printers detected.</property>
+-                        <attributes>
+-                          <attribute name="weight" value="bold"/>
+-                        </attributes>
++                        <property name="shadow_type">in</property>
++                        <child>
++                          <object class="GtkLabel" id="no-devices-label">
++                            <property name="visible">True</property>
++                            <property name="can_focus">False</property>
++                            <property name="sensitive">False</property>
++                            <property name="label" translatable="yes" comments="Translators: No printers were found">No printers detected.</property>
++                            <attributes>
++                              <attribute name="weight" value="bold"/>
++                            </attributes>
++                          </object>
++                        </child>
+                       </object>
+                       <packing>
+                         <property name="name">no-printers-page</property>
+-- 
+2.4.3
+

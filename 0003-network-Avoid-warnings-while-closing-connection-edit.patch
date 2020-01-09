@@ -1,0 +1,43 @@
+From d57be893401c0efb7cec362b2e3f5ea81e2b1f0c Mon Sep 17 00:00:00 2001
+From: Rui Matos <tiagomatos@gmail.com>
+Date: Mon, 25 Jan 2016 19:10:41 +0100
+Subject: [PATCH 3/4] network: Avoid warnings while closing connection editor
+
+It doesn't make sense to try to validate pages because widgets are
+changing due to the whole dialog being destroyed and it causes a bunch
+of warnings because some resources are cleared on each page dispose
+method.
+
+Avoid all that by disconnecting the page "changed" signal handler
+before we start destroying widgets.
+---
+ panels/network/connection-editor/net-connection-editor.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/panels/network/connection-editor/net-connection-editor.c b/panels/network/connection-editor/net-connection-editor.c
+index 9564506..d8a20a0 100644
+--- a/panels/network/connection-editor/net-connection-editor.c
++++ b/panels/network/connection-editor/net-connection-editor.c
+@@ -50,6 +50,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
+ 
+ G_DEFINE_TYPE (NetConnectionEditor, net_connection_editor, G_TYPE_OBJECT)
+ 
++static void page_changed (CEPage *page, gpointer user_data);
++
+ static void
+ selection_changed (GtkTreeSelection *selection, NetConnectionEditor *editor)
+ {
+@@ -182,6 +184,10 @@ static void
+ net_connection_editor_finalize (GObject *object)
+ {
+         NetConnectionEditor *editor = NET_CONNECTION_EDITOR (object);
++        GSList *l;
++
++        for (l = editor->pages; l != NULL; l = l->next)
++                g_signal_handlers_disconnect_by_func (l->data, page_changed, editor);
+ 
+         if (editor->permission_id > 0 && editor->client)
+                 g_signal_handler_disconnect (editor->client, editor->permission_id);
+-- 
+2.7.4
+

@@ -1,0 +1,68 @@
+From 51988f5a41f10696cee74d6f9ff5f92d14baa60b Mon Sep 17 00:00:00 2001
+From: Rui Matos <tiagomatos@gmail.com>
+Date: Wed, 27 May 2015 16:45:03 +0200
+Subject: [PATCH] network: Prevent a use after free crash when removing virtual
+ devices
+
+When a virtual device is removed and the instance gets finalized we're
+not disconnecting from the real NMDevice's notify signal and thus end
+up crashing when the signal fires afterwards.
+
+Avoid that by using g_signal_connect_object() so that when we're
+finalized the disconnection happens automatically.
+
+https://bugzilla.gnome.org/show_bug.cgi?id=749972
+---
+ panels/network/net-device-bond.c   | 4 ++--
+ panels/network/net-device-bridge.c | 4 ++--
+ panels/network/net-device-team.c   | 4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/panels/network/net-device-bond.c b/panels/network/net-device-bond.c
+index abf0829..67123ff 100644
+--- a/panels/network/net-device-bond.c
++++ b/panels/network/net-device-bond.c
+@@ -133,8 +133,8 @@ net_device_bond_device_set (NetVirtualDevice *virtual_device,
+ {
+         NetDeviceBond *device_bond = NET_DEVICE_BOND (virtual_device);
+ 
+-        g_signal_connect (nm_device, "notify::slaves",
+-                          G_CALLBACK (nm_device_slaves_changed), device_bond);
++        g_signal_connect_object (nm_device, "notify::slaves",
++                                 G_CALLBACK (nm_device_slaves_changed), device_bond, 0);
+         nm_device_slaves_changed (G_OBJECT (nm_device), NULL, device_bond);
+ }
+ 
+diff --git a/panels/network/net-device-bridge.c b/panels/network/net-device-bridge.c
+index 16251e0..2335ff8 100644
+--- a/panels/network/net-device-bridge.c
++++ b/panels/network/net-device-bridge.c
+@@ -133,8 +133,8 @@ net_device_bridge_device_set (NetVirtualDevice *virtual_device,
+ {
+         NetDeviceBridge *device_bridge = NET_DEVICE_BRIDGE (virtual_device);
+ 
+-        g_signal_connect (nm_device, "notify::slaves",
+-                          G_CALLBACK (nm_device_slaves_changed), device_bridge);
++        g_signal_connect_object (nm_device, "notify::slaves",
++                                 G_CALLBACK (nm_device_slaves_changed), device_bridge, 0);
+         nm_device_slaves_changed (G_OBJECT (nm_device), NULL, device_bridge);
+ }
+ 
+diff --git a/panels/network/net-device-team.c b/panels/network/net-device-team.c
+index 09a6142..55bfbca 100644
+--- a/panels/network/net-device-team.c
++++ b/panels/network/net-device-team.c
+@@ -133,8 +133,8 @@ net_device_team_device_set (NetVirtualDevice *virtual_device,
+ {
+         NetDeviceTeam *device_team = NET_DEVICE_TEAM (virtual_device);
+ 
+-        g_signal_connect (nm_device, "notify::slaves",
+-                          G_CALLBACK (nm_device_slaves_changed), device_team);
++        g_signal_connect_object (nm_device, "notify::slaves",
++                                 G_CALLBACK (nm_device_slaves_changed), device_team, 0);
+         nm_device_slaves_changed (G_OBJECT (nm_device), NULL, device_team);
+ }
+ 
+-- 
+2.4.0
+

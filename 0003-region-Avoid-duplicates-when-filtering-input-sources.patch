@@ -1,0 +1,162 @@
+From 9f37fe26bb983a3cee6c18bb5908fa877dce9199 Mon Sep 17 00:00:00 2001
+From: Rui Matos <tiagomatos@gmail.com>
+Date: Mon, 25 Apr 2016 20:06:34 +0200
+Subject: [PATCH 3/3] region: Avoid duplicates when filtering input sources in
+ the chooser
+
+Keep a table of unique input source rows and use those to filter from
+to avoid having duplicates in the filtered result.
+---
+ panels/region/cc-input-chooser.c | 77 ++++++++++++++++++++++++++++++----------
+ 1 file changed, 59 insertions(+), 18 deletions(-)
+
+diff --git a/panels/region/cc-input-chooser.c b/panels/region/cc-input-chooser.c
+index 5d2b478..0ba4060 100644
+--- a/panels/region/cc-input-chooser.c
++++ b/panels/region/cc-input-chooser.c
+@@ -67,6 +67,7 @@ typedef struct {
+   gboolean showing_extra;
+   guint filter_timeout_id;
+   gchar **filter_words;
++  GHashTable *filter_rows;
+ } CcInputChooserPrivate;
+ 
+ #define GET_PRIVATE(chooser) ((CcInputChooserPrivate *) g_object_get_data (G_OBJECT (chooser), "private"))
+@@ -282,6 +283,8 @@ input_source_row_new (GtkWidget   *chooser,
+       g_object_set_data (G_OBJECT (row), "type", (gpointer) type);
+       g_object_set_data (G_OBJECT (row), "id", (gpointer) id);
+ 
++      g_hash_table_replace (priv->filter_rows, (gpointer) id, row);
++
+       return GTK_LIST_BOX_ROW (row);
+     }
+ 
+@@ -461,6 +464,52 @@ show_locale_rows (GtkWidget *chooser)
+     g_hash_table_destroy (initial);
+ }
+ 
++static gboolean
++match_all (gchar       **words,
++           const gchar  *str)
++{
++  gchar **w;
++
++  for (w = words; *w; ++w)
++    if (!strstr (str, *w))
++      return FALSE;
++
++  return TRUE;
++}
++
++static gint
++filter_list_sort (gconstpointer a,
++                  gconstpointer b,
++                  gpointer      data)
++{
++  GtkWidget *chooser = data;
++  CcInputChooserPrivate *priv = GET_PRIVATE (chooser);
++  gboolean aparam, bparam;
++  const gchar *la;
++  const gchar *lb;
++
++  aparam = g_object_get_data (G_OBJECT (a), "default") != NULL;
++  bparam = g_object_get_data (G_OBJECT (b), "default") != NULL;
++
++  if (aparam && !bparam)
++    return -1;
++  else if (!aparam && bparam)
++    return 1;
++
++  la = g_object_get_data (G_OBJECT (a), "unaccented-name");
++  lb = g_object_get_data (G_OBJECT (b), "unaccented-name");
++
++  aparam = match_all (priv->filter_words, la);
++  bparam = match_all (priv->filter_words, lb);
++
++  if (aparam && !bparam)
++    return -1;
++  else if (!aparam && bparam)
++    return 1;
++
++  return g_strcmp0 (la, lb);
++}
++
+ static gint
+ list_sort (gconstpointer a,
+            gconstpointer b,
+@@ -474,6 +523,9 @@ list_sort (gconstpointer a,
+   const gchar *lb;
+   gint retval;
+ 
++  if (priv->filter_words && priv->filter_words[0])
++    return filter_list_sort (a, b, data);
++
+   /* Always goes at the end */
+   if (a == priv->more_row)
+     return 1;
+@@ -515,19 +567,6 @@ list_sort (gconstpointer a,
+ }
+ 
+ static gboolean
+-match_all (gchar       **words,
+-           const gchar  *str)
+-{
+-  gchar **w;
+-
+-  for (w = words; *w; ++w)
+-    if (!strstr (str, *w))
+-      return FALSE;
+-
+-  return TRUE;
+-}
+-
+-static gboolean
+ list_filter (GtkListBoxRow *row,
+              gpointer   user_data)
+ {
+@@ -614,21 +653,21 @@ static void
+ show_filter_widgets (GtkWidget *chooser)
+ {
+   CcInputChooserPrivate *priv = GET_PRIVATE (chooser);
+-  LocaleInfo *info;
++  GtkWidget *row;
+   GHashTableIter iter;
+ 
+   remove_all_children (GTK_CONTAINER (priv->list));
+ 
+-  g_hash_table_iter_init (&iter, priv->locales);
+-  while (g_hash_table_iter_next (&iter, NULL, (gpointer *) &info))
+-    add_input_source_rows_for_locale (chooser, info);
++  g_hash_table_iter_init (&iter, priv->filter_rows);
++  while (g_hash_table_iter_next (&iter, NULL, (gpointer *) &row))
++    gtk_container_add (GTK_CONTAINER (priv->list), row);
+ 
+   gtk_widget_show_all (priv->list);
+ 
+   gtk_adjustment_set_value (priv->adjustment,
+                             gtk_adjustment_get_lower (priv->adjustment));
+   gtk_list_box_set_header_func (GTK_LIST_BOX (priv->list),
+-                                update_header_filter, NULL, NULL);
++                                update_header, NULL, NULL);
+   gtk_list_box_invalidate_filter (GTK_LIST_BOX (priv->list));
+   gtk_list_box_set_selection_mode (GTK_LIST_BOX (priv->list), GTK_SELECTION_SINGLE);
+   gtk_list_box_set_activate_on_single_click (GTK_LIST_BOX (priv->list), FALSE);
+@@ -1005,6 +1044,7 @@ get_locale_infos (GtkWidget *chooser)
+   gchar **locale;
+   GList *list, *l;
+ 
++  priv->filter_rows = g_hash_table_new (g_str_hash, g_str_equal);
+   priv->locales = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                          NULL, locale_info_free);
+   priv->locales_by_language = g_hash_table_new_full (g_str_hash, g_str_equal,
+@@ -1109,6 +1149,7 @@ cc_input_chooser_private_free (gpointer data)
+ 
+   g_object_unref (priv->more_row);
+   g_object_unref (priv->no_results);
++  g_hash_table_destroy (priv->filter_rows);
+   g_hash_table_destroy (priv->locales);
+   g_hash_table_destroy (priv->locales_by_language);
+   g_strfreev (priv->filter_words);
+-- 
+2.5.0
+

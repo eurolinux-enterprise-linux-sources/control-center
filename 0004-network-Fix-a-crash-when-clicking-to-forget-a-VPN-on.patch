@@ -1,0 +1,36 @@
+From 2e7b23aa0019cd04e602be9c4838f458c97d9652 Mon Sep 17 00:00:00 2001
+From: Rui Matos <tiagomatos@gmail.com>
+Date: Tue, 26 Jan 2016 16:30:54 +0100
+Subject: [PATCH 4/4] network: Fix a crash when clicking to forget a VPN on the
+ editor
+
+We need to keep a reference to the NetVpn instance or it might already
+be finalized when the editor window closes.
+---
+ panels/network/net-vpn.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/panels/network/net-vpn.c b/panels/network/net-vpn.c
+index c6fdda1..94c1c10 100644
+--- a/panels/network/net-vpn.c
++++ b/panels/network/net-vpn.c
+@@ -406,6 +406,7 @@ editor_done (NetConnectionEditor *editor,
+ {
+         g_object_unref (editor);
+         net_object_refresh (NET_OBJECT (vpn));
++        g_object_unref (vpn);
+ }
+ 
+ static void
+@@ -432,7 +433,7 @@ vpn_proxy_edit (NetObject *object)
+         net_connection_editor_set_title (editor, title);
+         g_free (title);
+ 
+-        g_signal_connect (editor, "done", G_CALLBACK (editor_done), vpn);
++        g_signal_connect (editor, "done", G_CALLBACK (editor_done), g_object_ref (vpn));
+         net_connection_editor_run (editor);
+ }
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,96 @@
+From b5b421288c0df5412076b05b86d8ff532bbcae9f Mon Sep 17 00:00:00 2001
+From: Marek Kasik <mkasik@redhat.com>
+Date: Fri, 22 May 2015 11:23:19 +0200
+Subject: [PATCH 2/2] printers: Fix setting of page size
+
+Set 'PageSize' instead of 'media' for new printers since we use PPD
+for construction of the combo for selecting of default paper size.
+Previously, we've been setting 'media' attribute for new printers.
+Attribute 'media' is used by IPP but we set paper size using 'PageSize'
+which comes from PPD in the options dialog. Sometimes (quite often) IPP
+gets priority over PPD in print systems. Therefore there was inconsistency
+of what user set as default paper size on the options dialog and what was used.
+
+Also don't mark IPP and user's local options as default in PpPPDOptionWidget
+since it should use just PPD (we can change PPD values only in this widget).
+Since we use PPD for setting of paper size in the options dialog, we shouldn't
+show a value which user does not change actually (IPP's 'media' vs. PPD's
+'PageSize').
+
+https://bugzilla.gnome.org/show_bug.cgi?id=748569
+---
+ panels/printers/pp-new-printer.c       | 4 ++--
+ panels/printers/pp-ppd-option-widget.c | 3 ---
+ panels/printers/pp-utils.c             | 8 ++++----
+ panels/printers/pp-utils.h             | 2 +-
+ 4 files changed, 7 insertions(+), 10 deletions(-)
+
+diff --git a/panels/printers/pp-new-printer.c b/panels/printers/pp-new-printer.c
+index c21f934..d84cc1f 100644
+--- a/panels/printers/pp-new-printer.c
++++ b/panels/printers/pp-new-printer.c
+@@ -1326,9 +1326,9 @@ printer_configure_async (PpNewPrinter *new_printer)
+ 
+   /* Set media size for printer */
+   values = g_new0 (gchar *, 2);
+-  values[0] = g_strdup (get_paper_size_from_locale ());
++  values[0] = g_strdup (get_page_size_from_locale ());
+ 
+-  printer_add_option_async (priv->name, "media", values, TRUE, NULL, pao_cb, data);
++  printer_add_option_async (priv->name, "PageSize", values, FALSE, NULL, pao_cb, data);
+ 
+   g_strfreev (values);
+ 
+diff --git a/panels/printers/pp-ppd-option-widget.c b/panels/printers/pp-ppd-option-widget.c
+index 1e57c5b..f7d0bf4 100644
+--- a/panels/printers/pp-ppd-option-widget.c
++++ b/panels/printers/pp-ppd-option-widget.c
+@@ -524,9 +524,6 @@ update_widget_real (PpPPDOptionWidget *widget)
+       if (ppd_file)
+         {
+           ppdMarkDefaults (ppd_file);
+-          cupsMarkOptions (ppd_file,
+-                           priv->destination->num_options,
+-                           priv->destination->options);
+ 
+           for (iter = ppdFirstOption(ppd_file); iter; iter = ppdNextOption(ppd_file))
+             {
+diff --git a/panels/printers/pp-utils.c b/panels/printers/pp-utils.c
+index 3eb8e60..85d68ab 100644
+--- a/panels/printers/pp-utils.c
++++ b/panels/printers/pp-utils.c
+@@ -1331,14 +1331,14 @@ printer_get_hostname (cups_ptype_t  printer_type,
+   return result;
+ }
+ 
+-/* Returns default media size for current locale */
++/* Returns default page size for current locale */
+ const gchar *
+-get_paper_size_from_locale ()
++get_page_size_from_locale (void)
+ {
+   if (g_str_equal (gtk_paper_size_get_default (), GTK_PAPER_NAME_LETTER))
+-    return "na-letter";
++    return "Letter";
+   else
+-    return "iso-a4";
++    return "A4";
+ }
+ 
+ typedef struct
+diff --git a/panels/printers/pp-utils.h b/panels/printers/pp-utils.h
+index 37af065..c307879 100644
+--- a/panels/printers/pp-utils.h
++++ b/panels/printers/pp-utils.h
+@@ -297,7 +297,7 @@ PpPrintDevice *pp_print_device_copy (PpPrintDevice *device);
+ 
+ void         pp_devices_list_free (PpDevicesList *result);
+ 
+-const gchar *get_paper_size_from_locale (void);
++const gchar *get_page_size_from_locale (void);
+ 
+ typedef void (*GCDCallback) (GList          *devices,
+                              gboolean        finished,
+-- 
+2.4.3
+
