@@ -1,0 +1,291 @@
+diff -up gnome-wacom-properties-3.3.90/panels/wacom/gsd-wacom-device.c.update-from-gsd gnome-wacom-properties-3.3.90/panels/wacom/gsd-wacom-device.c
+--- gnome-wacom-properties-3.3.90/panels/wacom/gsd-wacom-device.c.update-from-gsd	2012-09-10 14:26:14.709744469 +0200
++++ gnome-wacom-properties-3.3.90/panels/wacom/gsd-wacom-device.c	2012-09-10 14:26:14.734744699 +0200
+@@ -402,8 +402,11 @@ filter_events (XEvent	 *xevent,
+ 
+ 	name = XGetAtomName (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), pev->property);
+ 	if (name == NULL ||
+-	    g_strcmp0 (name, WACOM_SERIAL_IDS_PROP) != 0)
+-		goto out;
++	    g_strcmp0 (name, WACOM_SERIAL_IDS_PROP) != 0) {
++		if (name)
++			XFree (name);
++		return GDK_FILTER_CONTINUE;
++	}
+ 	XFree (name);
+ 
+ 	tool_id = xdevice_get_last_tool_id (device->priv->device_id);
+@@ -427,7 +430,7 @@ setup_property_notify (GsdWacomDevice *d
+ 
+ 	evmask.deviceid = device->priv->device_id;
+ 	evmask.mask_len = XIMaskLen (XI_PropertyEvent);
+-	evmask.mask = g_malloc0(evmask.mask_len * sizeof(char));
++	evmask.mask = g_new0 (guchar, evmask.mask_len);
+ 	XISetMask (evmask.mask, XI_PropertyEvent);
+ 
+ 	dpy = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
+@@ -504,14 +507,14 @@ get_device_type (XDeviceInfo *dev)
+ 
+ 	gdk_error_trap_push ();
+ 
+-	rc = XGetDeviceProperty (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()),
+-				 device, prop, 0, 1, False,
+-				 XA_ATOM, &realtype, &realformat, &nitems,
+-				 &bytes_after, &data);
+-	if (gdk_error_trap_pop () || rc != Success || realtype == None) {
+-		XCloseDevice (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), device);
+-		ret = WACOM_TYPE_INVALID;
+-	}
++        rc = XGetDeviceProperty (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()),
++                                 device, prop, 0, 1, False,
++                                 XA_ATOM, &realtype, &realformat, &nitems,
++                                 &bytes_after, &data);
++        XCloseDevice (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), device);
++
++        if (gdk_error_trap_pop () || rc != Success || realtype == None)
++                ret = WACOM_TYPE_INVALID;
+ 
+ 	XFree (data);
+ 
+@@ -584,14 +587,14 @@ find_output_by_edid (const gchar *vendor
+ }
+ 
+ static GnomeOutputInfo*
+-find_single_output (void)
++find_builtin_output (void)
+ {
+ 	GError *error = NULL;
+ 	GnomeRRScreen *rr_screen = NULL;
+ 	GnomeRRConfig *rr_config = NULL;
+-	GnomeOutputInfo **rr_output_info, **outputs;
++	GnomeOutputInfo **rr_output_info;
+ 	GnomeOutputInfo *retval = NULL;
+-	gint noutputs = 0;
++	guint i;
+ 
+ 	rr_screen = gsd_rr_screen_new (gdk_screen_get_default (),
+ 					 NULL, NULL,
+@@ -605,11 +608,15 @@ find_single_output (void)
+ 	/* gsd_rr_config_compat_outputs_get() should return something even if rr_config in NULL */
+ 	rr_output_info = gsd_rr_config_compat_outputs_get (rr_config);
+ 
+-	for (outputs = rr_output_info; *outputs != NULL; outputs++)
+-		noutputs++;
++	for (i = 0; rr_output_info[i] != NULL; i++) {
++		if (!gsd_rr_output_info_is_connected (rr_output_info[i]))
++			continue;
+ 
+-	if (noutputs == 1)
+-		retval = gsd_rr_compat_output_deep_copy (*rr_output_info);
++		if (gsd_rr_compat_output_is_laptop (rr_output_info[i])) {
++			retval = gsd_rr_compat_output_deep_copy (rr_output_info[i]);
++			break;
++		}
++	}
+ 
+ 	gsd_rr_config_compat_outputs_free (rr_output_info);
+ 	if (rr_config)
+@@ -618,7 +625,7 @@ find_single_output (void)
+ 		gnome_rr_screen_destroy (rr_screen);
+ 
+ 	if (retval == NULL)
+-		g_debug ("More than one monitor found.");
++		g_debug ("Did not find a built-in monitor");
+ 
+ 	return retval;
+ }
+@@ -634,9 +641,6 @@ find_output_by_heuristic (GsdWacomDevice
+ 	 */
+ 	rr_output_info = find_output_by_edid("WAC", NULL, NULL);
+ 
+-	if (!rr_output_info)
+-		rr_output_info = find_single_output ();
+-
+ 	return rr_output_info;
+ }
+ 
+@@ -646,30 +650,30 @@ find_output_by_display (GsdWacomDevice *
+ 	gsize n;
+ 	GConfValue *display;
+ 	gchar **edid;
+-	GnomeOutputInfo* info;
++	GnomeOutputInfo* ret;
+ 
+ 	if (device == NULL)
+ 		return NULL;
+ 
++	ret      = NULL;
+ 	display  = gsd_gconf_get (device->priv->settings_path, device->priv->schemas_path, "display");
+ 	edid     = gsd_gconf_value_get_strv (display, &n);
+ 	gconf_value_free (display);
+ 
+ 	if (n != 3) {
+ 		g_critical ("Expected 'display' key to store %d values; got %"G_GSIZE_FORMAT".", 3, n);
+-		g_strfreev (edid);
+-		return NULL;
++		goto out;
+ 	}
+ 
+-	if (strlen(edid[0]) == 0 || strlen(edid[1]) == 0 || strlen(edid[2]) == 0) {
+-		g_strfreev (edid);
+-		return NULL;
+-	}
++	if (strlen(edid[0]) == 0 || strlen(edid[1]) == 0 || strlen(edid[2]) == 0)
++		goto out;
+ 
+-	info = find_output_by_edid (edid[0], edid[1], edid[2]);
++	ret = find_output_by_edid (edid[0], edid[1], edid[2]);
++
++out:
+ 	g_strfreev (edid);
+ 
+-	return info;
++	return ret;
+ }
+ 
+ static GnomeOutputInfo*
+@@ -799,6 +803,7 @@ find_output (GsdWacomDevice *device)
+ 			rr_output_info = find_output_by_heuristic (device);
+ 			if (rr_output_info == NULL) {
+ 				g_warning ("No fuzzy match based on heuristics was found.");
++				rr_output_info = find_builtin_output ();
+ 			} else {
+ 				g_warning("Automatically mapping tablet to heuristically-found display.");
+ 				set_display_by_output (device, rr_output_info);
+@@ -992,6 +997,8 @@ gsd_wacom_device_add_ring_modes (WacomDe
+ 			name = g_strdup_printf (_("Left Ring Mode #%d"), i);
+ 			id = g_strdup_printf ("left-ring-mode-%d", i);
+ 			l = g_list_append (l, gsd_wacom_tablet_button_new (name, id, settings_path, WACOM_TABLET_BUTTON_TYPE_ELEVATOR, flags_to_group (WACOM_BUTTON_RING_MODESWITCH), i - 1));
++			g_free (name);
++			g_free (id);
+ 		}
+ 	} else if ((direction & WACOM_BUTTON_POSITION_RIGHT) && libwacom_has_ring2 (wacom_device)) {
+ 		num_modes = libwacom_get_ring2_num_modes (wacom_device);
+@@ -999,6 +1006,8 @@ gsd_wacom_device_add_ring_modes (WacomDe
+ 			name = g_strdup_printf (_("Right Ring Mode #%d"), i);
+ 			id = g_strdup_printf ("right-ring-mode-%d", i);
+ 			l = g_list_append (l, gsd_wacom_tablet_button_new (name, id, settings_path, WACOM_TABLET_BUTTON_TYPE_ELEVATOR, flags_to_group (WACOM_BUTTON_RING2_MODESWITCH), i - 1));
++			g_free (name);
++			g_free (id);
+ 		}
+ 	}
+ 
+@@ -1027,6 +1036,8 @@ gsd_wacom_device_add_strip_modes (WacomD
+ 			name = g_strdup_printf (_("Left Touchstrip Mode #%d"), i);
+ 			id = g_strdup_printf ("left-strip-mode-%d", i);
+ 			l = g_list_append (l, gsd_wacom_tablet_button_new (name, id, settings_path, WACOM_TABLET_BUTTON_TYPE_ELEVATOR, flags_to_group (WACOM_BUTTON_TOUCHSTRIP_MODESWITCH), i - 1));
++			g_free (name);
++			g_free (id);
+ 		}
+ 	} else if ((direction & WACOM_BUTTON_POSITION_RIGHT) && num_strips >= 2) {
+ 		num_modes = libwacom_get_strips_num_modes (wacom_device);
+@@ -1034,6 +1045,8 @@ gsd_wacom_device_add_strip_modes (WacomD
+ 			name = g_strdup_printf (_("Right Touchstrip Mode #%d"), i);
+ 			id = g_strdup_printf ("right-strip-mode-%d", i);
+ 			l = g_list_append (l, gsd_wacom_tablet_button_new (name, id, settings_path, WACOM_TABLET_BUTTON_TYPE_ELEVATOR, flags_to_group (WACOM_BUTTON_TOUCHSTRIP2_MODESWITCH), i - 1));
++			g_free (name);
++			g_free (id);
+ 		}
+ 	}
+ 
+@@ -1413,12 +1426,15 @@ gsd_wacom_device_finalize (GObject *obje
+ 
+ 	p = device->priv;
+ 
+-	g_list_foreach (p->buttons, (GFunc) gsd_wacom_tablet_button_free, NULL);
+-	g_list_free (p->buttons);
+-
+ 	g_free (p->settings_path);
+ 	p->settings_path = NULL;
+ 
++        g_list_foreach (p->styli, (GFunc) g_object_unref, NULL);
++        g_list_free (p->styli);
++
++        g_list_foreach (p->buttons, (GFunc) gsd_wacom_tablet_button_free, NULL);
++        g_list_free (p->buttons);
++
+ 	g_free (p->name);
+ 	p->name = NULL;
+ 
+diff -up gnome-wacom-properties-3.3.90/panels/wacom/gsd-wacom-rr-helpers.c.update-from-gsd gnome-wacom-properties-3.3.90/panels/wacom/gsd-wacom-rr-helpers.c
+--- gnome-wacom-properties-3.3.90/panels/wacom/gsd-wacom-rr-helpers.c.update-from-gsd	2012-09-10 14:26:14.817745461 +0200
++++ gnome-wacom-properties-3.3.90/panels/wacom/gsd-wacom-rr-helpers.c	2012-09-10 14:26:14.820745490 +0200
+@@ -314,6 +314,14 @@ gsd_rr_output_info_is_active (GnomeOutpu
+ 	return self->on;
+ }
+ 
++gboolean
++gsd_rr_output_info_is_connected (GnomeOutputInfo *self)
++{
++	g_return_val_if_fail (self != NULL, FALSE);
++
++	return self->connected;
++}
++
+ void
+ gsd_rr_output_info_get_vendor (GnomeOutputInfo *self,
+ 			       gchar* vendor)
+@@ -371,6 +379,39 @@ gsd_rr_output_info_get_display_name (Gno
+ 	return self->display_name ? self->display_name : _("Unknown");
+ }
+ 
++/* Copied from gnome-desktop-3.x */
++static gboolean
++_gsd_rr_compat_output_name_is_laptop (const char *name)
++{
++	if (!name)
++		return FALSE;
++
++	if (strstr (name, "lvds") ||  /* Most drivers use an "LVDS" prefix... */
++	    strstr (name, "LVDS") ||
++	    strstr (name, "Lvds") ||
++	    strstr (name, "LCD")  ||  /* ... but fglrx uses "LCD" in some versions.  Shoot me now, kthxbye. */
++	    strstr (name, "eDP")  ||  /* eDP is for internal laptop panel connections */
++	    strstr (name, "DFP-0") || /* NV-CONTROL uses DFP-0 as the first flat panel */
++	    strstr (name, "default")) /* Finally, NVidia and all others that don't bother to do RANDR properly */
++		return TRUE;
++
++	return FALSE;
++}
++
++gboolean
++gsd_rr_compat_output_is_laptop (GnomeOutputInfo *output)
++{
++	g_return_val_if_fail (output != NULL, FALSE);
++
++	if (!output->connected)
++		return FALSE;
++
++	if (_gsd_rr_compat_output_name_is_laptop (output->name))
++		return TRUE;
++
++	return FALSE;
++}
++
+ GnomeOutputInfo *
+ gsd_rr_compat_output_deep_copy (const GnomeOutputInfo *output)
+ {
+@@ -597,3 +638,4 @@ gsd_rr_config_compat_outputs_free (Gnome
+ 
+ 	g_free (outputs);
+ }
++
+diff -up gnome-wacom-properties-3.3.90/panels/wacom/gsd-wacom-rr-helpers.h.update-from-gsd gnome-wacom-properties-3.3.90/panels/wacom/gsd-wacom-rr-helpers.h
+--- gnome-wacom-properties-3.3.90/panels/wacom/gsd-wacom-rr-helpers.h.update-from-gsd	2012-09-10 14:26:14.823745517 +0200
++++ gnome-wacom-properties-3.3.90/panels/wacom/gsd-wacom-rr-helpers.h	2012-09-10 14:26:14.825745535 +0200
+@@ -42,6 +42,7 @@ GnomeRRScreen *		gsd_rr_screen_new 			(G
+ 								 gpointer,
+ 								 GError **);
+ gboolean		gsd_rr_output_info_is_active		(GnomeOutputInfo *);
++gboolean		gsd_rr_output_info_is_connected		(GnomeOutputInfo *);
+ void			gsd_rr_output_info_get_vendor		(GnomeOutputInfo *,
+ 								 gchar *);
+ guint			gsd_rr_output_info_get_product		(GnomeOutputInfo *);
+@@ -53,6 +54,7 @@ void			gsd_rr_output_info_get_geometry		
+ 								 int *height);
+ const char *		gsd_rr_output_info_get_name 		(GnomeOutputInfo *);
+ const char *		gsd_rr_output_info_get_display_name	(GnomeOutputInfo *);
++gboolean		gsd_rr_compat_output_is_laptop		(GnomeOutputInfo *);
+ GnomeOutputInfo *	gsd_rr_compat_output_deep_copy		(const GnomeOutputInfo *);
+ void			gsd_rr_compat_output_free		(GnomeOutputInfo *);
+ GnomeOutputInfo **	gsd_rr_config_compat_outputs_get	(GnomeRRConfig *);
